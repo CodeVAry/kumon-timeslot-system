@@ -76,7 +76,7 @@
                             {{ request()->routeIs('admin.roles.*')
                                 ? 'bg-blue-600 text-white'
                                 : 'text-slate-300 hover:bg-slate-800
-                                                                                           hover:text-white' }}">
+                                                                                                                                                                                                                                       hover:text-white' }}">
 
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -107,7 +107,7 @@
                             {{ request()->routeIs('admin.permissions.*')
                                 ? 'bg-blue-600 text-white'
                                 : 'text-slate-300 hover:bg-slate-800
-                                                                                           hover:text-white' }}">
+                                                                                                                                                                                                                                       hover:text-white' }}">
 
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -134,7 +134,7 @@
                             {{ request()->routeIs('admin.users.*')
                                 ? 'bg-blue-600 text-white'
                                 : 'text-slate-300 hover:bg-slate-800
-                                                                                           hover:text-white' }}">
+                                                                                                                                                                                                                                       hover:text-white' }}">
 
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -163,7 +163,7 @@
                             {{ request()->is('admin/audit-logs*')
                                 ? 'bg-blue-600 text-white'
                                 : 'text-slate-300 hover:bg-slate-800
-                                                                                           hover:text-white' }}">
+                                                                                                                                                                                                                                       hover:text-white' }}">
 
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -253,8 +253,8 @@
                 {{ request()->routeIs('admin.sections.*')
                     ? 'bg-blue-600 text-white'
                     : 'text-slate-300
-                                                       hover:bg-slate-800
-                                                       hover:text-white' }}">
+                                                                                                                                       hover:bg-slate-800
+                                                                                                                                       hover:text-white' }}">
 
                             <span class="h-2 w-2 rounded-full
                          bg-current">
@@ -277,8 +277,8 @@
             {{ request()->routeIs('admin.section-offerings.*')
                 ? 'bg-blue-600 text-white'
                 : 'text-slate-300
-                               hover:bg-slate-800
-                               hover:text-white' }}">
+                                                                                           hover:bg-slate-800
+                                                                                           hover:text-white' }}">
                         <span class="h-2 w-2 rounded-full
                      bg-current">
                         </span>
@@ -311,66 +311,148 @@
                     {{ request()->routeIs('admin.student-statuses.*')
                         ? 'bg-blue-600 text-white'
                         : 'text-slate-300 hover:bg-slate-800
-                                               hover:text-white' }}">
+                                                                                                                                                   hover:text-white' }}">
                         <span class="h-2 w-2 rounded-full bg-current">
                         </span>
 
                         <span>Student Statuses</span>
                     </a>
                 @endif
+                {{--
+                @if ($loggedInUser->hasPermission('students.create'))
+                    <a href="{{ route('admin.student-registration.student') }}"
+                        class="flex items-center gap-3 rounded-lg
+               px-3 py-2.5 text-sm font-medium
+            {{ request()->routeIs('admin.student-registration.*')
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-300 hover:bg-slate-800
+                                           hover:text-white' }}">
+                        <span class="h-2 w-2 rounded-full bg-current"></span>
+                        <span>Add Student</span>
+                    </a>
+                @endif --}}
 
             </div>
+
+            @if ($loggedInUser->hasPermission('students.view'))
+                <a href="{{ route('admin.students.index') }}"
+                    class="flex items-center gap-3 rounded-lg
+               px-3 py-2.5 text-sm font-medium
+            {{ request()->routeIs('admin.students.*')
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-300 hover:bg-slate-800
+                                                                   hover:text-white' }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0
+                   2.625.372 9.337 9.337 0 0 0
+                   4.121-.952 4.125 4.125 0 0 0
+                   -7.533-2.493M15 19.128v-.003
+                   c0-1.113-.285-2.16-.786-3.07M15
+                   19.128v.106A12.318 12.318 0 0 1
+                   8.624 21c-2.331 0-4.512-.645
+                   -6.374-1.766l-.002-.109a6.375
+                   6.375 0 0 1 11.964-3.07M12
+                   6.375a3.375 3.375 0 1 1
+                   -6.75 0 3.375 3.375 0 0 1
+                   6.75 0Zm8.25 2.25a2.625
+                   2.625 0 1 1-5.25 0
+                   2.625 2.625 0 0 1 5.25 0Z" />
+                    </svg>
+
+                    <span>Student List</span>
+                </a>
+            @endif
 
         @endif
 
-        {{-- Enrolment section --}}
-        @if ($loggedInUser && $loggedInUser->hasAnyPermission(['enrolments.view', 'enrolment_statuses.view']))
 
-            <p
-                class="mb-2 mt-6 px-3 text-xs font-semibold
-                      uppercase tracking-wider text-slate-500">
-                Enrolment
-            </p>
+        @if (auth()->user()->hasPermission('section_offerings.view'))
+            <a href="{{ route('admin.schedule.index') }}"
+                class="flex items-center
+               gap-3 rounded-xl
+               px-4 py-3
+               text-sm font-medium
+            {{ request()->routeIs('admin.schedule.*')
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
-            <div class="space-y-1">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" class="h-5 w-5">
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
 
-                {{-- Enrolments --}}
-                @if ($loggedInUser->hasPermission('enrolments.view'))
-                    <a href="{{ url('/admin/enrolments') }}"
-                        class="flex items-center gap-3 rounded-lg
-                              px-3 py-2.5 text-sm font-medium
-                            {{ request()->is('admin/enrolments*')
-                                ? 'bg-blue-600 text-white'
-                                : 'text-slate-300 hover:bg-slate-800
-                                                                                           hover:text-white' }}">
+                    <path d="M16 3v4
+                   M8 3v4
+                   M3 10h18" />
+                </svg>
 
-                        <span class="h-2 w-2 rounded-full bg-current"></span>
+                Schedule
 
-                        <span>Enrolments</span>
+            </a>
+        @endif
 
-                    </a>
-                @endif
+        @if (Route::has('admin.attendance.index') && auth()->user()->hasPermission('enrolments.view'))
+            <a href="{{ route('admin.attendance.index') }}"
+                class="flex items-center
+               gap-3 rounded-xl
+               px-4 py-3
+               text-sm font-medium
+            {{ request()->routeIs('admin.attendance.*')
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" class="h-5 w-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25
+                   M17.25 3v2.25
+                   M3.75 9.75h16.5
+                   M5.25 5.25h13.5
+                   A1.5 1.5 0 0 1
+                   20.25 6.75v12
+                   a1.5 1.5 0 0 1
+                   -1.5 1.5H5.25
+                   a1.5 1.5 0 0 1
+                   -1.5-1.5v-12
+                   a1.5 1.5 0 0 1
+                   1.5-1.5Z" />
 
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m9 15 2 2 4-4" />
+                </svg>
 
-                {{-- Enrolment Statuses --}}
-                @if ($loggedInUser->hasPermission('enrolment_statuses.view'))
-                    <a href="{{ url('/admin/enrolment-statuses') }}"
-                        class="flex items-center gap-3 rounded-lg
-                              px-3 py-2.5 text-sm font-medium
-                            {{ request()->is('admin/enrolment-statuses*')
-                                ? 'bg-blue-600 text-white'
-                                : 'text-slate-300 hover:bg-slate-800
-                                                                                           hover:text-white' }}">
+                Attendance
 
-                        <span class="h-2 w-2 rounded-full bg-current"></span>
+            </a>
+        @endif
+        @if (Route::has('admin.leave.index'))
+            <a href="{{ route('admin.leave.index') }}"
+                class="flex items-center
+               gap-3 rounded-xl
+               px-4 py-3
+               text-sm font-medium
+               transition
+            {{ request()->routeIs('admin.leave.*')
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
-                        <span>Enrolment Statuses</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" class="h-5 w-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75V5.25
+                   A2.25 2.25 0 0 1
+                   10.5 3h3
+                   a2.25 2.25 0 0 1
+                   2.25 2.25v1.5
+                   M3.75 8.25h16.5
+                   v10.5A2.25 2.25
+                   0 0 1 18 21H6
+                   a2.25 2.25 0 0 1
+                   -2.25-2.25V8.25Z" />
 
-                    </a>
-                @endif
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 11.25v4.5
+                   M9.75 13.5h4.5" />
+                </svg>
 
-            </div>
+                Leave Management
 
+            </a>
         @endif
 
     </nav>

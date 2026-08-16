@@ -43,4 +43,13 @@ class SectionOffering extends Model
             'id'
         );
     }
+
+    public function enrolments()
+{
+    return $this->hasMany(
+        Enrolment::class,
+        'section_offering_id',
+        'id'
+    );
+}
 }

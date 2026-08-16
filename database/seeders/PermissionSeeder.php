@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Admin\Permission;
 
@@ -14,6 +13,13 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $modules = [
+
+            /*
+            |--------------------------------------------------------------------------
+            | USER & ACCESS
+            |--------------------------------------------------------------------------
+            */
+
             [
                 'name' => 'Roles',
                 'key' => 'roles',
@@ -22,9 +28,9 @@ class PermissionSeeder extends Seeder
                     'create',
                     'edit',
                     'delete',
-                    'print',
                 ],
             ],
+
             [
                 'name' => 'Permissions',
                 'key' => 'permissions',
@@ -33,6 +39,7 @@ class PermissionSeeder extends Seeder
                     'edit',
                 ],
             ],
+
             [
                 'name' => 'Users',
                 'key' => 'users',
@@ -41,30 +48,16 @@ class PermissionSeeder extends Seeder
                     'create',
                     'edit',
                     'delete',
-                    'print',
                 ],
             ],
-            [
-                'name' => 'Days',
-                'key' => 'days',
-                'actions' => [
-                    'view',
-                    'create',
-                    'edit',
-                    'delete',
-                ],
-            ],
-            [
-                'name' => 'Timeslots',
-                'key' => 'timeslots',
-                'actions' => [
-                    'view',
-                    'create',
-                    'edit',
-                    'delete',
-                    'print',
-                ],
-            ],
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CLASS SETUP
+            |--------------------------------------------------------------------------
+            */
+
             [
                 'name' => 'Sections',
                 'key' => 'sections',
@@ -73,9 +66,9 @@ class PermissionSeeder extends Seeder
                     'create',
                     'edit',
                     'delete',
-                    'print',
                 ],
             ],
+
             [
                 'name' => 'Section Offerings',
                 'key' => 'section_offerings',
@@ -87,6 +80,14 @@ class PermissionSeeder extends Seeder
                     'print',
                 ],
             ],
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | STUDENT SETUP
+            |--------------------------------------------------------------------------
+            */
+
             [
                 'name' => 'Students',
                 'key' => 'students',
@@ -98,6 +99,7 @@ class PermissionSeeder extends Seeder
                     'print',
                 ],
             ],
+
             [
                 'name' => 'Student Statuses',
                 'key' => 'student_statuses',
@@ -108,6 +110,7 @@ class PermissionSeeder extends Seeder
                     'delete',
                 ],
             ],
+
             [
                 'name' => 'Enrolments',
                 'key' => 'enrolments',
@@ -119,16 +122,67 @@ class PermissionSeeder extends Seeder
                     'print',
                 ],
             ],
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | SCHEDULE
+            |--------------------------------------------------------------------------
+            */
+
             [
-                'name' => 'Enrolment Statuses',
-                'key' => 'enrolment_statuses',
+                'name' => 'Schedule',
+                'key' => 'schedule',
+                'actions' => [
+                    'view',
+                    'print',
+                ],
+            ],
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | ATTENDANCE
+            |--------------------------------------------------------------------------
+            */
+
+            [
+                'name' => 'Attendance',
+                'key' => 'attendance',
+                'actions' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'print',
+                ],
+            ],
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | LEAVE MANAGEMENT
+            |--------------------------------------------------------------------------
+            */
+
+            [
+                'name' => 'Leave Management',
+                'key' => 'leave',
                 'actions' => [
                     'view',
                     'create',
                     'edit',
                     'delete',
+                    'print',
                 ],
             ],
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | AUDIT
+            |--------------------------------------------------------------------------
+            */
+
             [
                 'name' => 'Audit Logs',
                 'key' => 'audit_logs',
@@ -137,29 +191,52 @@ class PermissionSeeder extends Seeder
                     'print',
                 ],
             ],
+
         ];
 
+
         foreach ($modules as $module) {
-            foreach ($module['actions'] as $action) {
+
+            foreach (
+                $module['actions']
+                as $action
+            ) {
+
                 Permission::updateOrCreate(
                     [
                         'permission_key' =>
-                            $module['key'] . '.' . $action,
+                            $module['key']
+                            .
+                            '.'
+                            .
+                            $action,
                     ],
                     [
                         'permission_name' =>
-                            ucfirst($action) . ' ' . $module['name'],
+                            ucfirst($action)
+                            .
+                            ' '
+                            .
+                            $module['name'],
 
-                        'module' => $module['name'],
+                        'module' =>
+                            $module['name'],
 
                         'description' =>
-                            'Allows the role to ' .
-                            $action .
-                            ' ' .
-                            strtolower($module['name']) .
+                            'Allows the role to '
+                            .
+                            $action
+                            .
+                            ' '
+                            .
+                            strtolower(
+                                $module['name']
+                            )
+                            .
                             '.',
 
-                        'is_active' => true,
+                        'is_active' =>
+                            true,
                     ]
                 );
             }

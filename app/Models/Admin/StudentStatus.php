@@ -18,4 +18,13 @@ class StudentStatus extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function students()
+    {
+        return $this->hasMany(
+            Student::class,
+            'student_status_id',
+            'id'
+        );
+    }
 }

@@ -8,6 +8,13 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\SectionController;
 use App\Http\Controllers\Admin\SectionOfferingController;
 use App\Http\Controllers\Admin\StudentStatusController;
+use App\Http\Controllers\Admin\StudentRegistrationController;
+use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\StudentEnrolmentController;
+use App\Http\Controllers\Admin\ScheduleController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\AttendanceController;
+use App\Http\Controllers\Admin\LeaveController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,7 +24,7 @@ use App\Http\Controllers\Admin\StudentStatusController;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('welcome');
 
 
 /*
@@ -30,10 +37,14 @@ Route::get('/', function () {
 |
 */
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})
-    ->middleware(['auth', 'verified'])
+Route::get(
+    '/dashboard',
+    [
+        DashboardController::class,
+        'index',
+    ]
+)
+    ->middleware(['auth'])
     ->name('dashboard');
 
 
@@ -338,6 +349,415 @@ Route::middleware(['auth'])
         )
             ->middleware('permission:student_statuses.delete')
             ->name('student-statuses.destroy');
+
+        /*
+|--------------------------------------------------------------------------
+| Student Registration Wizard
+|--------------------------------------------------------------------------
+*/
+
+        Route::get(
+            '/student-registration',
+            [
+                StudentRegistrationController::class,
+                'studentStep',
+            ]
+        )
+            ->middleware('permission:students.create')
+            ->name('student-registration.student');
+
+        Route::post(
+            '/student-registration/student',
+            [
+                StudentRegistrationController::class,
+                'storeStudentStep',
+            ]
+        )
+            ->middleware('permission:students.create')
+            ->name('student-registration.student.store');
+
+        Route::get(
+            '/student-registration/guardians',
+            [
+                StudentRegistrationController::class,
+                'guardianStep',
+            ]
+        )
+            ->middleware('permission:students.create')
+            ->name('student-registration.guardians');
+
+        Route::post(
+            '/student-registration/guardians',
+            [
+                StudentRegistrationController::class,
+                'storeGuardianStep',
+            ]
+        )
+            ->middleware('permission:students.create')
+            ->name('student-registration.guardians.store');
+
+        Route::get(
+            '/student-registration/enrolments',
+            [
+                StudentRegistrationController::class,
+                'enrolmentStep',
+            ]
+        )
+            ->middleware([
+                'permission:students.create',
+                'permission:enrolments.create',
+            ])
+            ->name('student-registration.enrolments');
+
+        Route::post(
+            '/student-registration/cancel',
+            [
+                StudentRegistrationController::class,
+                'cancel',
+            ]
+        )
+            ->middleware('permission:students.create')
+            ->name('student-registration.cancel');
+
+        Route::post(
+            '/student-registration/complete',
+            [
+                StudentRegistrationController::class,
+                'complete',
+            ]
+        )
+            ->middleware([
+                'permission:students.create',
+                'permission:enrolments.create',
+            ])
+            ->name('student-registration.complete');
+
+        Route::get(
+            '/students',
+            [StudentController::class, 'index']
+        )
+            ->middleware(
+                'permission:students.view'
+            )
+            ->name('students.index');
+
+
+        Route::get(
+            '/students/{student}',
+            [StudentController::class, 'show']
+        )
+            ->middleware(
+                'permission:students.view'
+            )
+            ->name('students.show');
+
+
+        Route::get(
+            '/students/{student}/edit',
+            [StudentController::class, 'edit']
+        )
+            ->middleware(
+                'permission:students.edit'
+            )
+            ->name('students.edit');
+
+
+        Route::patch(
+            '/students/{student}',
+            [StudentController::class, 'update']
+        )
+            ->middleware(
+                'permission:students.edit'
+            )
+            ->name('students.update');
+
+        Route::get(
+            '/students/{student}/classes/add',
+            [
+                StudentEnrolmentController::class,
+                'create',
+            ]
+        )
+            ->middleware(
+                'permission:enrolments.create'
+            )
+            ->name(
+                'student-enrolments.create'
+            );
+
+
+        Route::post(
+            '/students/{student}/classes',
+            [
+                StudentEnrolmentController::class,
+                'store',
+            ]
+        )
+            ->middleware(
+                'permission:enrolments.create'
+            )
+            ->name(
+                'student-enrolments.store'
+            );
+
+
+        Route::get(
+            '/students/{student}/classes/edit',
+            [
+                StudentEnrolmentController::class,
+                'editList',
+            ]
+        )
+            ->middleware(
+                'permission:enrolments.edit'
+            )
+            ->name(
+                'student-enrolments.edit-list'
+            );
+
+
+        Route::get(
+            '/students/{student}/classes/{enrolment}/edit',
+            [
+                StudentEnrolmentController::class,
+                'edit',
+            ]
+        )
+            ->middleware(
+                'permission:enrolments.edit'
+            )
+            ->name(
+                'student-enrolments.edit'
+            );
+
+
+        Route::patch(
+            '/students/{student}/classes/{enrolment}',
+            [
+                StudentEnrolmentController::class,
+                'update',
+            ]
+        )
+            ->middleware(
+                'permission:enrolments.edit'
+            )
+            ->name(
+                'student-enrolments.update'
+            );
+
+        Route::get(
+            '/students/{student}/classes/remove',
+            [
+                StudentEnrolmentController::class,
+                'remove',
+            ]
+        )
+            ->middleware(
+                'permission:enrolments.delete'
+            )
+            ->name(
+                'student-enrolments.remove'
+            );
+
+        Route::delete(
+            '/students/{student}/classes/{enrolment}',
+            [
+                StudentEnrolmentController::class,
+                'destroy',
+            ]
+        )
+            ->middleware(
+                'permission:enrolments.delete'
+            )
+            ->name(
+                'student-enrolments.destroy'
+            );
+
+        Route::get(
+            '/section-offerings/selected/view',
+            [
+                SectionOfferingController::class,
+                'selectedOffering',
+            ]
+        )
+            ->middleware(
+                'permission:section_offerings.view'
+            )
+            ->name(
+                'section-offerings.selected'
+            );
+
+        Route::get(
+            '/schedule',
+            [
+                ScheduleController::class,
+                'index',
+            ]
+        )
+            ->middleware(
+                'permission:section_offerings.view'
+            )
+            ->name(
+                'schedule.index'
+            );
+
+
+        Route::get(
+            '/schedule/print-day',
+            [
+                ScheduleController::class,
+                'printDay',
+            ]
+        )
+            ->middleware(
+                'permission:enrolments.print'
+            )
+            ->name(
+                'schedule.print-day'
+            );
+
+
+        Route::get(
+            '/schedule/classes/{sectionOffering}/students/print',
+            [
+                ScheduleController::class,
+                'printClass',
+            ]
+        )
+            ->middleware(
+                'permission:enrolments.print'
+            )
+            ->name(
+                'schedule.class-students.print'
+            );
+
+
+        Route::get(
+            '/schedule/classes/{sectionOffering}/students',
+            [
+                ScheduleController::class,
+                'classStudents',
+            ]
+        )
+            ->middleware(
+                'permission:students.view'
+            )
+            ->name(
+                'schedule.class-students'
+            );
+        Route::get(
+            '/attendance',
+            [
+                AttendanceController::class,
+                'index',
+            ]
+        )
+            ->name(
+                'attendance.index'
+            );
+
+
+        Route::get(
+            '/attendance/classes/{sectionOffering}',
+            [
+                AttendanceController::class,
+                'takeAttendance',
+            ]
+        )
+            ->name(
+                'attendance.takeAttendance'
+            );
+
+
+        Route::post(
+            '/attendance/classes/{sectionOffering}',
+            [
+                AttendanceController::class,
+                'store',
+            ]
+        )
+            ->name(
+                'attendance.store'
+            );
+
+        Route::get(
+            '/leave',
+            [
+                LeaveController::class,
+                'index',
+            ]
+        )
+            ->name('leave.index');
+
+
+        Route::get(
+            '/leave/create',
+            [
+                LeaveController::class,
+                'create',
+            ]
+        )
+            ->name('leave.create');
+
+
+        Route::post(
+            '/leave',
+            [
+                LeaveController::class,
+                'store',
+            ]
+        )
+            ->name('leave.store');
+
+
+        Route::get(
+            '/leave/history',
+            [
+                LeaveController::class,
+                'history',
+            ]
+        )
+            ->name('leave.history');
+
+
+        Route::get(
+            '/leave/{leave}',
+            [
+                LeaveController::class,
+                'show',
+            ]
+        )
+            ->name('leave.show');
+
+
+        Route::get(
+            '/leave/{leave}/edit',
+            [
+                LeaveController::class,
+                'edit',
+            ]
+        )
+            ->name('leave.edit');
+
+
+        Route::patch(
+            '/leave/{leave}',
+            [
+                LeaveController::class,
+                'update',
+            ]
+        )
+            ->name('leave.update');
+
+
+        Route::patch(
+            '/leave/{leave}/return',
+            [
+                LeaveController::class,
+                'returnStudent',
+            ]
+        )
+            ->name('leave.return');
 
     });
 

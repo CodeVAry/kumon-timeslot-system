@@ -12,33 +12,390 @@ use Illuminate\Support\Facades\DB;
 
 class SectionOfferingController extends Controller
 {
-     public function index()
+    public function index(Request $request)
     {
-        $sectionOfferings = SectionOffering::with([
+        /*
+         * Active days for the day tabs.
+         */
+        $days = Day::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        /*
+         * Use the first available day when no day is selected.
+         */
+        $selectedDayId = $request->input(
+            'day_id',
+            $days->first()?->id
+        );
+
+        /*
+         * regular = English and Math
+         * interactive = Interactive classes
+         */
+        $viewType = $request->input(
+            'view',
+            'regular'
+        );
+
+        if (
+            !in_array(
+                $viewType,
+                ['regular', 'interactive']
+            )
+        ) {
+            $viewType = 'regular';
+        }
+
+        /*
+         * Load active sections.
+         */
+        $sections = Section::where(
+            'is_active',
+            true
+        )
+            ->orderBy('section_name')
+            ->get();
+
+        $englishSection = $sections->first(
+            function ($section) {
+                return str_contains(
+                    strtolower($section->section_name),
+                    'english'
+                );
+            }
+        );
+
+        $interactiveSection = $sections->first(
+            function ($section) {
+                return str_contains(
+                    strtolower($section->section_name),
+                    'interactive'
+                );
+            }
+        );
+
+        $mathSections = $sections
+            ->filter(function ($section) {
+                return str_contains(
+                    strtolower($section->section_name),
+                    'math'
+                );
+            })
+            ->values();
+
+        /*
+         * Load offerings for the selected day.
+         *
+         * Only active confirmed enrolments occupy seats.
+         * Wishlist enrolments do not occupy seats.
+         */
+        $offerings = SectionOffering::with([
             'day',
             'section',
         ])
-            ->select('section_offerings.*')
-            ->join(
-                'days',
-                'days.id',
-                '=',
-                'section_offerings.day_id'
-            )
-            ->join(
-                'sections',
-                'sections.id',
-                '=',
-                'section_offerings.section_id'
-            )
-            ->orderBy('days.sort_order', 'asc')
-            ->orderBy('section_offerings.start_time', 'asc')
-            ->orderBy('sections.section_name', 'asc')
-            ->paginate(15);
+            ->withCount([
+                'enrolments as allocated_seats' =>
+                    function ($query) {
+                        $query
+                            ->where('is_active', true)
+                            ->where('is_wishlist', false);
+                    },
+
+                'enrolments as wishlist_count' =>
+                    function ($query) {
+                        $query
+                            ->where('is_active', true)
+                            ->where('is_wishlist', true);
+                    },
+            ])
+            ->where('day_id', $selectedDayId)
+            ->where('is_active', true)
+            ->orderBy('start_time')
+            ->get();
+
+        /*
+         * English capacity comes from the English offering.
+         */
+        $englishCapacity = 0;
+
+        if ($englishSection) {
+            $englishCapacity = (int) (
+                $offerings
+                    ->where(
+                        'section_id',
+                        $englishSection->id
+                    )
+                    ->max('max_seats')
+                ?? 0
+            );
+        }
+
+        /*
+         * Shared Math capacity.
+         *
+         * This uses the maximum configured max_seats value
+         * from the Math offerings as the shared Math limit.
+         */
+        $mathCapacity = (int) (
+            $offerings
+                ->whereIn(
+                    'section_id',
+                    $mathSections->pluck('id')
+                )
+                ->max('max_seats')
+            ?? 0
+        );
+
+        /*
+         * Group English and Math offerings by starting time.
+         */
+        $regularOfferings = $offerings->filter(
+            function ($offering) use ($interactiveSection) {
+                if (!$interactiveSection) {
+                    return true;
+                }
+
+                return $offering->section_id !==
+                    $interactiveSection->id;
+            }
+        );
+
+        $regularRows = $regularOfferings
+            ->groupBy(function ($offering) {
+                return Carbon::parse(
+                    $offering->start_time
+                )->format('H:i:s');
+            })
+            ->map(function ($timeOfferings, $time) use ($englishSection, $mathSections, $englishCapacity, $mathCapacity) {
+                $offeringsBySection =
+                    $timeOfferings->keyBy(
+                        'section_id'
+                    );
+
+                $englishOffering = null;
+
+                if ($englishSection) {
+                    $englishOffering =
+                        $offeringsBySection->get(
+                            $englishSection->id
+                        );
+                }
+
+                $englishAllocated = (int) (
+                    $englishOffering
+                            ?->allocated_seats
+                    ?? 0
+                );
+
+                $englishMaximum = (int) (
+                    $englishOffering
+                            ?->max_seats
+                    ?? $englishCapacity
+                );
+
+                $mathAllocations = [];
+
+                foreach ($mathSections as $mathSection) {
+                    $mathOffering =
+                        $offeringsBySection->get(
+                            $mathSection->id
+                        );
+
+                    $mathAllocations[
+                        $mathSection->id
+                    ] = (int) (
+                            $mathOffering
+                                    ?->allocated_seats
+                            ?? 0
+                        );
+                }
+
+                $mathTotal = array_sum(
+                    $mathAllocations
+                );
+
+                $englishFull =
+                    $englishMaximum > 0 &&
+                    $englishAllocated >=
+                    $englishMaximum;
+
+                $mathFull =
+                    $mathCapacity > 0 &&
+                    $mathTotal >=
+                    $mathCapacity;
+
+                $englishNearlyFull =
+                    $englishMaximum > 0 &&
+                    $englishAllocated >=
+                    ($englishMaximum * 0.8);
+
+                $mathNearlyFull =
+                    $mathCapacity > 0 &&
+                    $mathTotal >=
+                    ($mathCapacity * 0.8);
+
+                if ($englishFull || $mathFull) {
+                    $status = 'Full';
+
+                    $statusClass =
+                        'bg-red-100 text-red-600';
+                } elseif (
+                    $englishNearlyFull ||
+                    $mathNearlyFull
+                ) {
+                    $status = 'Nearly full';
+
+                    $statusClass =
+                        'bg-amber-100 text-amber-600';
+                } else {
+                    $status = 'Available';
+
+                    $statusClass =
+                        'bg-green-100 text-green-700';
+                }
+
+                return [
+                    'time' => Carbon::parse(
+                        $time
+                    )->format('g:i A'),
+
+                    'sort_time' => $time,
+
+                    'english_allocated' =>
+                        $englishAllocated,
+
+                    'english_maximum' =>
+                        $englishMaximum,
+
+                    'math_allocations' =>
+                        $mathAllocations,
+
+                    'math_total' =>
+                        $mathTotal,
+
+                    'math_maximum' =>
+                        $mathCapacity,
+
+                    'status' =>
+                        $status,
+
+                    'status_class' =>
+                        $statusClass,
+
+                    'first_offering_id' =>
+                        $timeOfferings->first()?->id,
+                ];
+            })
+            ->sortBy('sort_time')
+            ->values();
+
+        /*
+         * Group Interactive offerings by starting time.
+         */
+        $interactiveOfferings = collect();
+
+        if ($interactiveSection) {
+            $interactiveOfferings = $offerings
+                ->where(
+                    'section_id',
+                    $interactiveSection->id
+                );
+        }
+
+        $interactiveRows = $interactiveOfferings
+            ->map(function ($offering) {
+                $allocated = (int)
+                    $offering->allocated_seats;
+
+                $maximum = (int)
+                    $offering->max_seats;
+
+                $available = max(
+                    0,
+                    $maximum - $allocated
+                );
+
+                if (
+                    $maximum > 0 &&
+                    $allocated >= $maximum
+                ) {
+                    $status = 'Full';
+
+                    $statusClass =
+                        'bg-red-100 text-red-600';
+                } elseif (
+                    $maximum > 0 &&
+                    $allocated >=
+                    ($maximum * 0.8)
+                ) {
+                    $status = 'Nearly full';
+
+                    $statusClass =
+                        'bg-amber-100 text-amber-600';
+                } else {
+                    $status = 'Available';
+
+                    $statusClass =
+                        'bg-green-100 text-green-700';
+                }
+
+                return [
+                    'id' =>
+                        $offering->id,
+
+                    'time' =>
+                        Carbon::parse(
+                            $offering->start_time
+                        )->format('g:i A'),
+
+                    'end_time' =>
+                        Carbon::parse(
+                            $offering->end_time
+                        )->format('g:i A'),
+
+                    'allocated' =>
+                        $allocated,
+
+                    'maximum' =>
+                        $maximum,
+
+                    'available' =>
+                        $available,
+
+                    'wishlist_count' =>
+                        (int)
+                        $offering->wishlist_count,
+
+                    'status' =>
+                        $status,
+
+                    'status_class' =>
+                        $statusClass,
+                ];
+            })
+            ->values();
+
+        $selectedDay = $days->firstWhere(
+            'id',
+            (int) $selectedDayId
+        );
 
         return view(
             'admin.section-offerings.index',
-            compact('sectionOfferings')
+            compact(
+                'days',
+                'selectedDayId',
+                'selectedDay',
+                'viewType',
+                'englishSection',
+                'interactiveSection',
+                'mathSections',
+                'englishCapacity',
+                'mathCapacity',
+                'regularRows',
+                'interactiveRows'
+            )
         );
     }
 
@@ -204,12 +561,7 @@ class SectionOfferingController extends Controller
             }
         }
 
-        DB::transaction(function () use (
-            $selectedDays,
-            $validated,
-            $startTimeValue,
-            $endTimeValue
-        ) {
+        DB::transaction(function () use ($selectedDays, $validated, $startTimeValue, $endTimeValue) {
             foreach ($selectedDays as $day) {
                 SectionOffering::create([
                     'day_id' => $day->id,
@@ -436,5 +788,5 @@ class SectionOfferingController extends Controller
                 'Section offering deleted successfully.'
             );
     }
-    
+
 }
