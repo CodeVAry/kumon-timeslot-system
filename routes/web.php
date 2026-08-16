@@ -687,6 +687,7 @@ Route::middleware(['auth'])
                 'index',
             ]
         )
+            ->middleware('permission:leave.view')
             ->name('leave.index');
 
 
@@ -697,6 +698,7 @@ Route::middleware(['auth'])
                 'create',
             ]
         )
+            ->middleware('permission:leave.create')
             ->name('leave.create');
 
 
@@ -707,6 +709,7 @@ Route::middleware(['auth'])
                 'store',
             ]
         )
+            ->middleware('permission:leave.create')
             ->name('leave.store');
 
 
@@ -717,6 +720,7 @@ Route::middleware(['auth'])
                 'history',
             ]
         )
+            ->middleware('permission:leave.view')
             ->name('leave.history');
 
 
@@ -727,6 +731,7 @@ Route::middleware(['auth'])
                 'show',
             ]
         )
+            ->middleware('permission:leave.view')
             ->name('leave.show');
 
 
@@ -737,6 +742,7 @@ Route::middleware(['auth'])
                 'edit',
             ]
         )
+            ->middleware('permission:leave.edit')
             ->name('leave.edit');
 
 
@@ -747,6 +753,7 @@ Route::middleware(['auth'])
                 'update',
             ]
         )
+            ->middleware('permission:leave.edit')
             ->name('leave.update');
 
 
@@ -757,6 +764,7 @@ Route::middleware(['auth'])
                 'returnStudent',
             ]
         )
+            ->middleware('permission:leave.edit')
             ->name('leave.return');
 
     });
