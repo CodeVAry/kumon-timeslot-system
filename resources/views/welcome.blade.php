@@ -1,7 +1,9 @@
 <!DOCTYPE html>
+
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
+
     <meta charset="utf-8">
 
     <meta
@@ -14,55 +16,86 @@
         content="{{ csrf_token() }}"
     >
 
-    <title>Kumon Time Scheduling System</title>
+    <title>
+        Kumon Time Scheduling System
+    </title>
 
     @vite([
         'resources/css/app.css',
         'resources/js/app.js'
     ])
+
 </head>
 
-<body class="bg-slate-100 font-sans antialiased">
+
+<body
+    class="bg-slate-100
+           font-sans
+           antialiased"
+>
 
     <main class="min-h-screen">
 
         <div
-            class="mx-auto flex min-h-screen
-                   w-full max-w-[1500px]
-                   flex-col bg-white"
+            class="mx-auto
+                   flex
+                   min-h-screen
+                   w-full
+                   max-w-[1500px]
+                   flex-col
+                   bg-white"
         >
 
-            {{-- Header --}}
+            {{-- =====================================================
+                HEADER
+            ====================================================== --}}
+
             <header
-                class="flex items-center justify-between
-                       border-b border-slate-200
-                       px-6 py-5 sm:px-10"
+                class="flex
+                       items-center
+                       justify-between
+                       border-b
+                       border-slate-200
+                       px-6 py-5
+                       sm:px-10"
             >
 
                 <div>
+
                     <p
-                        class="text-xs font-bold uppercase
+                        class="text-xs
+                               font-bold
+                               uppercase
                                tracking-[0.18em]
                                text-cyan-600"
                     >
                         Kumon North Hobart
                     </p>
 
+
                     <h1
-                        class="mt-1 text-lg font-bold
-                               text-slate-800 sm:text-xl"
+                        class="mt-1
+                               text-lg
+                               font-bold
+                               text-slate-800
+                               sm:text-xl"
                     >
                         Time Scheduling System
                     </h1>
+
                 </div>
+
 
                 <a
                     href="{{ route('login') }}"
-                    class="rounded-xl border
+                    class="rounded-xl
+                           border
                            border-cyan-500
                            px-5 py-2.5
-                           text-sm font-semibold
-                           text-cyan-700 transition
+                           text-sm
+                           font-semibold
+                           text-cyan-700
+                           transition
                            hover:bg-cyan-50"
                 >
                     Admin Sign In
@@ -70,20 +103,35 @@
 
             </header>
 
-            {{-- Main content --}}
+
+
+            {{-- =====================================================
+                MAIN CONTENT
+            ====================================================== --}}
+
             <section
-                class="flex flex-1 flex-col
-                       items-center justify-between
-                       px-5 py-10 sm:px-10 sm:py-14"
+                class="flex
+                       flex-1
+                       flex-col
+                       items-center
+                       justify-between
+                       px-5 py-10
+                       sm:px-10
+                       sm:py-14"
             >
 
                 <div class="w-full">
 
-                    {{-- Heading --}}
+
+                    {{-- =================================================
+                        HEADING
+                    ================================================== --}}
+
                     <div class="text-center">
 
                         <h2
-                            class="text-3xl font-semibold
+                            class="text-3xl
+                                   font-semibold
                                    tracking-tight
                                    text-cyan-950
                                    sm:text-4xl"
@@ -91,9 +139,13 @@
                             Tell us who you are
                         </h2>
 
+
                         <p
-                            class="mx-auto mt-3 max-w-xl
-                                   text-sm text-slate-500
+                            class="mx-auto
+                                   mt-3
+                                   max-w-xl
+                                   text-sm
+                                   text-slate-500
                                    sm:text-base"
                         >
                             Select your account type to continue.
@@ -101,25 +153,43 @@
 
                     </div>
 
-                    {{-- Account cards --}}
+
+
+                    {{-- =================================================
+                        ACCOUNT CARDS
+                    ================================================== --}}
+
                     <div
-                        class="mx-auto mt-12 grid
-                               max-w-3xl gap-8
-                               sm:grid-cols-2 sm:gap-12"
+                        class="mx-auto
+                               mt-12
+                               grid
+                               max-w-3xl
+                               gap-8
+                               sm:grid-cols-2
+                               sm:gap-12"
                     >
 
-                        {{-- Admin card --}}
+
+                        {{-- =================================================
+                            ADMIN
+                        ================================================== --}}
+
                         <a
                             href="{{ route('login') }}"
-                            class="group flex min-h-[335px]
-                                   flex-col items-center
+                            class="group
+                                   flex
+                                   min-h-[335px]
+                                   flex-col
+                                   items-center
                                    justify-center
                                    rounded-3xl
                                    border-2
                                    border-transparent
-                                   bg-slate-50 p-8
+                                   bg-slate-50
+                                   p-8
                                    text-center
-                                   transition duration-200
+                                   transition
+                                   duration-200
                                    hover:-translate-y-1
                                    hover:border-cyan-400
                                    hover:bg-cyan-50
@@ -127,8 +197,10 @@
                         >
 
                             <div
-                                class="flex h-48 w-48
-                                       items-center justify-center"
+                                class="flex
+                                       h-48 w-48
+                                       items-center
+                                       justify-center"
                             >
 
                                 <svg
@@ -146,6 +218,7 @@
                                         fill="#343A43"
                                     />
 
+
                                     {{-- Face --}}
                                     <circle
                                         cx="100"
@@ -153,6 +226,7 @@
                                         r="34"
                                         fill="#FDBA74"
                                     />
+
 
                                     {{-- Neck --}}
                                     <rect
@@ -163,7 +237,8 @@
                                         fill="#FDBA74"
                                     />
 
-                                    {{-- White body --}}
+
+                                    {{-- Body --}}
                                     <rect
                                         x="52"
                                         y="122"
@@ -173,7 +248,8 @@
                                         fill="#FFFFFF"
                                     />
 
-                                    {{-- Blue badge --}}
+
+                                    {{-- Badge --}}
                                     <rect
                                         x="72"
                                         y="142"
@@ -183,7 +259,7 @@
                                         fill="#28A9D3"
                                     />
 
-                                    {{-- Badge symbol --}}
+
                                     <path
                                         d="M100 154 L113 184 H87 Z"
                                         fill="#123B4A"
@@ -193,29 +269,51 @@
 
                             </div>
 
+
                             <h3
-                                class="mt-3 text-3xl
-                                       font-medium text-cyan-950
+                                class="mt-3
+                                       text-3xl
+                                       font-medium
+                                       text-cyan-950
                                        transition
                                        group-hover:text-cyan-700"
                             >
                                 Admin
                             </h3>
 
+
+                            <p
+                                class="mt-2
+                                       text-sm
+                                       text-slate-500"
+                            >
+                                Centre staff access
+                            </p>
+
                         </a>
 
-                        {{-- Parent card - design only --}}
-                        <button
-                            type="button"
-                            class="group flex min-h-[335px]
-                                   flex-col items-center
+
+
+                        {{-- =================================================
+                            PARENT
+                        ================================================== --}}
+
+                        <a
+                            href="{{ route('parent.login') }}"
+                            class="group
+                                   flex
+                                   min-h-[335px]
+                                   flex-col
+                                   items-center
                                    justify-center
                                    rounded-3xl
                                    border-2
                                    border-transparent
-                                   bg-slate-50 p-8
+                                   bg-slate-50
+                                   p-8
                                    text-center
-                                   transition duration-200
+                                   transition
+                                   duration-200
                                    hover:-translate-y-1
                                    hover:border-violet-400
                                    hover:bg-violet-50
@@ -223,8 +321,10 @@
                         >
 
                             <div
-                                class="flex h-48 w-48
-                                       items-center justify-center"
+                                class="flex
+                                       h-48 w-48
+                                       items-center
+                                       justify-center"
                             >
 
                                 <svg
@@ -241,6 +341,7 @@
                                         fill="#FDBA74"
                                     />
 
+
                                     {{-- Parent hair --}}
                                     <ellipse
                                         cx="120"
@@ -249,6 +350,7 @@
                                         ry="22"
                                         fill="#6F60B5"
                                     />
+
 
                                     {{-- Parent body --}}
                                     <rect
@@ -260,6 +362,7 @@
                                         fill="#2DAAD3"
                                     />
 
+
                                     {{-- Child head --}}
                                     <circle
                                         cx="60"
@@ -267,6 +370,7 @@
                                         r="22"
                                         fill="#FDBA74"
                                     />
+
 
                                     {{-- Child body --}}
                                     <rect
@@ -282,35 +386,57 @@
 
                             </div>
 
+
                             <h3
-                                class="mt-3 text-3xl
-                                       font-medium text-cyan-950
+                                class="mt-3
+                                       text-3xl
+                                       font-medium
+                                       text-cyan-950
                                        transition
                                        group-hover:text-violet-700"
                             >
                                 Parent
                             </h3>
 
-                        </button>
+
+                            <p
+                                class="mt-2
+                                       text-sm
+                                       text-slate-500"
+                            >
+                                Parent Portal access
+                            </p>
+
+                        </a>
 
                     </div>
 
                 </div>
 
-                {{-- Footer --}}
+
+
+                {{-- =================================================
+                    FOOTER
+                ================================================== --}}
+
                 <footer
-                    class="mt-14 text-center
-                           text-sm text-slate-500"
+                    class="mt-14
+                           text-center
+                           text-sm
+                           text-slate-500"
                 >
+
                     Need help? Contact
 
                     <a
                         href="mailto:admin@kumonhobart.com"
-                        class="font-medium text-cyan-500
+                        class="font-medium
+                               text-cyan-500
                                hover:text-cyan-700"
                     >
                         Kumon North Hobart.
                     </a>
+
                 </footer>
 
             </section>

@@ -3,12 +3,14 @@
 namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Models\User;
 
-class Guardian extends Model
+class Guardian extends Authenticatable
 {
     use HasFactory;
+
+
     protected $fillable = [
         'user_id',
         'first_name',
@@ -17,11 +19,21 @@ class Guardian extends Model
         'phone',
         'address',
         'is_active',
+        'normalized_email',
+        'normalized_phone',
     ];
+
 
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | User Relationship
+    |--------------------------------------------------------------------------
+    */
 
     public function user()
     {
@@ -31,6 +43,13 @@ class Guardian extends Model
             'id'
         );
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Students Relationship
+    |--------------------------------------------------------------------------
+    */
 
     public function students()
     {
@@ -46,5 +65,75 @@ class Guardian extends Model
                 'is_emergency_contact',
             ])
             ->withTimestamps();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Normalize Email
+    |--------------------------------------------------------------------------
+    */
+
+    public static function normalizeEmail($email)
+    {
+        if (!$email) {
+            return null;
+        }
+
+        return strtolower(
+            trim($email)
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Normalize Phone
+    |--------------------------------------------------------------------------
+    */
+
+    public static function normalizePhone($phone)
+    {
+        if (!$phone) {
+            return null;
+        }
+
+        return preg_replace(
+            '/[^0-9]/',
+            '',
+            $phone
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Automatically Normalize Email
+    |--------------------------------------------------------------------------
+    */
+
+    public function setEmailAttribute($value)
+    {
+        $this->attributes['email'] =
+            $value;
+
+        $this->attributes['normalized_email'] =
+            self::normalizeEmail($value);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Automatically Normalize Phone
+    |--------------------------------------------------------------------------
+    */
+
+    public function setPhoneAttribute($value)
+    {
+        $this->attributes['phone'] =
+            $value;
+
+        $this->attributes['normalized_phone'] =
+            self::normalizePhone($value);
     }
 }

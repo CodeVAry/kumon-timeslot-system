@@ -40,6 +40,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'parent' => [
+            'driver' => 'session',
+            'provider' => 'guardians',
+        ],
     ],
 
     /*
@@ -69,6 +73,10 @@ return [
         //     'driver' => 'database',
         //     'table' => 'users',
         // ],
+        'guardians' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Admin\Guardian::class,
+        ],
     ],
 
     /*

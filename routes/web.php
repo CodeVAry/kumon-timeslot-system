@@ -15,6 +15,9 @@ use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\AttendanceController;
 use App\Http\Controllers\Admin\LeaveController;
+use App\Http\Controllers\Admin\WishlistController;
+use App\Http\Controllers\Parent\Auth\ParentLoginController;
+use App\Http\Controllers\Parent\ParentPortalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -766,6 +769,226 @@ Route::middleware(['auth'])
         )
             ->middleware('permission:leave.edit')
             ->name('leave.return');
+
+        Route::get(
+            '/wishlist',
+            [
+                WishlistController::class,
+                'index',
+            ]
+        )
+            ->middleware(
+                'permission:wishlist.view'
+            )
+            ->name(
+                'wishlist.index'
+            );
+
+
+        Route::get(
+            '/wishlist/create/{enrolment}',
+            [
+                WishlistController::class,
+                'create',
+            ]
+        )
+            ->middleware(
+                'permission:wishlist.create'
+            )
+            ->name(
+                'wishlist.create'
+            );
+
+
+        Route::post(
+            '/wishlist/{enrolment}',
+            [
+                WishlistController::class,
+                'store',
+            ]
+        )
+            ->middleware(
+                'permission:wishlist.create'
+            )
+            ->name(
+                'wishlist.store'
+            );
+
+
+        Route::patch(
+            '/wishlist/{wishlist}/approve',
+            [
+                WishlistController::class,
+                'approve',
+            ]
+        )
+            ->middleware(
+                'permission:wishlist.edit'
+            )
+            ->name(
+                'wishlist.approve'
+            );
+
+
+        Route::patch(
+            '/wishlist/{wishlist}/cancel',
+            [
+                WishlistController::class,
+                'cancel',
+            ]
+        )
+            ->middleware(
+                'permission:wishlist.edit'
+            )
+            ->name(
+                'wishlist.cancel'
+            );
+
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Parent Portal Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('parent')
+    ->name('parent.')
+    ->group(function () {
+
+        Route::get(
+            '/login',
+            [
+                ParentLoginController::class,
+                'showLogin'
+            ]
+        )->name('login');
+
+
+        Route::post(
+            '/login',
+            [
+                ParentLoginController::class,
+                'checkLogin'
+            ]
+        )->name('login.check');
+
+
+        Route::get(
+            '/verify-otp',
+            [
+                ParentLoginController::class,
+                'showOtp'
+            ]
+        )->name('otp');
+
+
+        Route::post(
+            '/verify-otp',
+            [
+                ParentLoginController::class,
+                'verifyOtp'
+            ]
+        )->name('otp.verify');
+        
+        Route::post(
+            '/logout',
+            [
+                ParentLoginController::class,
+                'logout'
+            ]
+        )->name('logout');
+
+    });
+
+Route::prefix('parent')
+    ->name('parent.')
+    ->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Guest Parent Routes
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/login',
+            [
+                ParentLoginController::class,
+                'showLogin'
+            ]
+        )->name('login');
+
+
+        Route::post(
+            '/login',
+            [
+                ParentLoginController::class,
+                'checkLogin'
+            ]
+        )->name('login.check');
+
+
+        Route::get(
+            '/verify-otp',
+            [
+                ParentLoginController::class,
+                'showOtp'
+            ]
+        )->name('otp');
+
+
+        Route::post(
+            '/verify-otp',
+            [
+                ParentLoginController::class,
+                'verifyOtp'
+            ]
+        )->name('otp.verify');
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Logged-in Parent Routes
+        |--------------------------------------------------------------------------
+        */
+
+        Route::middleware(
+            'auth:parent'
+        )->group(function () {
+
+            Route::get(
+                '/welcome',
+                [
+                    ParentPortalController::class,
+                    'welcome'
+                ]
+            )->name('welcome');
+
+
+            Route::post(
+                '/students/{student}/select',
+                [
+                    ParentPortalController::class,
+                    'selectStudent'
+                ]
+            )->name(
+                    'students.select'
+                );
+
+
+            Route::get(
+                '/dashboard',
+                [
+                    ParentPortalController::class,
+                    'dashboard'
+                ]
+            )->name(
+                    'dashboard'
+                );
+
+        });
 
     });
 
