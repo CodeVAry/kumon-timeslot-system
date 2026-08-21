@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Parent\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Guardian;
+use App\Models\Admin\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -13,29 +14,35 @@ class ParentLoginController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
-    | Show Login Page
+    | Show Parent Login
     |--------------------------------------------------------------------------
     */
 
     public function showLogin()
     {
-        return view('parent.auth.login');
+        return view(
+            'parent.auth.login'
+        );
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Check Parent Login Details
+    | Check Email + Student DOB
     |--------------------------------------------------------------------------
     */
 
-    public function checkLogin(Request $request)
-    {
+    public function checkLogin(
+        Request $request
+    ) {
+        /*
+         * Validate form.
+         */
         $request->validate(
             [
                 'login' => [
                     'required',
-                    'string',
+                    'email',
                 ],
 
                 'date_of_birth' => [
@@ -45,7 +52,10 @@ class ParentLoginController extends Controller
             ],
             [
                 'login.required' =>
-                    'Please enter your email or mobile number.',
+                    'Please enter your registered email address.',
+
+                'login.email' =>
+                    'Please enter a valid email address.',
 
                 'date_of_birth.required' =>
                     'Please enter the student date of birth.',
@@ -54,117 +64,147 @@ class ParentLoginController extends Controller
 
 
         /*
-         * Detect whether parent entered
-         * email or mobile number.
+         * Normalize entered email.
          */
-        $login =
-            trim($request->login);
-
-
-        $isEmail =
-            filter_var(
-                $login,
-                FILTER_VALIDATE_EMAIL
+        $normalizedEmail =
+            Guardian::normalizeEmail(
+                $request->login
             );
 
 
         /*
-         * Start Guardian query.
+        |--------------------------------------------------------------------------
+        | Find ALL Guardian Records With Same Email
+        |--------------------------------------------------------------------------
+        |
+        | Example:
+        |
+        | Guardian ID 5
+        | email = parent@gmail.com
+        | Student A
+        |
+        | Guardian ID 10
+        | email = parent@gmail.com
+        | Student B
+        |
+        | Both are treated as the same parent identity.
+        |
+        */
+
+        $guardianIds =
+            Guardian::where(
+                'is_active',
+                true
+            )
+                ->where(
+                    'normalized_email',
+                    $normalizedEmail
+                )
+                ->pluck('id');
+
+
+        /*
+         * Email does not exist.
+         *
+         * Keep error generic.
          */
-        $guardianQuery =
-            Guardian::query()
+        if ($guardianIds->isEmpty()) {
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'login' =>
+                        'The provided email and date of birth could not be verified.',
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Verify Student DOB
+        |--------------------------------------------------------------------------
+        |
+        | The entered DOB only needs to belong to ONE student
+        | connected to ANY guardian record with this email.
+        |
+        */
+
+        $studentExists =
+            Student::where(
+                'is_active',
+                true
+            )
+                ->whereDate(
+                    'date_of_birth',
+                    $request->date_of_birth
+                )
+                ->whereHas(
+                    'guardians',
+                    function ($query) use ($guardianIds) {
+
+                        $query->whereIn(
+                            'guardians.id',
+                            $guardianIds
+                        );
+                    }
+                )
+                ->exists();
+
+
+        /*
+         * DOB does not match any linked child.
+         */
+        if (!$studentExists) {
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'login' =>
+                        'The provided email and date of birth could not be verified.',
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Select Guardian Record For Authentication
+        |--------------------------------------------------------------------------
+        |
+        | We need one Guardian model for Laravel's parent guard.
+        |
+        | The email remains the real parent identity.
+        |
+        */
+
+        $guardian =
+            Guardian::whereIn(
+                'id',
+                $guardianIds
+            )
                 ->where(
                     'is_active',
                     true
-                );
-
-
-        /*
-         * Search by email.
-         */
-        if ($isEmail) {
-
-            $normalizedEmail =
-                Guardian::normalizeEmail(
-                    $login
-                );
-
-
-            $guardianQuery->where(
-                'normalized_email',
-                $normalizedEmail
-            );
-        }
-
-
-        /*
-         * Search by mobile.
-         */ else {
-
-            $normalizedPhone =
-                Guardian::normalizePhone(
-                    $login
-                );
-
-
-            $guardianQuery->where(
-                'normalized_phone',
-                $normalizedPhone
-            );
-        }
-
-
-        /*
-         * Guardian must be linked
-         * to a student with matching DOB.
-         */
-        $guardian =
-            $guardianQuery
-                ->whereHas(
-                    'students',
-                    function ($query) use ($request) {
-
-                        $query->whereDate(
-                            'date_of_birth',
-                            $request->date_of_birth
-                        );
-                    }
                 )
                 ->first();
 
 
-        /*
-         * No valid match.
-         */
         if (!$guardian) {
 
             return back()
                 ->withInput()
                 ->withErrors([
                     'login' =>
-                        'The provided details could not be verified.',
+                        'The guardian account is not available.',
                 ]);
         }
 
 
         /*
-         * Guardian needs an email
-         * because email OTP is used first.
-         */
-        if (!$guardian->email) {
+        |--------------------------------------------------------------------------
+        | Generate OTP
+        |--------------------------------------------------------------------------
+        */
 
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'login' =>
-                        'No email address is registered for this guardian. Please contact the centre.',
-                ]);
-        }
-
-
-        /*
-         * Generate 6-digit OTP.
-         */
         $otp =
             random_int(
                 100000,
@@ -173,41 +213,72 @@ class ParentLoginController extends Controller
 
 
         /*
-         * Save OTP details temporarily
-         * in Laravel session.
-         */
+        |--------------------------------------------------------------------------
+        | Store OTP Temporarily In Session
+        |--------------------------------------------------------------------------
+        */
+
         session([
+            /*
+             * Guardian used for Laravel login.
+             */
             'parent_login_guardian_id' =>
                 $guardian->id,
 
+
+            /*
+             * Parent identity.
+             */
+            'parent_login_email' =>
+                $normalizedEmail,
+
+
+            /*
+             * Secure OTP hash.
+             */
             'parent_login_otp_hash' =>
                 Hash::make(
                     (string) $otp
                 ),
 
+
+            /*
+             * OTP expires after 5 minutes.
+             */
             'parent_login_otp_expires_at' =>
                 now()
                     ->addMinutes(5)
                     ->timestamp,
 
+
+            /*
+             * Incorrect attempt counter.
+             */
             'parent_login_otp_attempts' =>
                 0,
 
+
+            /*
+             * Used on OTP page.
+             */
             'parent_login_otp_destination' =>
-                $guardian->email,
+                $normalizedEmail,
         ]);
 
 
         /*
-         * Send OTP email.
-         */
+        |--------------------------------------------------------------------------
+        | Send OTP
+        |--------------------------------------------------------------------------
+        */
+
         Mail::raw(
             "Your Kumon Parent Portal verification code is {$otp}. This code will expire in 5 minutes.",
-            function ($message) use ($guardian) {
+            function ($message) use ($normalizedEmail) {
 
                 $message
                     ->to(
-                        $guardian->email
+                        $normalizedEmail
                     )
                     ->subject(
                         'Kumon Parent Portal Verification Code'
@@ -217,7 +288,7 @@ class ParentLoginController extends Controller
 
 
         /*
-         * Open OTP page.
+         * Go to OTP page.
          */
         return redirect()
             ->route(
@@ -234,13 +305,13 @@ class ParentLoginController extends Controller
 
     public function showOtp()
     {
-        /*
-         * Parent must first complete
-         * the login form.
-         */
         if (
             !session(
                 'parent_login_guardian_id'
+            )
+            ||
+            !session(
+                'parent_login_email'
             )
         ) {
 
@@ -257,10 +328,24 @@ class ParentLoginController extends Controller
             );
 
 
+        /*
+         * Mask email.
+         *
+         * Example:
+         * ariyan@gmail.com
+         * becomes
+         * ar***@gmail.com
+         */
+        $maskedDestination =
+            $this->maskEmail(
+                $destination
+            );
+
+
         return view(
             'parent.auth.otp',
             compact(
-                'destination'
+                'maskedDestination'
             )
         );
     }
@@ -292,12 +377,15 @@ class ParentLoginController extends Controller
         );
 
 
-        /*
-         * Make sure login session exists.
-         */
         $guardianId =
             session(
                 'parent_login_guardian_id'
+            );
+
+
+        $parentEmail =
+            session(
+                'parent_login_email'
             );
 
 
@@ -313,8 +401,13 @@ class ParentLoginController extends Controller
             );
 
 
+        /*
+         * Verification session missing.
+         */
         if (
             !$guardianId
+            ||
+            !$parentEmail
             ||
             !$otpHash
             ||
@@ -327,14 +420,17 @@ class ParentLoginController extends Controller
                 )
                 ->withErrors([
                     'login' =>
-                        'Your verification session has expired. Please try again.',
+                        'Your verification session has expired. Please sign in again.',
                 ]);
         }
 
 
         /*
-         * Check OTP expiry.
-         */
+        |--------------------------------------------------------------------------
+        | Check OTP Expiry
+        |--------------------------------------------------------------------------
+        */
+
         if (
             now()->timestamp
             >
@@ -356,8 +452,11 @@ class ParentLoginController extends Controller
 
 
         /*
-         * Check number of attempts.
-         */
+        |--------------------------------------------------------------------------
+        | Check Attempts
+        |--------------------------------------------------------------------------
+        */
+
         $attempts =
             session(
                 'parent_login_otp_attempts',
@@ -382,8 +481,11 @@ class ParentLoginController extends Controller
 
 
         /*
-         * Check OTP.
-         */
+        |--------------------------------------------------------------------------
+        | Check OTP
+        |--------------------------------------------------------------------------
+        */
+
         if (
             !Hash::check(
                 $request->otp,
@@ -393,7 +495,7 @@ class ParentLoginController extends Controller
 
             session([
                 'parent_login_otp_attempts'
-                =>
+                    =>
                     $attempts + 1,
             ]);
 
@@ -405,6 +507,12 @@ class ParentLoginController extends Controller
                 ]);
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get Guardian For Laravel Authentication
+        |--------------------------------------------------------------------------
+        */
 
         $guardian =
             Guardian::where(
@@ -429,22 +537,63 @@ class ParentLoginController extends Controller
                 )
                 ->withErrors([
                     'login' =>
-                        'Guardian account is not available.',
+                        'The guardian account is not available.',
                 ]);
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Authenticate Parent
+        |--------------------------------------------------------------------------
+        */
+
         Auth::guard(
             'parent'
         )->login(
-                $guardian
-            );
+            $guardian
+        );
 
 
-        $request->session()
+        /*
+         * Regenerate session ID.
+         */
+        $request
+            ->session()
             ->regenerate();
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Keep Parent Email Identity
+        |--------------------------------------------------------------------------
+        |
+        | This is the important value used by the Parent Portal.
+        |
+        | Every guardian record with this normalized email
+        | belongs to the current parent identity.
+        |
+        */
+
+        session([
+            'parent_auth_email' =>
+                $parentEmail,
+        ]);
+
+
+        /*
+         * Clear temporary OTP values.
+         */
         $this->clearOtpSession();
+
+
+        /*
+         * Remove previously selected child.
+         */
+        session()->forget(
+            'parent_student_id'
+        );
+
 
         return redirect()
             ->route(
@@ -453,10 +602,56 @@ class ParentLoginController extends Controller
     }
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Logout
+    |--------------------------------------------------------------------------
+    */
+
+    public function logout(
+        Request $request
+    ) {
+        Auth::guard(
+            'parent'
+        )->logout();
+
+
+        $request
+            ->session()
+            ->forget([
+                'parent_student_id',
+                'parent_auth_email',
+            ]);
+
+
+        $request
+            ->session()
+            ->invalidate();
+
+
+        $request
+            ->session()
+            ->regenerateToken();
+
+
+        return redirect()
+            ->route(
+                'parent.login'
+            );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Clear Temporary OTP Session
+    |--------------------------------------------------------------------------
+    */
+
     private function clearOtpSession()
     {
         session()->forget([
             'parent_login_guardian_id',
+            'parent_login_email',
             'parent_login_otp_hash',
             'parent_login_otp_expires_at',
             'parent_login_otp_attempts',
@@ -464,21 +659,60 @@ class ParentLoginController extends Controller
         ]);
     }
 
-    public function logout(Request $request)
-    {
-        Auth::guard('parent')->logout();
 
-        $request->session()
-            ->forget('parent_student_id');
+    /*
+    |--------------------------------------------------------------------------
+    | Mask Email
+    |--------------------------------------------------------------------------
+    */
 
-        $request->session()
-            ->invalidate();
+    private function maskEmail(
+        $email
+    ) {
+        if (
+            !$email
+            ||
+            !str_contains(
+                $email,
+                '@'
+            )
+        ) {
+            return $email;
+        }
 
-        $request->session()
-            ->regenerateToken();
+
+        [$name, $domain] =
+            explode(
+                '@',
+                $email,
+                2
+            );
 
 
-        return redirect()
-            ->route('parent.login');
+        $visible =
+            mb_substr(
+                $name,
+                0,
+                min(
+                    2,
+                    mb_strlen($name)
+                )
+            );
+
+
+        return
+            $visible
+            .
+            str_repeat(
+                '*',
+                max(
+                    3,
+                    mb_strlen($name) - 2
+                )
+            )
+            .
+            '@'
+            .
+            $domain;
     }
 }

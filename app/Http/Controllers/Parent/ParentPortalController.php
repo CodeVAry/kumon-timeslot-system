@@ -12,85 +12,50 @@ class ParentPortalController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
-    | Get Guardian IDs For Logged-In Parent Identity
+    | Parent Email
     |--------------------------------------------------------------------------
     |
-    | The email/mobile used during login identifies the parent.
-    | One parent may exist in more than one guardian row because
-    | they may have been registered separately for different students.
+    | Email is the parent identity.
     |
+    */
+
+    private function getParentEmail()
+    {
+        return session(
+            'parent_auth_email'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Get All Guardian IDs For Parent Email
+    |--------------------------------------------------------------------------
     */
 
     private function getParentGuardianIds()
     {
-        $guardian =
-            Auth::guard('parent')->user();
+        $email =
+            $this->getParentEmail();
 
 
-        if (!$guardian) {
+        if (!$email) {
+
             return collect();
         }
 
 
-        $loginType =
-            session('parent_auth_type');
-
-
-        $loginValue =
-            session('parent_auth_value');
-
-
-        /*
-         * If parent logged in using email.
-         */
-        if (
-            $loginType === 'email'
-            &&
-            $loginValue
-        ) {
-
-            return Guardian::where(
-                'is_active',
-                true
+        return Guardian::where(
+            'is_active',
+            true
+        )
+            ->where(
+                'normalized_email',
+                $email
             )
-                ->where(
-                    'normalized_email',
-                    $loginValue
-                )
-                ->pluck('id');
-        }
-
-
-        /*
-         * If parent logged in using phone.
-         */
-        if (
-            $loginType === 'phone'
-            &&
-            $loginValue
-        ) {
-
-            return Guardian::where(
-                'is_active',
-                true
-            )
-                ->where(
-                    'normalized_phone',
-                    $loginValue
-                )
-                ->pluck('id');
-        }
-
-
-        /*
-         * Fallback.
-         *
-         * This is only used if the login identity
-         * was not stored in the session.
-         */
-        return collect([
-            $guardian->id,
-        ]);
+            ->pluck(
+                'id'
+            );
     }
 
 
@@ -102,18 +67,43 @@ class ParentPortalController extends Controller
 
     public function welcome()
     {
+        /*
+         * Laravel authenticated Guardian.
+         */
         $guardian =
-            Auth::guard('parent')->user();
+            Auth::guard(
+                'parent'
+            )->user();
 
 
-        $guardianIds =
-            $this->getParentGuardianIds();
+        if (!$guardian) {
+
+            return redirect()
+                ->route(
+                    'parent.login'
+                );
+        }
 
 
         /*
-         * Get ALL students connected to any guardian
-         * record belonging to this parent identity.
+         * Get every Guardian record
+         * using the same email.
          */
+        $guardianIds =
+            $this
+                ->getParentGuardianIds();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get ALL Students
+        |--------------------------------------------------------------------------
+        |
+        | Student may be attached to any Guardian row
+        | using the same parent email.
+        |
+        */
+
         $students =
             Student::where(
                 'is_active',
@@ -158,13 +148,14 @@ class ParentPortalController extends Controller
         Student $student
     ) {
         $guardianIds =
-            $this->getParentGuardianIds();
+            $this
+                ->getParentGuardianIds();
 
 
         /*
          * Security:
-         * Parent can select only a student connected
-         * to one of their matching guardian records.
+         * selected student must belong
+         * to this parent's email group.
          */
         $hasStudent =
             $student
@@ -207,7 +198,18 @@ class ParentPortalController extends Controller
     public function dashboard()
     {
         $guardian =
-            Auth::guard('parent')->user();
+            Auth::guard(
+                'parent'
+            )->user();
+
+
+        if (!$guardian) {
+
+            return redirect()
+                ->route(
+                    'parent.login'
+                );
+        }
 
 
         $studentId =
@@ -216,9 +218,6 @@ class ParentPortalController extends Controller
             );
 
 
-        /*
-         * No student selected.
-         */
         if (!$studentId) {
 
             return redirect()
@@ -229,13 +228,16 @@ class ParentPortalController extends Controller
 
 
         $guardianIds =
-            $this->getParentGuardianIds();
+            $this
+                ->getParentGuardianIds();
 
 
         /*
-         * Find selected student only if the student
-         * belongs to this parent.
-         */
+        |--------------------------------------------------------------------------
+        | Secure Student Lookup
+        |--------------------------------------------------------------------------
+        */
+
         $student =
             Student::where(
                 'id',
@@ -258,9 +260,6 @@ class ParentPortalController extends Controller
                 ->first();
 
 
-        /*
-         * Invalid student selection.
-         */
         if (!$student) {
 
             session()->forget(
@@ -276,8 +275,11 @@ class ParentPortalController extends Controller
 
 
         /*
-         * Load confirmed active classes.
-         */
+        |--------------------------------------------------------------------------
+        | Confirmed Classes
+        |--------------------------------------------------------------------------
+        */
+
         $enrolments =
             Enrolment::with([
                 'sectionOffering.section',
