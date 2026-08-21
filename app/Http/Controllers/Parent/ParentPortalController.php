@@ -3,12 +3,97 @@
 namespace App\Http\Controllers\Parent;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\Enrolment;
+use App\Models\Admin\Guardian;
 use App\Models\Admin\Student;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ParentPortalController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Get Guardian IDs For Logged-In Parent Identity
+    |--------------------------------------------------------------------------
+    |
+    | The email/mobile used during login identifies the parent.
+    | One parent may exist in more than one guardian row because
+    | they may have been registered separately for different students.
+    |
+    */
+
+    private function getParentGuardianIds()
+    {
+        $guardian =
+            Auth::guard('parent')->user();
+
+
+        if (!$guardian) {
+            return collect();
+        }
+
+
+        $loginType =
+            session('parent_auth_type');
+
+
+        $loginValue =
+            session('parent_auth_value');
+
+
+        /*
+         * If parent logged in using email.
+         */
+        if (
+            $loginType === 'email'
+            &&
+            $loginValue
+        ) {
+
+            return Guardian::where(
+                'is_active',
+                true
+            )
+                ->where(
+                    'normalized_email',
+                    $loginValue
+                )
+                ->pluck('id');
+        }
+
+
+        /*
+         * If parent logged in using phone.
+         */
+        if (
+            $loginType === 'phone'
+            &&
+            $loginValue
+        ) {
+
+            return Guardian::where(
+                'is_active',
+                true
+            )
+                ->where(
+                    'normalized_phone',
+                    $loginValue
+                )
+                ->pluck('id');
+        }
+
+
+        /*
+         * Fallback.
+         *
+         * This is only used if the login identity
+         * was not stored in the session.
+         */
+        return collect([
+            $guardian->id,
+        ]);
+    }
+
+
     /*
     |--------------------------------------------------------------------------
     | Welcome Page
@@ -21,22 +106,34 @@ class ParentPortalController extends Controller
             Auth::guard('parent')->user();
 
 
+        $guardianIds =
+            $this->getParentGuardianIds();
+
+
         /*
-         * Get only students linked
-         * to the logged-in guardian.
+         * Get ALL students connected to any guardian
+         * record belonging to this parent identity.
          */
         $students =
-            $guardian
-                ->students()
-                ->where(
-                    'students.is_active',
-                    true
+            Student::where(
+                'is_active',
+                true
+            )
+                ->whereHas(
+                    'guardians',
+                    function ($query) use ($guardianIds) {
+
+                        $query->whereIn(
+                            'guardians.id',
+                            $guardianIds
+                        );
+                    }
                 )
                 ->orderBy(
-                    'students.first_name'
+                    'first_name'
                 )
                 ->orderBy(
-                    'students.last_name'
+                    'last_name'
                 )
                 ->get();
 
@@ -60,21 +157,21 @@ class ParentPortalController extends Controller
     public function selectStudent(
         Student $student
     ) {
-        $guardian =
-            Auth::guard('parent')->user();
+        $guardianIds =
+            $this->getParentGuardianIds();
 
 
         /*
          * Security:
-         * Make sure this student
-         * really belongs to this guardian.
+         * Parent can select only a student connected
+         * to one of their matching guardian records.
          */
         $hasStudent =
-            $guardian
-                ->students()
-                ->where(
-                    'students.id',
-                    $student->id
+            $student
+                ->guardians()
+                ->whereIn(
+                    'guardians.id',
+                    $guardianIds
                 )
                 ->exists();
 
@@ -86,8 +183,7 @@ class ParentPortalController extends Controller
 
 
         /*
-         * Save selected student
-         * into the parent session.
+         * Save selected student.
          */
         session([
             'parent_student_id' =>
@@ -104,7 +200,7 @@ class ParentPortalController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Temporary Dashboard
+    | Parent Dashboard
     |--------------------------------------------------------------------------
     */
 
@@ -115,38 +211,67 @@ class ParentPortalController extends Controller
 
 
         $studentId =
-            session('parent_student_id');
-
-
-        if (!$studentId) {
-
-            return redirect()
-                ->route('parent.welcome');
-        }
+            session(
+                'parent_student_id'
+            );
 
 
         /*
-         * Make sure selected student
-         * belongs to this guardian.
+         * No student selected.
+         */
+        if (!$studentId) {
+
+            return redirect()
+                ->route(
+                    'parent.welcome'
+                );
+        }
+
+
+        $guardianIds =
+            $this->getParentGuardianIds();
+
+
+        /*
+         * Find selected student only if the student
+         * belongs to this parent.
          */
         $student =
-            $guardian
-                ->students()
+            Student::where(
+                'id',
+                $studentId
+            )
                 ->where(
-                    'students.id',
-                    $studentId
+                    'is_active',
+                    true
+                )
+                ->whereHas(
+                    'guardians',
+                    function ($query) use ($guardianIds) {
+
+                        $query->whereIn(
+                            'guardians.id',
+                            $guardianIds
+                        );
+                    }
                 )
                 ->first();
 
 
+        /*
+         * Invalid student selection.
+         */
         if (!$student) {
 
             session()->forget(
                 'parent_student_id'
             );
 
+
             return redirect()
-                ->route('parent.welcome');
+                ->route(
+                    'parent.welcome'
+                );
         }
 
 
@@ -154,7 +279,7 @@ class ParentPortalController extends Controller
          * Load confirmed active classes.
          */
         $enrolments =
-            \App\Models\Admin\Enrolment::with([
+            Enrolment::with([
                 'sectionOffering.section',
                 'sectionOffering.day',
             ])
