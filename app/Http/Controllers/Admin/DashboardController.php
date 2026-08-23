@@ -3,581 +3,886 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\Attendance;
 use App\Models\Admin\Day;
 use App\Models\Admin\Enrolment;
 use App\Models\Admin\SectionOffering;
+use App\Models\Admin\Student;
+use App\Models\Admin\StudentStatus;
+use App\Services\StudentStatusReviewService;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    public function index()
-    {
+    public function index(
+        StudentStatusReviewService $reviewService
+    ) {
         /*
         |--------------------------------------------------------------------------
         | Current Date / Time
         |--------------------------------------------------------------------------
         |
-        | Make sure config/app.php uses:
+        | config/app.php should use:
         |
         | 'timezone' => 'Australia/Hobart'
         |
         */
 
-        $dashboardDate = now();
+        $dashboardDate =
+            now();
+
 
         $todayName =
-            $dashboardDate->format('l');
+            $dashboardDate
+                ->format(
+                    'l'
+                );
+
 
         $currentTime =
-            $dashboardDate->format('H:i:s');
+            $dashboardDate
+                ->format(
+                    'H:i:s'
+                );
 
 
         /*
         |--------------------------------------------------------------------------
-        | Find Today's Day Record
+        | Default Dashboard Values
         |--------------------------------------------------------------------------
         */
 
-        $todayDay = Day::where(
-            'day_name',
-            $todayName
-        )
-            ->where(
-                'is_active',
-                true
-            )
-            ->first();
+        $studentsToday =
+            0;
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Defaults
-        |--------------------------------------------------------------------------
-        */
+        $currentlyAttending =
+            0;
 
-        $studentsToday = 0;
 
-        $currentlyAttending = 0;
+        $absentToday =
+            0;
 
-        $absentToday = 0;
 
-        $wishlistCount = 0;
+        $wishlistCount =
+            0;
 
-        $currentClassTime = null;
 
-        $currentClassStudents = 0;
+        $currentClassTime =
+            null;
 
-        $nextClassTime = null;
 
-        $nextClassStudents = 0;
+        $currentClassStudents =
+            0;
 
-        $todayClasses = collect();
 
-        $absentStudents = collect();
+        $nextClassTime =
+            null;
 
-        $adminReminders = collect();
+
+        $nextClassStudents =
+            0;
+
+
+        $todayClasses =
+            collect();
+
+
+        $absentStudents =
+            collect();
+
+
+        $adminReminders =
+            collect();
 
 
         /*
         |--------------------------------------------------------------------------
         | Overall Wishlist Count
         |--------------------------------------------------------------------------
-        |
-        | Wishlist is not restricted to today.
-        |
         */
 
-        $wishlistCount = Enrolment::where(
-            'is_active',
-            true
-        )
-            ->where(
-                'is_wishlist',
+        $wishlistCount =
+            Enrolment::where(
+                'is_active',
                 true
             )
-            ->count();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | No Classes Today
-        |--------------------------------------------------------------------------
-        */
-
-        if (!$todayDay) {
-
-            return view(
-                'dashboard',
-                compact(
-                    'dashboardDate',
-                    'studentsToday',
-                    'currentlyAttending',
-                    'absentToday',
-                    'wishlistCount',
-                    'currentClassTime',
-                    'currentClassStudents',
-                    'nextClassTime',
-                    'nextClassStudents',
-                    'todayClasses',
-                    'absentStudents',
-                    'adminReminders'
+                ->where(
+                    'is_wishlist',
+                    true
                 )
-            );
-        }
+                ->count();
 
 
         /*
         |--------------------------------------------------------------------------
-        | Today's Active Class Offerings
+        | Today's Actual Absences
+        |--------------------------------------------------------------------------
+        |
+        | This now uses real attendance records.
+        |
+        */
+
+        $todayAbsentAttendance =
+            Attendance::with([
+                'enrolment.student',
+            ])
+                ->whereDate(
+                    'attendance_date',
+                    $dashboardDate
+                        ->toDateString()
+                )
+                ->where(
+                    'status',
+                    'absent'
+                )
+                ->get();
+
+
+        /*
+         * Get unique absent students.
+         *
+         * One student could theoretically have
+         * attendance records for multiple classes.
+         */
+        $absentStudents =
+            $todayAbsentAttendance
+                ->map(
+                    function ($attendance) {
+
+                        return
+                            $attendance
+                                ->enrolment
+                                ?->student;
+                    }
+                )
+                ->filter()
+                ->unique(
+                    'id'
+                )
+                ->values();
+
+
+        $absentToday =
+            $absentStudents
+                ->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Find Today's Day
         |--------------------------------------------------------------------------
         */
 
-        $offerings = SectionOffering::with([
-            'section',
+        $todayDay =
+            Day::where(
+                'day_name',
+                $todayName
+            )
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->first();
 
-            'enrolments' => function ($query) {
 
-                $query
+        /*
+        |--------------------------------------------------------------------------
+        | Today's Classes
+        |--------------------------------------------------------------------------
+        |
+        | We deliberately do NOT return early
+        | if there are no classes today.
+        |
+        | Student review notifications should
+        | still appear on the Dashboard.
+        |
+        */
+
+        if ($todayDay) {
+
+            $offerings =
+                SectionOffering::with([
+                    'section',
+
+                    'enrolments' =>
+                        function ($query) {
+
+                            $query
+                                ->where(
+                                    'is_active',
+                                    true
+                                )
+                                ->where(
+                                    'is_wishlist',
+                                    false
+                                );
+                        },
+                ])
+                    ->where(
+                        'day_id',
+                        $todayDay->id
+                    )
                     ->where(
                         'is_active',
                         true
                     )
-                    ->where(
-                        'is_wishlist',
-                        false
+                    ->orderBy(
+                        'start_time'
+                    )
+                    ->get();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Students Today
+            |--------------------------------------------------------------------------
+            */
+
+            $studentsToday =
+                $offerings
+                    ->flatMap(
+                        function ($offering) {
+
+                            return
+                                $offering
+                                    ->enrolments
+                                    ->pluck(
+                                        'student_id'
+                                    );
+                        }
+                    )
+                    ->unique()
+                    ->count();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Group Classes By Start Time
+            |--------------------------------------------------------------------------
+            */
+
+            $groupedOfferings =
+                $offerings
+                    ->groupBy(
+                        function ($offering) {
+
+                            return
+                                Carbon::parse(
+                                    $offering
+                                        ->start_time
+                                )
+                                    ->format(
+                                        'H:i:s'
+                                    );
+                        }
                     );
-            },
-        ])
-            ->where(
-                'day_id',
-                $todayDay->id
-            )
-            ->where(
-                'is_active',
-                true
-            )
-            ->orderBy(
-                'start_time'
-            )
-            ->get();
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | No Offerings Today
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | Build Today's Class Table
+            |--------------------------------------------------------------------------
+            */
 
-        if ($offerings->isEmpty()) {
+            foreach (
+                $groupedOfferings
+                as $startTime => $classOfferings
+            ) {
 
-            return view(
-                'dashboard',
-                compact(
-                    'dashboardDate',
-                    'studentsToday',
-                    'currentlyAttending',
-                    'absentToday',
-                    'wishlistCount',
-                    'currentClassTime',
-                    'currentClassStudents',
-                    'nextClassTime',
-                    'nextClassStudents',
-                    'todayClasses',
-                    'absentStudents',
-                    'adminReminders'
-                )
-            );
+                /*
+                 * Start Date / Time
+                 */
+                $startDateTime =
+                    Carbon::parse(
+                        $dashboardDate
+                            ->format(
+                                'Y-m-d'
+                            )
+                        .
+                        ' '
+                        .
+                        $startTime
+                    );
+
+
+                /*
+                 * Classes beginning at the same
+                 * time may have different end times.
+                 *
+                 * Use the latest end time.
+                 */
+                $latestEndTime =
+                    $classOfferings
+                        ->max(
+                            'end_time'
+                        );
+
+
+                $endDateTime =
+                    Carbon::parse(
+                        $dashboardDate
+                            ->format(
+                                'Y-m-d'
+                            )
+                        .
+                        ' '
+                        .
+                        $latestEndTime
+                    );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Student Groups
+                |--------------------------------------------------------------------------
+                */
+
+                $allStudentIds =
+                    collect();
+
+
+                $regularStudentIds =
+                    collect();
+
+
+                $interactiveStudentIds =
+                    collect();
+
+
+                foreach (
+                    $classOfferings
+                    as $offering
+                ) {
+
+                    $studentIds =
+                        $offering
+                            ->enrolments
+                            ->pluck(
+                                'student_id'
+                            );
+
+
+                    $allStudentIds =
+                        $allStudentIds
+                            ->merge(
+                                $studentIds
+                            );
+
+
+                    /*
+                     * TEMPORARY section grouping.
+                     *
+                     * Keep existing behaviour for now.
+                     *
+                     * Later this can use
+                     * database-driven section groups.
+                     */
+                    $sectionName =
+                        strtolower(
+                            trim(
+                                $offering
+                                    ->section
+                                    ?->section_name
+                                ??
+                                ''
+                            )
+                        );
+
+
+                    if (
+                        $sectionName
+                        ===
+                        'interactive'
+                    ) {
+
+                        $interactiveStudentIds =
+                            $interactiveStudentIds
+                                ->merge(
+                                    $studentIds
+                                );
+
+                    } else {
+
+                        $regularStudentIds =
+                            $regularStudentIds
+                                ->merge(
+                                    $studentIds
+                                );
+                    }
+                }
+
+
+                $regularStudents =
+                    $regularStudentIds
+                        ->unique()
+                        ->count();
+
+
+                $interactiveStudents =
+                    $interactiveStudentIds
+                        ->unique()
+                        ->count();
+
+
+                $totalStudents =
+                    $allStudentIds
+                        ->unique()
+                        ->count();
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Class Status
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $dashboardDate
+                        ->greaterThanOrEqualTo(
+                            $startDateTime
+                        )
+                    &&
+                    $dashboardDate
+                        ->lessThan(
+                            $endDateTime
+                        )
+                ) {
+
+                    $status =
+                        'In Progress';
+
+                } elseif (
+                    $dashboardDate
+                        ->greaterThanOrEqualTo(
+                            $endDateTime
+                        )
+                ) {
+
+                    $status =
+                        'Completed';
+
+                } elseif (
+                    $dashboardDate
+                        ->lessThan(
+                            $startDateTime
+                        )
+                    &&
+                    $dashboardDate
+                        ->diffInMinutes(
+                            $startDateTime
+                        )
+                    <=
+                    30
+                ) {
+
+                    $status =
+                        'Starting Soon';
+
+                } else {
+
+                    $status =
+                        'Upcoming';
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Add Dashboard Table Row
+                |--------------------------------------------------------------------------
+                */
+
+                $todayClasses->push([
+                    'raw_time' =>
+                        $startTime,
+
+                    'class_time' =>
+                        $startDateTime
+                            ->format(
+                                'g:i A'
+                            ),
+
+                    'regular_students' =>
+                        $regularStudents,
+
+                    'interactive_students' =>
+                        $interactiveStudents,
+
+                    'total_students' =>
+                        $totalStudents,
+
+                    'status' =>
+                        $status,
+                ]);
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Current Class
+            |--------------------------------------------------------------------------
+            */
+
+            $currentClass =
+                $todayClasses
+                    ->first(
+                        function ($class) {
+
+                            return
+                                $class[
+                                    'status'
+                                ]
+                                ===
+                                'In Progress';
+                        }
+                    );
+
+
+            if ($currentClass) {
+
+                $currentClassTime =
+                    $currentClass[
+                        'class_time'
+                    ];
+
+
+                $currentClassStudents =
+                    $currentClass[
+                        'total_students'
+                    ];
+
+
+                /*
+                 * This currently means students
+                 * scheduled in the current class.
+                 *
+                 * We can later change this to
+                 * actual Present attendance.
+                 */
+                $currentlyAttending =
+                    $currentClassStudents;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Next Class
+            |--------------------------------------------------------------------------
+            */
+
+            $nextClass =
+                $todayClasses
+                    ->first(
+                        function ($class) use (
+                            $currentTime
+                        ) {
+
+                            return
+                                $class[
+                                    'raw_time'
+                                ]
+                                >
+                                $currentTime;
+                        }
+                    );
+
+
+            if ($nextClass) {
+
+                $nextClassTime =
+                    $nextClass[
+                        'class_time'
+                    ];
+
+
+                $nextClassStudents =
+                    $nextClass[
+                        'total_students'
+                    ];
+            }
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Students Today
+        | Admin Reminder 1
+        | Trial Students
         |--------------------------------------------------------------------------
-        |
-        | One student may have multiple enrolments.
-        | Therefore count unique student IDs.
-        |
         */
 
-        $studentsToday = $offerings
-            ->flatMap(
-                function ($offering) {
-
-                    return $offering
-                        ->enrolments
-                        ->pluck(
-                            'student_id'
-                        );
-                }
+        $trialStatus =
+            StudentStatus::whereRaw(
+                'LOWER(status_name) = ?',
+                [
+                    'trial',
+                ]
             )
-            ->unique()
-            ->count();
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->first();
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Group Offerings By Start Time
-        |--------------------------------------------------------------------------
-        |
-        | Example:
-        |
-        | 3:45 PM
-        |   English
-        |   3A Math
-        |   B-D Math
-        |   E+ Math
-        |
-        */
-
-        $groupedOfferings =
-            $offerings->groupBy(
-                function ($offering) {
-
-                    return Carbon::parse(
-                        $offering->start_time
-                    )->format('H:i:s');
-                }
-            );
+        $trialReviewCount =
+            0;
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Build Today's Classes Table
-        |--------------------------------------------------------------------------
-        */
+        if ($trialStatus) {
 
-        foreach (
-            $groupedOfferings
-            as $startTime => $classOfferings
+            $trialReviewCount =
+                Student::where(
+                    'student_status_id',
+                    $trialStatus->id
+                )
+                    ->where(
+                        'is_active',
+                        true
+                    )
+                    ->count();
+        }
+
+
+        if (
+            $trialReviewCount > 0
         ) {
 
-            /*
-             * Start DateTime
-             */
-            $startDateTime =
-                Carbon::parse(
-                    $dashboardDate
-                        ->format('Y-m-d')
+            $adminReminders->push([
+                'type' =>
+                    'trial',
+
+                'title' =>
+                    'Trial student review required',
+
+                'message' =>
+                    $trialReviewCount
                     .
-                    ' '
-                    .
-                    $startTime
-                );
+                    ' Trial student(s) are waiting for an Admin decision.',
 
-
-            /*
-             * Find the latest ending time
-             * among classes starting together.
-             */
-            $latestEndTime =
-                $classOfferings
-                    ->max(
-                        'end_time'
-                    );
-
-
-            $endDateTime =
-                Carbon::parse(
-                    $dashboardDate
-                        ->format('Y-m-d')
-                    .
-                    ' '
-                    .
-                    $latestEndTime
-                );
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Student IDs
-            |--------------------------------------------------------------------------
-            */
-
-            $allStudentIds =
-                collect();
-
-
-            $regularStudentIds =
-                collect();
-
-
-            $interactiveStudentIds =
-                collect();
-
-
-            foreach (
-                $classOfferings
-                as $offering
-            ) {
-
-                $studentIds =
-                    $offering
-                        ->enrolments
-                        ->pluck(
-                            'student_id'
-                        );
-
-
-                $allStudentIds =
-                    $allStudentIds
-                        ->merge(
-                            $studentIds
-                        );
-
-
-                /*
-                 * TEMPORARY classification.
-                 *
-                 * Later we will replace this
-                 * with section_groups.
-                 *
-                 * For now only the Interactive
-                 * section is separated.
-                 */
-                $sectionName =
-                    strtolower(
-                        trim(
-                            $offering
-                                ->section
-                                ?->section_name
-                            ?? ''
-                        )
-                    );
-
-
-                if (
-                    $sectionName
-                    ===
-                    'interactive'
-                ) {
-
-                    $interactiveStudentIds =
-                        $interactiveStudentIds
-                            ->merge(
-                                $studentIds
-                            );
-
-                } else {
-
-                    $regularStudentIds =
-                        $regularStudentIds
-                            ->merge(
-                                $studentIds
-                            );
-                }
-            }
-
-
-            $regularStudents =
-                $regularStudentIds
-                    ->unique()
-                    ->count();
-
-
-            $interactiveStudents =
-                $interactiveStudentIds
-                    ->unique()
-                    ->count();
-
-
-            $totalStudents =
-                $allStudentIds
-                    ->unique()
-                    ->count();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Status
-            |--------------------------------------------------------------------------
-            */
-
-            if (
-                $dashboardDate->greaterThanOrEqualTo(
-                    $startDateTime
-                )
-                &&
-                $dashboardDate->lessThan(
-                    $endDateTime
-                )
-            ) {
-
-                $status =
-                    'In Progress';
-
-            } elseif (
-                $dashboardDate->greaterThanOrEqualTo(
-                    $endDateTime
-                )
-            ) {
-
-                $status =
-                    'Completed';
-
-            } elseif (
-                $dashboardDate->lessThan(
-                    $startDateTime
-                )
-                &&
-                $dashboardDate
-                    ->diffInMinutes(
-                        $startDateTime
-                    )
-                    <= 30
-            ) {
-
-                $status =
-                    'Starting Soon';
-
-            } else {
-
-                $status =
-                    'Upcoming';
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Add Table Row
-            |--------------------------------------------------------------------------
-            */
-
-            $todayClasses->push([
-
-                'raw_time' =>
-                    $startTime,
-
-                'class_time' =>
-                    $startDateTime
-                        ->format(
-                            'g:i A'
-                        ),
-
-                'regular_students' =>
-                    $regularStudents,
-
-                'interactive_students' =>
-                    $interactiveStudents,
-
-                'total_students' =>
-                    $totalStudents,
-
-                'status' =>
-                    $status,
+                'url' =>
+                    route(
+                        'admin.student-reviews.index'
+                    ),
             ]);
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Current Class
+        | Admin Reminder 2
+        | 30-Day Absence Review
         |--------------------------------------------------------------------------
         */
 
-        $currentClass =
-            $todayClasses
-                ->first(
-                    function ($class) {
-
-                        return
-                            $class['status']
-                            ===
-                            'In Progress';
-                    }
-                );
-
-
-        if ($currentClass) {
-
-            $currentClassTime =
-                $currentClass[
-                    'class_time'
-                ];
+        $activeStatus =
+            StudentStatus::whereRaw(
+                'LOWER(status_name) = ?',
+                [
+                    'active',
+                ]
+            )
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->first();
 
 
-            $currentClassStudents =
-                $currentClass[
-                    'total_students'
-                ];
+        $absenceReviewCount =
+            0;
 
 
-            /*
-             * Until attendance is implemented,
-             * this means students scheduled
-             * in the current class.
-             */
-            $currentlyAttending =
-                $currentClassStudents;
+        if ($activeStatus) {
+
+            $activeStudents =
+                Student::with([
+                    'enrolments',
+                ])
+                    ->where(
+                        'student_status_id',
+                        $activeStatus->id
+                    )
+                    ->where(
+                        'is_active',
+                        true
+                    )
+                    ->get();
+
+
+            foreach (
+                $activeStudents
+                as $student
+            ) {
+
+                if (
+                    $reviewService
+                        ->requiresAbsenceReview(
+                            $student
+                        )
+                ) {
+
+                    $absenceReviewCount++;
+                }
+            }
+        }
+
+
+        if (
+            $absenceReviewCount > 0
+        ) {
+
+            $adminReminders->push([
+                'type' =>
+                    'absence',
+
+                'title' =>
+                    'Student removal review required',
+
+                'message' =>
+                    $absenceReviewCount
+                    .
+                    ' student(s) have been absent for at least 30 days.',
+
+                'url' =>
+                    route(
+                        'admin.student-reviews.index'
+                    ),
+            ]);
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Next Class
+        | Admin Reminder 3
+        | Inactive Student Warning
         |--------------------------------------------------------------------------
         */
 
-        $nextClass =
-            $todayClasses
-                ->first(
-                    function ($class) use (
-                        $currentTime
-                    ) {
-
-                        return
-                            $class[
-                                'raw_time'
-                            ]
-                            >
-                            $currentTime;
-                    }
-                );
+        $inactiveStatus =
+            StudentStatus::whereRaw(
+                'LOWER(status_name) = ?',
+                [
+                    'inactive',
+                ]
+            )
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->first();
 
 
-        if ($nextClass) {
-
-            $nextClassTime =
-                $nextClass[
-                    'class_time'
-                ];
+        $inactiveWarningCount =
+            0;
 
 
-            $nextClassStudents =
-                $nextClass[
-                    'total_students'
-                ];
+        $deletionReviewCount =
+            0;
+
+
+        if ($inactiveStatus) {
+
+            $inactiveStudents =
+                Student::where(
+                    'student_status_id',
+                    $inactiveStatus->id
+                )
+                    ->whereNotNull(
+                        'inactive_since'
+                    )
+                    ->get();
+
+
+            foreach (
+                $inactiveStudents
+                as $student
+            ) {
+
+                $inactiveInfo =
+                    $reviewService
+                        ->getInactiveInfo(
+                            $student
+                        );
+
+
+                if (!$inactiveInfo) {
+
+                    continue;
+                }
+
+
+                if (
+                    $inactiveInfo[
+                        'requires_deletion_review'
+                    ]
+                ) {
+
+                    $deletionReviewCount++;
+
+                } elseif (
+                    $inactiveInfo[
+                        'show_warning'
+                    ]
+                ) {
+
+                    $inactiveWarningCount++;
+                }
+            }
         }
 
 
         /*
-        |--------------------------------------------------------------------------
-        | Absence
-        |--------------------------------------------------------------------------
-        |
-        | Absence module is not implemented yet.
-        |
-        | Do not create fake absence information.
-        |
-        */
+         * Approaching six months.
+         */
+        if (
+            $inactiveWarningCount > 0
+        ) {
 
-        $absentToday = 0;
+            $adminReminders->push([
+                'type' =>
+                    'inactive-warning',
 
-        $absentStudents =
-            collect();
+                'title' =>
+                    'Inactive student deletion warning',
+
+                'message' =>
+                    $inactiveWarningCount
+                    .
+                    ' inactive student(s) are approaching six months inactive.',
+
+                'url' =>
+                    route(
+                        'admin.student-reviews.index'
+                    ),
+            ]);
+        }
 
 
         /*
-        |--------------------------------------------------------------------------
-        | Admin Reminders
-        |--------------------------------------------------------------------------
-        |
-        | No reminder module yet.
-        |
-        */
+         * Already reached six months.
+         */
+        if (
+            $deletionReviewCount > 0
+        ) {
 
-        $adminReminders =
-            collect();
+            $adminReminders->push([
+                'type' =>
+                    'deletion',
+
+                'title' =>
+                    'Student deletion review required',
+
+                'message' =>
+                    $deletionReviewCount
+                    .
+                    ' inactive student(s) have reached six months and require review.',
+
+                'url' =>
+                    route(
+                        'admin.student-reviews.index'
+                    ),
+            ]);
+        }
 
 
         /*

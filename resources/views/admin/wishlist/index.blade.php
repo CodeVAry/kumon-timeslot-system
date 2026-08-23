@@ -14,6 +14,22 @@
         ],
     ];
 
+
+    $statusLabels = [
+        'pending' => 'Pending Approval',
+        'approved' => 'Approved',
+        'rejected' => 'Rejected',
+        'cancelled' => 'Cancelled',
+    ];
+
+
+    $statusClasses = [
+        'pending' => 'bg-amber-100 text-amber-700',
+        'approved' => 'bg-green-100 text-green-700',
+        'rejected' => 'bg-red-100 text-red-700',
+        'cancelled' => 'bg-slate-200 text-slate-600',
+    ];
+
 @endphp
 
 
@@ -22,7 +38,10 @@
 <div class="space-y-6">
 
 
-    {{-- Header --}}
+    {{-- =========================================================
+        HEADER
+    ========================================================== --}}
+
     <div>
 
         <h1
@@ -39,7 +58,7 @@
                    text-sm
                    text-slate-500"
         >
-            Manage students waiting
+            Review and manage student requests
             to move to another class time.
         </p>
 
@@ -47,12 +66,16 @@
 
 
 
-    {{-- Messages --}}
+    {{-- =========================================================
+        SUCCESS MESSAGE
+    ========================================================== --}}
+
     @if (session('success'))
 
         <div
             class="rounded-xl
-                   border border-green-200
+                   border
+                   border-green-200
                    bg-green-50
                    px-5 py-4
                    text-sm
@@ -65,11 +88,17 @@
     @endif
 
 
+
+    {{-- =========================================================
+        ERROR MESSAGE
+    ========================================================== --}}
+
     @if (session('error'))
 
         <div
             class="rounded-xl
-                   border border-red-200
+                   border
+                   border-red-200
                    bg-red-50
                    px-5 py-4
                    text-sm
@@ -83,15 +112,69 @@
 
 
 
-    {{-- Summary --}}
+    {{-- =========================================================
+        VALIDATION ERRORS
+    ========================================================== --}}
+
+    @if ($errors->any())
+
+        <div
+            class="rounded-xl
+                   border
+                   border-red-200
+                   bg-red-50
+                   px-5 py-4"
+        >
+
+            <p
+                class="font-semibold
+                       text-red-700"
+            >
+                Please correct the following:
+            </p>
+
+
+            <ul
+                class="mt-2
+                       list-disc
+                       space-y-1
+                       pl-5
+                       text-sm
+                       text-red-600"
+            >
+
+                @foreach ($errors->all() as $error)
+
+                    <li>
+                        {{ $error }}
+                    </li>
+
+                @endforeach
+
+            </ul>
+
+        </div>
+
+    @endif
+
+
+
+    {{-- =========================================================
+        SUMMARY
+    ========================================================== --}}
+
     <div
-        class="grid gap-4
+        class="grid
+               gap-4
                sm:grid-cols-2"
     >
 
+
+        {{-- Active Wishlist --}}
         <div
             class="rounded-2xl
-                   border border-blue-100
+                   border
+                   border-blue-100
                    bg-blue-50
                    p-5"
         >
@@ -117,9 +200,12 @@
         </div>
 
 
+
+        {{-- Seat Available --}}
         <div
             class="rounded-2xl
-                   border border-green-100
+                   border
+                   border-green-100
                    bg-green-50
                    p-5"
         >
@@ -148,17 +234,24 @@
 
 
 
-    {{-- Main table --}}
+    {{-- =========================================================
+        MAIN TABLE
+    ========================================================== --}}
+
     <section
         class="overflow-hidden
                rounded-2xl
-               border border-slate-200
+               border
+               border-slate-200
                bg-white
                shadow-sm"
     >
 
 
-        {{-- Search --}}
+        {{-- =====================================================
+            SEARCH
+        ====================================================== --}}
+
         <div
             class="border-b
                    border-slate-100
@@ -195,7 +288,9 @@
                            px-5 py-2.5
                            text-sm
                            font-semibold
-                           text-white"
+                           text-white
+                           transition
+                           hover:bg-blue-700"
                 >
                     Search
                 </button>
@@ -213,10 +308,13 @@
                                rounded-xl
                                border
                                border-slate-300
+                               bg-white
                                px-5 py-2.5
                                text-sm
                                font-semibold
-                               text-slate-600"
+                               text-slate-600
+                               transition
+                               hover:bg-slate-50"
                     >
                         Clear
                     </a>
@@ -229,6 +327,10 @@
 
 
 
+        {{-- =====================================================
+            TABLE
+        ====================================================== --}}
+
         <div class="overflow-x-auto">
 
             <table class="min-w-full">
@@ -237,10 +339,13 @@
 
                     <tr>
 
+
+                        {{-- Student --}}
                         <th
                             class="px-6 py-4
                                    text-left
-                                   text-xs font-bold
+                                   text-xs
+                                   font-bold
                                    uppercase
                                    text-slate-500"
                         >
@@ -248,10 +353,13 @@
                         </th>
 
 
+
+                        {{-- Current Class --}}
                         <th
                             class="px-6 py-4
                                    text-left
-                                   text-xs font-bold
+                                   text-xs
+                                   font-bold
                                    uppercase
                                    text-slate-500"
                         >
@@ -259,10 +367,13 @@
                         </th>
 
 
+
+                        {{-- Requested Class --}}
                         <th
                             class="px-6 py-4
                                    text-left
-                                   text-xs font-bold
+                                   text-xs
+                                   font-bold
                                    uppercase
                                    text-slate-500"
                         >
@@ -270,10 +381,13 @@
                         </th>
 
 
+
+                        {{-- Availability --}}
                         <th
                             class="px-6 py-4
                                    text-center
-                                   text-xs font-bold
+                                   text-xs
+                                   font-bold
                                    uppercase
                                    text-slate-500"
                         >
@@ -281,10 +395,27 @@
                         </th>
 
 
+
+                        {{-- Status --}}
                         <th
                             class="px-6 py-4
                                    text-center
-                                   text-xs font-bold
+                                   text-xs
+                                   font-bold
+                                   uppercase
+                                   text-slate-500"
+                        >
+                            Status
+                        </th>
+
+
+
+                        {{-- Action --}}
+                        <th
+                            class="px-6 py-4
+                                   text-center
+                                   text-xs
+                                   font-bold
                                    uppercase
                                    text-slate-500"
                         >
@@ -306,9 +437,22 @@
 
                         @php
 
-                            $student =
-                                $wishlist->student;
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Student
+                            |--------------------------------------------------------------------------
+                            */
 
+                            $student =
+                                $wishlist
+                                    ->student;
+
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Current Class
+                            |--------------------------------------------------------------------------
+                            */
 
                             $current =
                                 $wishlist
@@ -316,10 +460,22 @@
                                     ?->sectionOffering;
 
 
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Requested Class
+                            |--------------------------------------------------------------------------
+                            */
+
                             $requested =
                                 $wishlist
                                     ->sectionOffering;
 
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Confirmed Seat Count
+                            |--------------------------------------------------------------------------
+                            */
 
                             $confirmedCount =
                                 $requested
@@ -337,6 +493,12 @@
                                     : 0;
 
 
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Available Seats
+                            |--------------------------------------------------------------------------
+                            */
+
                             $availableSeats =
                                 $requested
                                     ? max(
@@ -347,15 +509,32 @@
                                     )
                                     : 0;
 
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Wishlist Status
+                            |--------------------------------------------------------------------------
+                            */
+
+                            $wishlistStatus =
+                                $wishlist
+                                    ->wishlist_status
+                                ?? 'pending';
+
                         @endphp
 
 
+
                         <tr
-                            class="hover:bg-blue-50/30"
+                            class="transition
+                                   hover:bg-blue-50/30"
                         >
 
 
-                            {{-- Student --}}
+                            {{-- =================================================
+                                STUDENT
+                            ================================================== --}}
+
                             <td
                                 class="px-6 py-5"
                             >
@@ -384,7 +563,10 @@
 
 
 
-                            {{-- Current --}}
+                            {{-- =================================================
+                                CURRENT CLASS
+                            ================================================== --}}
+
                             <td
                                 class="px-6 py-5"
                             >
@@ -413,15 +595,36 @@
                                             ?->day_name
                                         ?? '—'
                                     }}
+
 
                                     @if ($current)
 
-                                        ·
+                                        <span
+                                            class="mx-1
+                                                   text-slate-300"
+                                        >
+                                            ·
+                                        </span>
+
 
                                         {{
                                             \Carbon\Carbon::parse(
-                                                $current->start_time
-                                            )->format('g:i A')
+                                                $current
+                                                    ->start_time
+                                            )->format(
+                                                'g:i A'
+                                            )
+                                        }}
+
+                                        –
+
+                                        {{
+                                            \Carbon\Carbon::parse(
+                                                $current
+                                                    ->end_time
+                                            )->format(
+                                                'g:i A'
+                                            )
                                         }}
 
                                     @endif
@@ -431,7 +634,10 @@
 
 
 
-                            {{-- Requested --}}
+                            {{-- =================================================
+                                REQUESTED CLASS
+                            ================================================== --}}
+
                             <td
                                 class="px-6 py-5"
                             >
@@ -461,24 +667,49 @@
                                         ?? '—'
                                     }}
 
+
                                     @if ($requested)
 
-                                        ·
+                                        <span
+                                            class="mx-1
+                                                   text-slate-300"
+                                        >
+                                            ·
+                                        </span>
+
 
                                         {{
                                             \Carbon\Carbon::parse(
-                                                $requested->start_time
-                                            )->format('g:i A')
+                                                $requested
+                                                    ->start_time
+                                            )->format(
+                                                'g:i A'
+                                            )
+                                        }}
+
+                                        –
+
+                                        {{
+                                            \Carbon\Carbon::parse(
+                                                $requested
+                                                    ->end_time
+                                            )->format(
+                                                'g:i A'
+                                            )
                                         }}
 
                                     @endif
+
                                 </p>
 
                             </td>
 
 
 
-                            {{-- Availability --}}
+                            {{-- =================================================
+                                AVAILABILITY
+                            ================================================== --}}
+
                             <td
                                 class="px-6 py-5
                                        text-center"
@@ -496,8 +727,14 @@
                                                text-green-700"
                                     >
                                         {{ $availableSeats }}
-                                        seat available
+
+                                        {{
+                                            $availableSeats === 1
+                                                ? 'seat available'
+                                                : 'seats available'
+                                        }}
                                     </span>
+
 
                                 @else
 
@@ -519,109 +756,319 @@
 
 
 
-                            {{-- Action --}}
+                            {{-- =================================================
+                                STATUS
+                            ================================================== --}}
+
+                            <td
+                                class="px-6 py-5
+                                       text-center"
+                            >
+
+                                <span
+                                    class="inline-flex
+                                           rounded-full
+                                           px-3 py-1.5
+                                           text-xs
+                                           font-bold
+                                           {{
+                                               $statusClasses[
+                                                   $wishlistStatus
+                                               ]
+                                               ??
+                                               'bg-slate-100 text-slate-600'
+                                           }}"
+                                >
+                                    {{
+                                        $statusLabels[
+                                            $wishlistStatus
+                                        ]
+                                        ??
+                                        ucfirst(
+                                            $wishlistStatus
+                                        )
+                                    }}
+                                </span>
+
+                            </td>
+
+
+
+                            {{-- =================================================
+                                ACTION
+                            ================================================== --}}
+
                             <td
                                 class="px-6 py-5"
                             >
 
                                 <div
                                     class="flex
+                                           flex-wrap
+                                           items-center
                                            justify-center
                                            gap-2"
                                 >
 
+
+                                    {{-- =========================================
+                                        PENDING REQUEST ACTIONS
+                                    ========================================== --}}
+
                                     @if (
-                                        auth()
-                                            ->user()
-                                            ->hasPermission(
-                                                'wishlist.edit'
-                                            )
-                                        &&
-                                        $availableSeats > 0
+                                        $wishlistStatus
+                                        ===
+                                        'pending'
                                     )
 
-                                        <form
-                                            method="POST"
-                                            action="{{ route(
-                                                'admin.wishlist.approve',
-                                                $wishlist
-                                            ) }}"
-                                            onsubmit="
-                                                return confirm(
-                                                    'Move this student to the requested class?'
-                                                );
-                                            "
-                                        >
 
-                                            @csrf
-                                            @method('PATCH')
+                                        {{-- =====================================
+                                            APPROVE
+                                        ====================================== --}}
 
+                                        @if (
+                                            auth()
+                                                ->user()
+                                                ->hasPermission(
+                                                    'wishlist.edit'
+                                                )
+                                            &&
+                                            $availableSeats > 0
+                                        )
+
+                                            <form
+                                                method="POST"
+                                                action="{{ route(
+                                                    'admin.wishlist.approve',
+                                                    $wishlist
+                                                ) }}"
+                                                onsubmit="
+                                                    return confirm(
+                                                        'Approve this wishlist request and move the student to the requested class?'
+                                                    );
+                                                "
+                                            >
+
+                                                @csrf
+                                                @method('PATCH')
+
+
+                                                <input
+                                                    type="hidden"
+                                                    name="wishlist_review_note"
+                                                    value=""
+                                                >
+
+
+                                                <button
+                                                    type="submit"
+                                                    class="inline-flex
+                                                           h-9
+                                                           items-center
+                                                           justify-center
+                                                           rounded-lg
+                                                           bg-green-600
+                                                           px-4
+                                                           text-xs
+                                                           font-semibold
+                                                           text-white
+                                                           transition
+                                                           hover:bg-green-700"
+                                                >
+                                                    Approve / Move
+                                                </button>
+
+                                            </form>
+
+                                        @endif
+
+
+
+                                        {{-- =====================================
+                                            APPROVE DISABLED WHEN FULL
+                                        ====================================== --}}
+
+                                        @if (
+                                            auth()
+                                                ->user()
+                                                ->hasPermission(
+                                                    'wishlist.edit'
+                                                )
+                                            &&
+                                            $availableSeats <= 0
+                                        )
 
                                             <button
-                                                type="submit"
+                                                type="button"
+                                                disabled
+                                                title="Requested class is full"
                                                 class="inline-flex
                                                        h-9
+                                                       cursor-not-allowed
                                                        items-center
+                                                       justify-center
                                                        rounded-lg
-                                                       bg-green-600
+                                                       bg-slate-200
                                                        px-4
                                                        text-xs
                                                        font-semibold
-                                                       text-white
-                                                       hover:bg-green-700"
+                                                       text-slate-400"
                                             >
                                                 Approve / Move
                                             </button>
 
-                                        </form>
-
-                                    @endif
+                                        @endif
 
 
 
-                                    @if (
-                                        auth()
-                                            ->user()
-                                            ->hasPermission(
-                                                'wishlist.edit'
-                                            )
-                                    )
+                                        {{-- =====================================
+                                            REJECT
+                                        ====================================== --}}
 
-                                        <form
-                                            method="POST"
-                                            action="{{ route(
-                                                'admin.wishlist.cancel',
-                                                $wishlist
-                                            ) }}"
-                                            onsubmit="
-                                                return confirm(
-                                                    'Cancel this wishlist request?'
-                                                );
-                                            "
-                                        >
+                                        @if (
+                                            auth()
+                                                ->user()
+                                                ->hasPermission(
+                                                    'wishlist.edit'
+                                                )
+                                        )
 
-                                            @csrf
-                                            @method('PATCH')
-
-
-                                            <button
-                                                type="submit"
-                                                class="inline-flex
-                                                       h-9
-                                                       items-center
-                                                       rounded-lg
-                                                       border
-                                                       border-red-300
-                                                       px-4
-                                                       text-xs
-                                                       font-semibold
-                                                       text-red-600
-                                                       hover:bg-red-50"
+                                            <form
+                                                method="POST"
+                                                action="{{ route(
+                                                    'admin.wishlist.reject',
+                                                    $wishlist
+                                                ) }}"
+                                                id="reject-form-{{ $wishlist->id }}"
                                             >
-                                                Cancel
-                                            </button>
 
-                                        </form>
+                                                @csrf
+                                                @method('PATCH')
+
+
+                                                <input
+                                                    type="hidden"
+                                                    name="wishlist_review_note"
+                                                    id="reject-note-{{ $wishlist->id }}"
+                                                >
+
+
+                                                <button
+                                                    type="button"
+                                                    onclick="
+                                                        const reason =
+                                                            prompt(
+                                                                'Enter the reason for rejecting this wishlist request:'
+                                                            );
+
+                                                        if (
+                                                            reason !== null
+                                                            &&
+                                                            reason.trim() !== ''
+                                                        ) {
+
+                                                            document.getElementById(
+                                                                'reject-note-{{ $wishlist->id }}'
+                                                            ).value =
+                                                                reason.trim();
+
+                                                            document.getElementById(
+                                                                'reject-form-{{ $wishlist->id }}'
+                                                            ).submit();
+                                                        }
+                                                    "
+                                                    class="inline-flex
+                                                           h-9
+                                                           items-center
+                                                           justify-center
+                                                           rounded-lg
+                                                           border
+                                                           border-red-300
+                                                           bg-red-50
+                                                           px-4
+                                                           text-xs
+                                                           font-semibold
+                                                           text-red-700
+                                                           transition
+                                                           hover:bg-red-100"
+                                                >
+                                                    Reject
+                                                </button>
+
+                                            </form>
+
+                                        @endif
+
+
+
+                                        {{-- =====================================
+                                            CANCEL
+                                        ====================================== --}}
+
+                                        @if (
+                                            auth()
+                                                ->user()
+                                                ->hasPermission(
+                                                    'wishlist.edit'
+                                                )
+                                        )
+
+                                            <form
+                                                method="POST"
+                                                action="{{ route(
+                                                    'admin.wishlist.cancel',
+                                                    $wishlist
+                                                ) }}"
+                                                onsubmit="
+                                                    return confirm(
+                                                        'Cancel this wishlist request?'
+                                                    );
+                                                "
+                                            >
+
+                                                @csrf
+                                                @method('PATCH')
+
+
+                                                <button
+                                                    type="submit"
+                                                    class="inline-flex
+                                                           h-9
+                                                           items-center
+                                                           justify-center
+                                                           rounded-lg
+                                                           border
+                                                           border-slate-300
+                                                           bg-white
+                                                           px-4
+                                                           text-xs
+                                                           font-semibold
+                                                           text-slate-600
+                                                           transition
+                                                           hover:bg-slate-50"
+                                                >
+                                                    Cancel
+                                                </button>
+
+                                            </form>
+
+                                        @endif
+
+
+                                    @else
+
+
+                                        {{-- =====================================
+                                            PROCESSED REQUEST
+                                        ====================================== --}}
+
+                                        <span
+                                            class="text-xs
+                                                   font-medium
+                                                   text-slate-400"
+                                        >
+                                            Request processed
+                                        </span>
 
                                     @endif
 
@@ -637,8 +1084,9 @@
                         <tr>
 
                             <td
-                                colspan="5"
-                                class="px-6 py-14
+                                colspan="6"
+                                class="px-6
+                                       py-14
                                        text-center"
                             >
 
@@ -646,7 +1094,7 @@
                                     class="font-semibold
                                            text-slate-700"
                                 >
-                                    No active wishlist requests
+                                    No wishlist requests
                                 </p>
 
 
@@ -655,8 +1103,8 @@
                                            text-sm
                                            text-slate-500"
                                 >
-                                    Wishlist requests will
-                                    appear here.
+                                    Parent wishlist requests
+                                    will appear here.
                                 </p>
 
                             </td>
@@ -671,6 +1119,11 @@
 
         </div>
 
+
+
+        {{-- =====================================================
+            PAGINATION
+        ====================================================== --}}
 
         @if ($wishlists->hasPages())
 

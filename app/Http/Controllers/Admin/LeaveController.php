@@ -16,12 +16,13 @@ class LeaveController extends Controller
     | Leave Management
     |--------------------------------------------------------------------------
     */
+
     public function index(Request $request)
     {
         $tab =
             $request->input(
                 'tab',
-                'current'
+                'pending'
             );
 
 
@@ -29,12 +30,13 @@ class LeaveController extends Controller
             !in_array(
                 $tab,
                 [
+                    'pending',
                     'current',
                     'upcoming',
                 ]
             )
         ) {
-            $tab = 'current';
+            $tab = 'pending';
         }
 
 
@@ -66,10 +68,11 @@ class LeaveController extends Controller
                     },
 
                 'student.enrolments.sectionOffering.section',
-
                 'student.enrolments.sectionOffering.day',
 
                 'createdBy',
+                'requestedByGuardian',
+                'reviewedBy',
             ]);
 
 
@@ -83,14 +86,10 @@ class LeaveController extends Controller
 
             $query->whereHas(
                 'student',
-                function ($studentQuery) use (
-                    $search
-                ) {
+                function ($studentQuery) use ($search) {
 
                     $studentQuery->where(
-                        function ($query) use (
-                            $search
-                        ) {
+                        function ($query) use ($search) {
 
                             $query
                                 ->where(
@@ -123,9 +122,18 @@ class LeaveController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Current / Upcoming
+        | Tabs
         |--------------------------------------------------------------------------
         */
+
+        if ($tab === 'pending') {
+
+            $query->where(
+                'status',
+                'pending'
+            );
+        }
+
 
         if ($tab === 'current') {
 
@@ -150,9 +158,17 @@ class LeaveController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Summary
+        | Counters
         |--------------------------------------------------------------------------
         */
+
+        $pendingCount =
+            StudentLeave::where(
+                'status',
+                'pending'
+            )
+                ->count();
+
 
         $currentCount =
             StudentLeave::current()
@@ -161,11 +177,6 @@ class LeaveController extends Controller
 
         $upcomingCount =
             StudentLeave::upcoming()
-                ->count();
-
-
-        $historyCount =
-            StudentLeave::completed()
                 ->count();
 
 
@@ -182,27 +193,69 @@ class LeaveController extends Controller
                 ->count();
 
 
+        $historyCount =
+            StudentLeave::where(
+                function ($query) {
+
+                    $query
+                        ->whereIn(
+                            'status',
+                            [
+                                'rejected',
+                                'cancelled',
+                            ]
+                        )
+                        ->orWhere(
+                            function ($query) {
+
+                                $query
+                                    ->where(
+                                        'status',
+                                        'approved'
+                                    )
+                                    ->where(
+                                        function ($query) {
+
+                                            $query
+                                                ->whereNotNull(
+                                                    'actual_return_date'
+                                                )
+                                                ->orWhereDate(
+                                                    'expected_return_date',
+                                                    '<',
+                                                    now()->toDateString()
+                                                );
+                                        }
+                                    );
+                            }
+                        );
+                }
+            )
+                ->count();
+
+
         return view(
             'admin.leave.index',
             compact(
                 'leaves',
                 'tab',
                 'search',
+                'pendingCount',
                 'currentCount',
                 'upcomingCount',
-                'historyCount',
-                'returningSoonCount'
+                'returningSoonCount',
+                'historyCount'
             )
         );
     }
 
 
-
     /*
     |--------------------------------------------------------------------------
-    | Create Leave
+    | Create Admin Leave
     |--------------------------------------------------------------------------
     */
+
     public function create(Request $request)
     {
         $search =
@@ -218,12 +271,6 @@ class LeaveController extends Controller
             collect();
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Student Search
-        |--------------------------------------------------------------------------
-        */
-
         if ($search !== '') {
 
             $students =
@@ -232,9 +279,7 @@ class LeaveController extends Controller
                     true
                 )
                     ->where(
-                        function ($query) use (
-                            $search
-                        ) {
+                        function ($query) use ($search) {
 
                             $query
                                 ->where(
@@ -276,12 +321,6 @@ class LeaveController extends Controller
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Selected Student
-        |--------------------------------------------------------------------------
-        */
-
         $selectedStudent =
             null;
 
@@ -312,7 +351,6 @@ class LeaveController extends Controller
                         },
 
                     'enrolments.sectionOffering.section',
-
                     'enrolments.sectionOffering.day',
                 ])
                     ->where(
@@ -336,17 +374,16 @@ class LeaveController extends Controller
     }
 
 
-
     /*
     |--------------------------------------------------------------------------
-    | Store Leave
+    | Store Admin Leave
     |--------------------------------------------------------------------------
     */
+
     public function store(Request $request)
     {
         $validated =
             $request->validate([
-
                 'student_id' => [
                     'required',
                     'exists:students,id',
@@ -388,97 +425,71 @@ class LeaveController extends Controller
             ]);
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Prevent Overlapping Leave
-        |--------------------------------------------------------------------------
-        */
-
-        $overlappingLeave =
+        $overlap =
             StudentLeave::where(
                 'student_id',
-                $validated[
-                    'student_id'
-                ]
+                $validated['student_id']
             )
+                ->where(
+                    'status',
+                    'approved'
+                )
                 ->whereNull(
                     'actual_return_date'
                 )
-                ->where(
-                    function ($query) use (
-                        $validated
-                    ) {
-
-                        $query
-                            ->whereBetween(
-                                'start_date',
-                                [
-                                    $validated[
-                                        'start_date'
-                                    ],
-
-                                    $validated[
-                                        'expected_return_date'
-                                    ],
-                                ]
-                            )
-                            ->orWhereBetween(
-                                'expected_return_date',
-                                [
-                                    $validated[
-                                        'start_date'
-                                    ],
-
-                                    $validated[
-                                        'expected_return_date'
-                                    ],
-                                ]
-                            )
-                            ->orWhere(
-                                function ($query) use (
-                                    $validated
-                                ) {
-
-                                    $query
-                                        ->whereDate(
-                                            'start_date',
-                                            '<=',
-                                            $validated[
-                                                'start_date'
-                                            ]
-                                        )
-                                        ->whereDate(
-                                            'expected_return_date',
-                                            '>=',
-                                            $validated[
-                                                'expected_return_date'
-                                            ]
-                                        );
-                                }
-                            );
-                    }
+                ->whereDate(
+                    'start_date',
+                    '<=',
+                    $validated[
+                        'expected_return_date'
+                    ]
+                )
+                ->whereDate(
+                    'expected_return_date',
+                    '>=',
+                    $validated[
+                        'start_date'
+                    ]
                 )
                 ->exists();
 
 
-        if ($overlappingLeave) {
+        if ($overlap) {
 
             return back()
                 ->withInput()
                 ->withErrors([
                     'start_date' =>
-                        'This student already has leave during this period.',
+                        'This student already has approved leave during this period.',
                 ]);
         }
 
 
         $leave =
             StudentLeave::create([
-
                 'student_id' =>
                     $validated[
                         'student_id'
                     ],
+
+                /*
+                 * Staff-created leave is
+                 * approved immediately.
+                 */
+                'status' =>
+                    'approved',
+
+                'requested_by_guardian_id' =>
+                    null,
+
+                'reviewed_by_user_id' =>
+                    null,
+
+                'reviewed_at' =>
+                    null,
+
+                'review_note' =>
+                    null,
 
                 'start_date' =>
                     $validated[
@@ -504,14 +515,12 @@ class LeaveController extends Controller
                 'reason' =>
                     $validated[
                         'reason'
-                    ]
-                    ?? null,
+                    ] ?? null,
 
                 'notes' =>
                     $validated[
                         'notes'
-                    ]
-                    ?? null,
+                    ] ?? null,
 
                 'created_by_user_id' =>
                     auth()->id(),
@@ -530,18 +539,17 @@ class LeaveController extends Controller
     }
 
 
-
     /*
     |--------------------------------------------------------------------------
     | Leave Details
     |--------------------------------------------------------------------------
     */
+
     public function show(
         StudentLeave $leave
     ) {
         $leave->load([
             'student.studentStatus',
-
             'student.guardians',
 
             'student.enrolments' =>
@@ -559,10 +567,11 @@ class LeaveController extends Controller
                 },
 
             'student.enrolments.sectionOffering.section',
-
             'student.enrolments.sectionOffering.day',
 
             'createdBy',
+            'requestedByGuardian',
+            'reviewedBy',
         ]);
 
 
@@ -575,20 +584,246 @@ class LeaveController extends Controller
     }
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Approve Parent Request
+    |--------------------------------------------------------------------------
+    */
+
+    public function approve(
+        Request $request,
+        StudentLeave $leave
+    ) {
+        if (
+            $leave->status
+            !==
+            'pending'
+        ) {
+
+            return redirect()
+                ->route(
+                    'admin.leave.show',
+                    $leave
+                )
+                ->with(
+                    'error',
+                    'Only pending leave requests can be approved.'
+                );
+        }
+
+
+        $validated =
+            $request->validate([
+                'review_note' => [
+                    'nullable',
+                    'string',
+                    'max:2000',
+                ],
+            ]);
+
+
+        /*
+         * Always recheck overlap
+         * at the moment of approval.
+         */
+        $overlap =
+            StudentLeave::where(
+                'student_id',
+                $leave->student_id
+            )
+                ->where(
+                    'id',
+                    '!=',
+                    $leave->id
+                )
+                ->where(
+                    'status',
+                    'approved'
+                )
+                ->whereNull(
+                    'actual_return_date'
+                )
+                ->whereDate(
+                    'start_date',
+                    '<=',
+                    $leave
+                        ->expected_return_date
+                        ->toDateString()
+                )
+                ->whereDate(
+                    'expected_return_date',
+                    '>=',
+                    $leave
+                        ->start_date
+                        ->toDateString()
+                )
+                ->exists();
+
+
+        if ($overlap) {
+
+            return redirect()
+                ->route(
+                    'admin.leave.show',
+                    $leave
+                )
+                ->with(
+                    'error',
+                    'This request overlaps with another approved leave.'
+                );
+        }
+
+
+        $leave->update([
+            'status' =>
+                'approved',
+
+            'reviewed_by_user_id' =>
+                auth()->id(),
+
+            'reviewed_at' =>
+                now(),
+
+            'review_note' =>
+                $validated[
+                    'review_note'
+                ] ?? null,
+        ]);
+
+
+        return redirect()
+            ->route(
+                'admin.leave.show',
+                $leave
+            )
+            ->with(
+                'success',
+                'Parent leave request approved successfully.'
+            );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reject Parent Request
+    |--------------------------------------------------------------------------
+    */
+
+    public function reject(
+        Request $request,
+        StudentLeave $leave
+    ) {
+        if (
+            $leave->status
+            !==
+            'pending'
+        ) {
+
+            return redirect()
+                ->route(
+                    'admin.leave.show',
+                    $leave
+                )
+                ->with(
+                    'error',
+                    'Only pending leave requests can be rejected.'
+                );
+        }
+
+
+        $validated =
+            $request->validate(
+                [
+                    'review_note' => [
+                        'required',
+                        'string',
+                        'max:2000',
+                    ],
+                ],
+                [
+                    'review_note.required' =>
+                        'Please enter a reason or review note before rejecting the request.',
+                ]
+            );
+
+
+        $leave->update([
+            'status' =>
+                'rejected',
+
+            'reviewed_by_user_id' =>
+                auth()->id(),
+
+            'reviewed_at' =>
+                now(),
+
+            'review_note' =>
+                $validated[
+                    'review_note'
+                ],
+        ]);
+
+
+        return redirect()
+            ->route(
+                'admin.leave.show',
+                $leave
+            )
+            ->with(
+                'success',
+                'Parent leave request rejected.'
+            );
+    }
+
 
     /*
     |--------------------------------------------------------------------------
     | Edit Leave
     |--------------------------------------------------------------------------
+    |
+    | Admin may edit:
+    |
+    | - pending request
+    | - approved current/upcoming leave
+    |
+    | Admin may NOT edit:
+    |
+    | - rejected
+    | - cancelled
+    | - completed
+    |
     */
+
     public function edit(
         StudentLeave $leave
     ) {
-        /*
-         * Completed leave should not
-         * normally be edited.
-         */
-        if ($leave->actual_return_date) {
+        if (
+            !in_array(
+                $leave->status,
+                [
+                    'pending',
+                    'approved',
+                ]
+            )
+        ) {
+
+            return redirect()
+                ->route(
+                    'admin.leave.show',
+                    $leave
+                )
+                ->with(
+                    'error',
+                    'Rejected or cancelled leave requests cannot be edited.'
+                );
+        }
+
+
+        if (
+            $leave->status === 'approved'
+            &&
+            $leave->actual_return_date
+        ) {
 
             return redirect()
                 ->route(
@@ -620,7 +855,6 @@ class LeaveController extends Controller
                 },
 
             'student.enrolments.sectionOffering.section',
-
             'student.enrolments.sectionOffering.day',
         ]);
 
@@ -634,17 +868,43 @@ class LeaveController extends Controller
     }
 
 
-
     /*
     |--------------------------------------------------------------------------
-    | Update / Extend Leave
+    | Update Leave
     |--------------------------------------------------------------------------
     */
+
     public function update(
         Request $request,
         StudentLeave $leave
     ) {
-        if ($leave->actual_return_date) {
+        if (
+            !in_array(
+                $leave->status,
+                [
+                    'pending',
+                    'approved',
+                ]
+            )
+        ) {
+
+            return redirect()
+                ->route(
+                    'admin.leave.show',
+                    $leave
+                )
+                ->with(
+                    'error',
+                    'This leave record cannot be updated.'
+                );
+        }
+
+
+        if (
+            $leave->status === 'approved'
+            &&
+            $leave->actual_return_date
+        ) {
 
             return redirect()
                 ->route(
@@ -660,7 +920,6 @@ class LeaveController extends Controller
 
         $validated =
             $request->validate([
-
                 'start_date' => [
                     'required',
                     'date',
@@ -694,16 +953,24 @@ class LeaveController extends Controller
                     'string',
                     'max:2000',
                 ],
+
+                'review_note' => [
+                    'nullable',
+                    'string',
+                    'max:2000',
+                ],
             ]);
 
 
         /*
-        |--------------------------------------------------------------------------
-        | Prevent overlap with another leave
-        |--------------------------------------------------------------------------
-        */
-
-        $overlappingLeave =
+         * Only approved leave records
+         * should block another leave.
+         *
+         * If current record is pending,
+         * it can overlap another pending
+         * request but not approved leave.
+         */
+        $overlap =
             StudentLeave::where(
                 'student_id',
                 $leave->student_id
@@ -713,79 +980,42 @@ class LeaveController extends Controller
                     '!=',
                     $leave->id
                 )
+                ->where(
+                    'status',
+                    'approved'
+                )
                 ->whereNull(
                     'actual_return_date'
                 )
-                ->where(
-                    function ($query) use (
-                        $validated
-                    ) {
-
-                        $query
-                            ->whereBetween(
-                                'start_date',
-                                [
-                                    $validated[
-                                        'start_date'
-                                    ],
-
-                                    $validated[
-                                        'expected_return_date'
-                                    ],
-                                ]
-                            )
-                            ->orWhereBetween(
-                                'expected_return_date',
-                                [
-                                    $validated[
-                                        'start_date'
-                                    ],
-
-                                    $validated[
-                                        'expected_return_date'
-                                    ],
-                                ]
-                            )
-                            ->orWhere(
-                                function ($query) use (
-                                    $validated
-                                ) {
-
-                                    $query
-                                        ->whereDate(
-                                            'start_date',
-                                            '<=',
-                                            $validated[
-                                                'start_date'
-                                            ]
-                                        )
-                                        ->whereDate(
-                                            'expected_return_date',
-                                            '>=',
-                                            $validated[
-                                                'expected_return_date'
-                                            ]
-                                        );
-                                }
-                            );
-                    }
+                ->whereDate(
+                    'start_date',
+                    '<=',
+                    $validated[
+                        'expected_return_date'
+                    ]
+                )
+                ->whereDate(
+                    'expected_return_date',
+                    '>=',
+                    $validated[
+                        'start_date'
+                    ]
                 )
                 ->exists();
 
 
-        if ($overlappingLeave) {
+        if ($overlap) {
 
             return back()
                 ->withInput()
                 ->withErrors([
                     'start_date' =>
-                        'This leave overlaps another leave record for this student.',
+                        'This leave period overlaps another approved leave for this student.',
                 ]);
         }
 
 
         $leave->update([
-
             'start_date' =>
                 $validated[
                     'start_date'
@@ -804,14 +1034,19 @@ class LeaveController extends Controller
             'reason' =>
                 $validated[
                     'reason'
-                ]
-                ?? null,
+                ] ?? null,
 
             'notes' =>
                 $validated[
                     'notes'
+                ] ?? null,
+
+            'review_note' =>
+                $validated[
+                    'review_note'
                 ]
-                ?? null,
+                ??
+                $leave->review_note,
         ]);
 
 
@@ -822,24 +1057,103 @@ class LeaveController extends Controller
             )
             ->with(
                 'success',
-                'Student leave updated successfully.'
+                $leave->status === 'pending'
+                    ? 'Leave request updated successfully.'
+                    : 'Student leave updated successfully.'
             );
     }
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Delete Leave / Request
+    |--------------------------------------------------------------------------
+    |
+    | For audit/history protection:
+    |
+    | Allowed:
+    | - pending
+    | - rejected
+    | - cancelled
+    |
+    | Not allowed:
+    | - approved
+    | - completed approved leave
+    |
+    */
+
+    public function destroy(
+        StudentLeave $leave
+    ) {
+        if (
+            !in_array(
+                $leave->status,
+                [
+                    'pending',
+                    'rejected',
+                    'cancelled',
+                ]
+            )
+        ) {
+
+            return redirect()
+                ->route(
+                    'admin.leave.show',
+                    $leave
+                )
+                ->with(
+                    'error',
+                    'Approved leave records cannot be deleted because they are part of the student leave history.'
+                );
+        }
+
+
+        $leave->delete();
+
+
+        return redirect()
+            ->route(
+                'admin.leave.index',
+                [
+                    'tab' =>
+                        'pending',
+                ]
+            )
+            ->with(
+                'success',
+                'Leave request deleted successfully.'
+            );
+    }
+
 
     /*
     |--------------------------------------------------------------------------
-    | Return Student / Early Return
+    | Return Student
     |--------------------------------------------------------------------------
     */
+
     public function returnStudent(
         Request $request,
         StudentLeave $leave
     ) {
-        /*
-         * Return already recorded.
-         */
+        if (
+            $leave->status
+            !==
+            'approved'
+        ) {
+
+            return redirect()
+                ->route(
+                    'admin.leave.show',
+                    $leave
+                )
+                ->with(
+                    'error',
+                    'Only approved leave can record a return.'
+                );
+        }
+
+
         if ($leave->actual_return_date) {
 
             return redirect()
@@ -854,10 +1168,6 @@ class LeaveController extends Controller
         }
 
 
-        /*
-         * Do not return before
-         * the leave has started.
-         */
         if (
             now()
                 ->startOfDay()
@@ -883,12 +1193,10 @@ class LeaveController extends Controller
 
         $validated =
             $request->validate([
-
                 'actual_return_date' => [
                     'required',
                     'date',
                 ],
-
             ]);
 
 
@@ -901,10 +1209,6 @@ class LeaveController extends Controller
                 ->startOfDay();
 
 
-        /*
-         * Return date cannot be
-         * before leave start date.
-         */
         if (
             $actualReturnDate->lt(
                 $leave
@@ -917,22 +1221,12 @@ class LeaveController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-
                     'actual_return_date' =>
                         'Return date cannot be before the leave start date.',
-
                 ]);
         }
 
 
-        /*
-         * We do not allow a future
-         * actual return date.
-         *
-         * If the return is planned for
-         * the future, expected_return_date
-         * should be edited instead.
-         */
         if (
             $actualReturnDate->gt(
                 now()->startOfDay()
@@ -942,19 +1236,11 @@ class LeaveController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-
                     'actual_return_date' =>
                         'Actual return date cannot be in the future.',
-
                 ]);
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Determine Early Return
-        |--------------------------------------------------------------------------
-        */
 
         $returnedEarly =
             $actualReturnDate->lt(
@@ -965,14 +1251,7 @@ class LeaveController extends Controller
             );
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Save Return
-        |--------------------------------------------------------------------------
-        */
-
         $leave->update([
-
             'actual_return_date' =>
                 $actualReturnDate
                     ->toDateString(),
@@ -991,13 +1270,10 @@ class LeaveController extends Controller
                 'success',
 
                 $returnedEarly
-
                     ? 'Student early return recorded successfully.'
-
                     : 'Student return recorded successfully.'
             );
     }
-
 
 
     /*
@@ -1005,6 +1281,7 @@ class LeaveController extends Controller
     | Leave History
     |--------------------------------------------------------------------------
     */
+
     public function history(
         Request $request
     ) {
@@ -1036,32 +1313,59 @@ class LeaveController extends Controller
                     },
 
                 'student.enrolments.sectionOffering.section',
-
                 'student.enrolments.sectionOffering.day',
 
                 'createdBy',
+                'requestedByGuardian',
+                'reviewedBy',
             ])
-                ->completed();
+                ->where(
+                    function ($query) {
 
+                        $query
+                            ->whereIn(
+                                'status',
+                                [
+                                    'rejected',
+                                    'cancelled',
+                                ]
+                            )
+                            ->orWhere(
+                                function ($query) {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Search
-        |--------------------------------------------------------------------------
-        */
+                                    $query
+                                        ->where(
+                                            'status',
+                                            'approved'
+                                        )
+                                        ->where(
+                                            function ($query) {
+
+                                                $query
+                                                    ->whereNotNull(
+                                                        'actual_return_date'
+                                                    )
+                                                    ->orWhereDate(
+                                                        'expected_return_date',
+                                                        '<',
+                                                        now()->toDateString()
+                                                    );
+                                            }
+                                        );
+                                }
+                            );
+                    }
+                );
+
 
         if ($search !== '') {
 
             $query->whereHas(
                 'student',
-                function ($studentQuery) use (
-                    $search
-                ) {
+                function ($studentQuery) use ($search) {
 
                     $studentQuery->where(
-                        function ($query) use (
-                            $search
-                        ) {
+                        function ($query) use ($search) {
 
                             $query
                                 ->where(
@@ -1095,7 +1399,7 @@ class LeaveController extends Controller
         $leaves =
             $query
                 ->orderByDesc(
-                    'start_date'
+                    'created_at'
                 )
                 ->paginate(20)
                 ->withQueryString();

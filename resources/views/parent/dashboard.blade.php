@@ -7,6 +7,156 @@
 
 @section('content')
 
+@php
+
+    /*
+    |--------------------------------------------------------------------------
+    | Safe Defaults
+    |--------------------------------------------------------------------------
+    |
+    | These prevent the page from crashing if a variable
+    | is temporarily missing while routes/cache are changing.
+    |
+    */
+
+    $latestWishlist =
+        $latestWishlist
+        ?? null;
+
+
+    $latestLeave =
+        $latestLeave
+        ?? null;
+
+
+    $currentLeave =
+        $currentLeave
+        ?? null;
+
+
+    $upcomingLeave =
+        $upcomingLeave
+        ?? null;
+
+
+    $pendingLeaveCount =
+        $pendingLeaveCount
+        ?? 0;
+
+
+    $pendingWishlistCount =
+        $pendingWishlistCount
+        ?? 0;
+
+
+    $approvedWishlistCount =
+        $approvedWishlistCount
+        ?? 0;
+
+
+    $rejectedWishlistCount =
+        $rejectedWishlistCount
+        ?? 0;
+
+
+    $cancelledWishlistCount =
+        $cancelledWishlistCount
+        ?? 0;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Wishlist Status Labels
+    |--------------------------------------------------------------------------
+    */
+
+    $wishlistStatusLabels = [
+
+        'pending' =>
+            'Pending',
+
+        'approved' =>
+            'Approved',
+
+        'rejected' =>
+            'Rejected',
+
+        'cancelled' =>
+            'Cancelled',
+
+    ];
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Wishlist Badge Classes
+    |--------------------------------------------------------------------------
+    */
+
+    $wishlistStatusClasses = [
+
+        'pending' =>
+            'bg-amber-100 text-amber-700',
+
+        'approved' =>
+            'bg-green-100 text-green-700',
+
+        'rejected' =>
+            'bg-red-100 text-red-700',
+
+        'cancelled' =>
+            'bg-slate-200 text-slate-600',
+
+    ];
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Wishlist Heading Classes
+    |--------------------------------------------------------------------------
+    */
+
+    $wishlistHeadingClasses = [
+
+        'pending' =>
+            'text-amber-600',
+
+        'approved' =>
+            'text-green-700',
+
+        'rejected' =>
+            'text-red-700',
+
+        'cancelled' =>
+            'text-slate-600',
+
+    ];
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Latest Wishlist Data
+    |--------------------------------------------------------------------------
+    */
+
+    $latestWishlistStatus =
+        $latestWishlist
+            ?->wishlist_status;
+
+
+    $latestRequestedOffering =
+        $latestWishlist
+            ?->sectionOffering;
+
+
+    $latestOriginalOffering =
+        $latestWishlist
+            ?->wishlistForEnrolment
+            ?->sectionOffering;
+
+@endphp
+
+
 <div
     class="min-h-full
            rounded-[28px]
@@ -18,7 +168,7 @@
 
 
     {{-- =========================================================
-        PAGE HEADING
+        PAGE HEADER
     ========================================================== --}}
 
     <div
@@ -49,6 +199,7 @@
                        text-slate-500"
             >
                 Viewing
+
                 <span
                     class="font-semibold
                            text-slate-700"
@@ -69,12 +220,14 @@
                    border
                    border-violet-200
                    bg-white
-                   px-5 py-2.5
+                   px-5
+                   py-2.5
                    text-sm
                    font-semibold
                    text-violet-700
                    shadow-sm"
         >
+
             {{ $enrolments->count() }}
 
             {{
@@ -82,6 +235,7 @@
                     ? 'Active Class'
                     : 'Active Classes'
             }}
+
         </div>
 
     </div>
@@ -89,7 +243,7 @@
 
 
     {{-- =========================================================
-        SUMMARY
+        TOP SUMMARY CARDS
     ========================================================== --}}
 
     <div
@@ -99,7 +253,11 @@
                md:grid-cols-3"
     >
 
-        {{-- Classes --}}
+
+        {{-- =====================================================
+            ACTIVE CLASSES
+        ====================================================== --}}
+
         <div
             class="rounded-[24px]
                    border
@@ -113,7 +271,7 @@
                        font-semibold
                        text-slate-600"
             >
-                Active classes
+                Active Classes
             </p>
 
 
@@ -139,13 +297,23 @@
 
 
 
-        {{-- Wishlist --}}
-        <div
-            class="rounded-[24px]
+        {{-- =====================================================
+            LATEST WISHLIST
+        ====================================================== --}}
+
+        <a
+            href="{{ route(
+                'parent.wishlist.index'
+            ) }}"
+            class="block
+                   rounded-[24px]
                    border
                    border-purple-100
                    bg-purple-50
-                   p-6"
+                   p-6
+                   transition
+                   hover:-translate-y-0.5
+                   hover:shadow-md"
         >
 
             <p
@@ -157,35 +325,279 @@
             </p>
 
 
-            <p
-                class="mt-4
-                       text-2xl
-                       font-bold
-                       text-purple-700"
-            >
-                Manage
-            </p>
+            @if ($latestWishlist)
+
+                <div
+                    class="mt-4
+                           flex
+                           flex-wrap
+                           items-center
+                           gap-3"
+                >
+
+                    <p
+                        class="text-2xl
+                               font-bold
+                               {{
+                                   $wishlistHeadingClasses[
+                                       $latestWishlistStatus
+                                   ]
+                                   ??
+                                   'text-purple-700'
+                               }}"
+                    >
+                        Latest Request
+                    </p>
 
 
-            <p
-                class="mt-2
-                       text-sm
-                       text-slate-500"
-            >
-                Preferred class day and time
-            </p>
+                    <span
+                        class="inline-flex
+                               rounded-full
+                               px-3 py-1
+                               text-xs
+                               font-bold
+                               {{
+                                   $wishlistStatusClasses[
+                                       $latestWishlistStatus
+                                   ]
+                                   ??
+                                   'bg-slate-100 text-slate-600'
+                               }}"
+                    >
+                        {{
+                            $wishlistStatusLabels[
+                                $latestWishlistStatus
+                            ]
+                            ??
+                            ucfirst(
+                                $latestWishlistStatus
+                                ?? 'Unknown'
+                            )
+                        }}
+                    </span>
 
-        </div>
+                </div>
 
 
 
-        {{-- Leave --}}
-        <div
-            class="rounded-[24px]
+                {{-- Requested Class --}}
+                @if ($latestRequestedOffering)
+
+                    <p
+                        class="mt-3
+                               font-semibold
+                               text-slate-700"
+                    >
+                        {{
+                            $latestRequestedOffering
+                                ->section
+                                ?->section_name
+                            ??
+                            'Class'
+                        }}
+                    </p>
+
+
+                    <p
+                        class="mt-1
+                               text-sm
+                               text-slate-500"
+                    >
+                        {{
+                            $latestRequestedOffering
+                                ->day
+                                ?->day_name
+                            ??
+                            '—'
+                        }}
+
+
+                        @if (
+                            $latestRequestedOffering
+                                ->start_time
+                            &&
+                            $latestRequestedOffering
+                                ->end_time
+                        )
+
+                            <span
+                                class="mx-1
+                                       text-slate-300"
+                            >
+                                ·
+                            </span>
+
+
+                            {{
+                                \Carbon\Carbon::parse(
+                                    $latestRequestedOffering
+                                        ->start_time
+                                )->format(
+                                    'g:i A'
+                                )
+                            }}
+
+                            –
+
+                            {{
+                                \Carbon\Carbon::parse(
+                                    $latestRequestedOffering
+                                        ->end_time
+                                )->format(
+                                    'g:i A'
+                                )
+                            }}
+
+                        @endif
+                    </p>
+
+                @endif
+
+
+
+                {{-- Rejected Note --}}
+                @if (
+                    $latestWishlistStatus
+                    ===
+                    'rejected'
+                )
+
+                    <p
+                        class="mt-3
+                               text-sm
+                               font-semibold
+                               text-red-700"
+                    >
+                        Request rejected by the centre.
+                    </p>
+
+
+                    @if (
+                        $latestWishlist
+                            ->wishlist_review_note
+                    )
+
+                        <p
+                            class="mt-1
+                                   text-xs
+                                   leading-5
+                                   text-red-600"
+                        >
+                            {{
+                                \Illuminate\Support\Str::limit(
+                                    $latestWishlist
+                                        ->wishlist_review_note,
+                                    100
+                                )
+                            }}
+                        </p>
+
+                    @endif
+
+                @endif
+
+
+
+                {{-- Approved --}}
+                @if (
+                    $latestWishlistStatus
+                    ===
+                    'approved'
+                )
+
+                    <p
+                        class="mt-3
+                               text-sm
+                               font-semibold
+                               text-green-700"
+                    >
+                        This request has been approved.
+                    </p>
+
+                @endif
+
+
+
+                {{-- Pending --}}
+                @if (
+                    $latestWishlistStatus
+                    ===
+                    'pending'
+                )
+
+                    <p
+                        class="mt-3
+                               text-sm
+                               text-amber-700"
+                    >
+                        Waiting for centre approval.
+                    </p>
+
+                @endif
+
+
+
+                {{-- Cancelled --}}
+                @if (
+                    $latestWishlistStatus
+                    ===
+                    'cancelled'
+                )
+
+                    <p
+                        class="mt-3
+                               text-sm
+                               text-slate-600"
+                    >
+                        This request was cancelled.
+                    </p>
+
+                @endif
+
+
+            @else
+
+                <p
+                    class="mt-4
+                           text-2xl
+                           font-bold
+                           text-purple-700"
+                >
+                    No Request
+                </p>
+
+
+                <p
+                    class="mt-2
+                           text-sm
+                           text-slate-500"
+                >
+                    No wishlist request has been submitted.
+                </p>
+
+            @endif
+
+        </a>
+
+
+
+        {{-- =====================================================
+            LEAVE SUMMARY
+        ====================================================== --}}
+
+        <a
+            href="{{ route(
+                'parent.leave.index'
+            ) }}"
+            class="block
+                   rounded-[24px]
                    border
                    border-cyan-100
                    bg-cyan-100/60
-                   p-6"
+                   p-6
+                   transition
+                   hover:-translate-y-0.5
+                   hover:shadow-md"
         >
 
             <p
@@ -197,32 +609,200 @@
             </p>
 
 
-            <p
-                class="mt-4
-                       text-2xl
-                       font-bold
-                       text-cyan-700"
-            >
-                Manage
-            </p>
+
+            @if ($currentLeave)
+
+                <p
+                    class="mt-4
+                           text-2xl
+                           font-bold
+                           text-blue-700"
+                >
+                    Current Leave
+                </p>
 
 
-            <p
-                class="mt-2
-                       text-sm
-                       text-slate-500"
-            >
-                Add or update student leave
-            </p>
+                <p
+                    class="mt-2
+                           text-sm
+                           text-slate-500"
+                >
+                    Expected return
 
-        </div>
+                    <span
+                        class="font-semibold
+                               text-slate-700"
+                    >
+                        {{
+                            $currentLeave
+                                ->expected_return_date
+                                ->format(
+                                    'd M Y'
+                                )
+                        }}
+                    </span>
+                </p>
+
+
+            @elseif ($pendingLeaveCount > 0)
+
+                <div
+                    class="mt-4
+                           flex
+                           items-center
+                           gap-3"
+                >
+
+                    <p
+                        class="text-3xl
+                               font-bold
+                               text-amber-600"
+                    >
+                        {{ $pendingLeaveCount }}
+                    </p>
+
+
+                    <span
+                        class="rounded-full
+                               bg-amber-100
+                               px-3 py-1
+                               text-xs
+                               font-bold
+                               text-amber-700"
+                    >
+                        Pending
+                    </span>
+
+                </div>
+
+
+                <p
+                    class="mt-2
+                           text-sm
+                           text-slate-500"
+                >
+                    Leave request waiting for approval
+                </p>
+
+
+            @elseif ($upcomingLeave)
+
+                <p
+                    class="mt-4
+                           text-2xl
+                           font-bold
+                           text-purple-700"
+                >
+                    Upcoming Leave
+                </p>
+
+
+                <p
+                    class="mt-2
+                           text-sm
+                           text-slate-500"
+                >
+                    Starts
+
+                    <span
+                        class="font-semibold
+                               text-slate-700"
+                    >
+                        {{
+                            $upcomingLeave
+                                ->start_date
+                                ->format(
+                                    'd M Y'
+                                )
+                        }}
+                    </span>
+                </p>
+
+
+            @elseif (
+                $latestLeave
+                &&
+                $latestLeave->status
+                    ===
+                    'rejected'
+            )
+
+                <p
+                    class="mt-4
+                           text-2xl
+                           font-bold
+                           text-red-700"
+                >
+                    Latest Request Rejected
+                </p>
+
+
+                <p
+                    class="mt-2
+                           text-sm
+                           text-slate-500"
+                >
+                    Open Leave Management for details.
+                </p>
+
+
+            @elseif (
+                $latestLeave
+                &&
+                $latestLeave->status
+                    ===
+                    'cancelled'
+            )
+
+                <p
+                    class="mt-4
+                           text-2xl
+                           font-bold
+                           text-slate-600"
+                >
+                    Latest Request Cancelled
+                </p>
+
+
+                <p
+                    class="mt-2
+                           text-sm
+                           text-slate-500"
+                >
+                    No active leave request.
+                </p>
+
+
+            @else
+
+                <p
+                    class="mt-4
+                           text-2xl
+                           font-bold
+                           text-cyan-700"
+                >
+                    No Active Leave
+                </p>
+
+
+                <p
+                    class="mt-2
+                           text-sm
+                           text-slate-500"
+                >
+                    Submit a leave request if needed.
+                </p>
+
+            @endif
+
+        </a>
 
     </div>
 
 
 
     {{-- =========================================================
-        MAIN AREA
+        MAIN CONTENT
     ========================================================== --}}
 
     <div
@@ -234,7 +814,7 @@
 
 
         {{-- =====================================================
-            CLASS SLIDER
+            MY CLASSES
         ====================================================== --}}
 
         <section
@@ -365,7 +945,8 @@
                                                 $offering
                                                     ?->section
                                                     ?->section_name
-                                                ?? '—'
+                                                ??
+                                                '—'
                                             }}
                                         </h3>
 
@@ -394,6 +975,8 @@
                                            md:grid-cols-3"
                                 >
 
+
+                                    {{-- Day --}}
                                     <div
                                         class="rounded-xl
                                                bg-white
@@ -417,7 +1000,8 @@
                                                 $offering
                                                     ?->day
                                                     ?->day_name
-                                                ?? '—'
+                                                ??
+                                                '—'
                                             }}
                                         </p>
 
@@ -425,6 +1009,7 @@
 
 
 
+                                    {{-- Class Time --}}
                                     <div
                                         class="rounded-xl
                                                bg-white
@@ -449,16 +1034,22 @@
 
                                                 {{
                                                     \Carbon\Carbon::parse(
-                                                        $offering->start_time
-                                                    )->format('g:i A')
+                                                        $offering
+                                                            ->start_time
+                                                    )->format(
+                                                        'g:i A'
+                                                    )
                                                 }}
 
                                                 –
 
                                                 {{
                                                     \Carbon\Carbon::parse(
-                                                        $offering->end_time
-                                                    )->format('g:i A')
+                                                        $offering
+                                                            ->end_time
+                                                    )->format(
+                                                        'g:i A'
+                                                    )
                                                 }}
 
                                             @else
@@ -473,6 +1064,7 @@
 
 
 
+                                    {{-- Duration --}}
                                     <div
                                         class="rounded-xl
                                                bg-white
@@ -494,7 +1086,9 @@
                                         >
                                             {{
                                                 $offering
-                                                    ? $offering->duration_minutes . ' min'
+                                                    ? $offering
+                                                        ->duration_minutes
+                                                        . ' min'
                                                     : '—'
                                             }}
                                         </p>
@@ -510,6 +1104,10 @@
                     @endforeach
 
 
+
+                    {{-- =================================================
+                        SLIDER CONTROLS
+                    ================================================== --}}
 
                     @if ($enrolments->count() > 1)
 
@@ -530,14 +1128,21 @@
                                        rounded-xl
                                        border
                                        border-violet-200
+                                       bg-white
                                        text-violet-700
+                                       transition
                                        hover:bg-violet-50"
                             >
                                 ←
                             </button>
 
 
-                            <div class="flex gap-2">
+
+                            <div
+                                class="flex
+                                       items-center
+                                       gap-2"
+                            >
 
                                 @foreach (
                                     $enrolments
@@ -549,17 +1154,18 @@
                                         class="class-dot
                                                h-2.5 w-2.5
                                                rounded-full
-                                            {{
-                                                $loop->first
-                                                    ? 'bg-violet-600'
-                                                    : 'bg-violet-200'
-                                            }}"
+                                               {{
+                                                   $loop->first
+                                                       ? 'bg-violet-600'
+                                                       : 'bg-violet-200'
+                                               }}"
                                         data-index="{{ $loop->index }}"
                                     ></button>
 
                                 @endforeach
 
                             </div>
+
 
 
                             <button
@@ -572,7 +1178,9 @@
                                        rounded-xl
                                        border
                                        border-violet-200
+                                       bg-white
                                        text-violet-700
+                                       transition
                                        hover:bg-violet-50"
                             >
                                 →
@@ -588,7 +1196,8 @@
             @else
 
                 <div
-                    class="px-6 py-14
+                    class="px-6
+                           py-16
                            text-center"
                 >
 
@@ -597,6 +1206,16 @@
                                text-slate-700"
                     >
                         No active classes
+                    </p>
+
+
+                    <p
+                        class="mt-1
+                               text-sm
+                               text-slate-500"
+                    >
+                        No confirmed class enrolment
+                        is currently available.
                     </p>
 
                 </div>
@@ -614,7 +1233,10 @@
         <div class="space-y-6">
 
 
-            {{-- Wishlist --}}
+            {{-- =================================================
+                WISHLIST DETAIL CARD
+            ================================================== --}}
+
             <section
                 class="rounded-[26px]
                        border
@@ -639,39 +1261,238 @@
                            font-bold
                            text-slate-900"
                 >
-                    Preferred class times
+                    Preferred Class Times
                 </h3>
 
 
-                <p
-                    class="mt-2
-                           text-sm
-                           text-slate-600"
-                >
-                    Add or update a preferred
-                    day and time for an enrolled class.
-                </p>
+
+                @if ($latestWishlist)
+
+                    <div
+                        class="mt-4
+                               flex
+                               flex-wrap
+                               items-center
+                               gap-2"
+                    >
+
+                        <span
+                            class="rounded-full
+                                   px-3 py-1
+                                   text-xs
+                                   font-bold
+                                   {{
+                                       $wishlistStatusClasses[
+                                           $latestWishlistStatus
+                                       ]
+                                       ??
+                                       'bg-slate-100 text-slate-600'
+                                   }}"
+                        >
+                            {{
+                                $wishlistStatusLabels[
+                                    $latestWishlistStatus
+                                ]
+                                ??
+                                ucfirst(
+                                    $latestWishlistStatus
+                                    ?? 'Unknown'
+                                )
+                            }}
+                        </span>
 
 
-                <button
-                    type="button"
+                        @if (
+                            $latestRequestedOffering
+                                ?->section
+                        )
+
+                            <span
+                                class="text-sm
+                                       font-semibold
+                                       text-slate-700"
+                            >
+                                {{
+                                    $latestRequestedOffering
+                                        ->section
+                                        ->section_name
+                                }}
+                            </span>
+
+                        @endif
+
+                    </div>
+
+
+
+                    {{-- Pending --}}
+                    @if (
+                        $latestWishlistStatus
+                        ===
+                        'pending'
+                    )
+
+                        <p
+                            class="mt-3
+                                   text-sm
+                                   leading-6
+                                   text-amber-700"
+                        >
+                            Waiting for centre approval.
+                        </p>
+
+                    @endif
+
+
+
+                    {{-- Approved --}}
+                    @if (
+                        $latestWishlistStatus
+                        ===
+                        'approved'
+                    )
+
+                        <p
+                            class="mt-3
+                                   text-sm
+                                   leading-6
+                                   text-green-700"
+                        >
+                            Your latest wishlist request
+                            has been approved.
+                        </p>
+
+                    @endif
+
+
+
+                    {{-- Rejected --}}
+                    @if (
+                        $latestWishlistStatus
+                        ===
+                        'rejected'
+                    )
+
+                        <p
+                            class="mt-3
+                                   text-sm
+                                   leading-6
+                                   font-semibold
+                                   text-red-700"
+                        >
+                            Your latest wishlist request
+                            was rejected.
+                        </p>
+
+
+                        @if (
+                            $latestWishlist
+                                ->wishlist_review_note
+                        )
+
+                            <div
+                                class="mt-3
+                                       rounded-xl
+                                       border
+                                       border-red-100
+                                       bg-white/80
+                                       p-3"
+                            >
+
+                                <p
+                                    class="text-xs
+                                           font-bold
+                                           uppercase
+                                           text-red-500"
+                                >
+                                    Centre Note
+                                </p>
+
+
+                                <p
+                                    class="mt-1
+                                           text-xs
+                                           leading-5
+                                           text-slate-600"
+                                >
+                                    {{
+                                        \Illuminate\Support\Str::limit(
+                                            $latestWishlist
+                                                ->wishlist_review_note,
+                                            120
+                                        )
+                                    }}
+                                </p>
+
+                            </div>
+
+                        @endif
+
+                    @endif
+
+
+
+                    {{-- Cancelled --}}
+                    @if (
+                        $latestWishlistStatus
+                        ===
+                        'cancelled'
+                    )
+
+                        <p
+                            class="mt-3
+                                   text-sm
+                                   leading-6
+                                   text-slate-600"
+                        >
+                            Your latest wishlist request
+                            was cancelled.
+                        </p>
+
+                    @endif
+
+
+                @else
+
+                    <p
+                        class="mt-3
+                               text-sm
+                               leading-6
+                               text-slate-600"
+                    >
+                        No wishlist request has been submitted.
+                    </p>
+
+                @endif
+
+
+
+                <a
+                    href="{{ route(
+                        'parent.wishlist.index'
+                    ) }}"
                     class="mt-5
+                           inline-flex
                            rounded-xl
                            bg-purple-600
                            px-5 py-2.5
                            text-sm
                            font-semibold
                            text-white
+                           transition
                            hover:bg-purple-700"
                 >
                     Open Wishlist
-                </button>
+                </a>
 
             </section>
 
 
 
-            {{-- Leave --}}
+            {{-- =================================================
+                LEAVE DETAIL CARD
+            ================================================== --}}
+
             <section
                 class="rounded-[26px]
                        border
@@ -696,33 +1517,179 @@
                            font-bold
                            text-slate-900"
                 >
-                    Student leave
+                    Student Leave
                 </h3>
 
 
-                <p
-                    class="mt-2
-                           text-sm
-                           text-slate-600"
-                >
-                    Submit leave, update the expected
-                    return date or return early.
-                </p>
+
+                @if ($currentLeave)
+
+                    <p
+                        class="mt-3
+                               text-sm
+                               leading-6
+                               text-slate-600"
+                    >
+                        Currently on approved leave until
+
+                        <span
+                            class="font-semibold
+                                   text-slate-800"
+                        >
+                            {{
+                                $currentLeave
+                                    ->expected_return_date
+                                    ->format(
+                                        'd M Y'
+                                    )
+                            }}
+                        </span>.
+                    </p>
 
 
-                <button
-                    type="button"
+                @elseif ($pendingLeaveCount > 0)
+
+                    <p
+                        class="mt-3
+                               text-sm
+                               leading-6
+                               text-slate-600"
+                    >
+                        You have
+
+                        <span
+                            class="font-bold
+                                   text-amber-700"
+                        >
+                            {{ $pendingLeaveCount }}
+                        </span>
+
+                        pending leave
+
+                        {{
+                            $pendingLeaveCount === 1
+                                ? 'request'
+                                : 'requests'
+                        }}.
+                    </p>
+
+
+                @elseif ($upcomingLeave)
+
+                    <p
+                        class="mt-3
+                               text-sm
+                               leading-6
+                               text-slate-600"
+                    >
+                        Next approved leave starts on
+
+                        <span
+                            class="font-semibold
+                                   text-slate-800"
+                        >
+                            {{
+                                $upcomingLeave
+                                    ->start_date
+                                    ->format(
+                                        'd M Y'
+                                    )
+                            }}
+                        </span>.
+                    </p>
+
+
+                @elseif (
+                    $latestLeave
+                    &&
+                    $latestLeave->status
+                        ===
+                        'rejected'
+                )
+
+                    <p
+                        class="mt-3
+                               text-sm
+                               font-semibold
+                               leading-6
+                               text-red-700"
+                    >
+                        Your latest leave request
+                        was rejected.
+                    </p>
+
+
+                    @if ($latestLeave->review_note)
+
+                        <p
+                            class="mt-2
+                                   text-xs
+                                   leading-5
+                                   text-slate-600"
+                        >
+                            {{
+                                \Illuminate\Support\Str::limit(
+                                    $latestLeave
+                                        ->review_note,
+                                    120
+                                )
+                            }}
+                        </p>
+
+                    @endif
+
+
+                @elseif (
+                    $latestLeave
+                    &&
+                    $latestLeave->status
+                        ===
+                        'cancelled'
+                )
+
+                    <p
+                        class="mt-3
+                               text-sm
+                               leading-6
+                               text-slate-600"
+                    >
+                        Your latest leave request
+                        was cancelled.
+                    </p>
+
+
+                @else
+
+                    <p
+                        class="mt-3
+                               text-sm
+                               leading-6
+                               text-slate-600"
+                    >
+                        No current or upcoming leave.
+                    </p>
+
+                @endif
+
+
+
+                <a
+                    href="{{ route(
+                        'parent.leave.index'
+                    ) }}"
                     class="mt-5
+                           inline-flex
                            rounded-xl
                            bg-cyan-600
                            px-5 py-2.5
                            text-sm
                            font-semibold
                            text-white
+                           transition
                            hover:bg-cyan-700"
                 >
                     Open Leave
-                </button>
+                </a>
 
             </section>
 
@@ -749,20 +1716,24 @@ document.addEventListener(
                 '.class-slide'
             );
 
+
         const dots =
             document.querySelectorAll(
                 '.class-dot'
             );
 
-        const prev =
+
+        const prevButton =
             document.getElementById(
                 'classPrev'
             );
 
-        const next =
+
+        const nextButton =
             document.getElementById(
                 'classNext'
             );
+
 
         const counter =
             document.getElementById(
@@ -770,54 +1741,117 @@ document.addEventListener(
             );
 
 
-        if (slides.length <= 1) {
+        /*
+         * No slider required
+         * for one or zero classes.
+         */
+        if (
+            slides.length
+            <=
+            1
+        ) {
+
             return;
         }
 
 
-        let currentIndex = 0;
+        let currentIndex =
+            0;
 
 
-        function showSlide(index) {
+        function showSlide(
+            index
+        ) {
 
+            /*
+             * Go from first
+             * to last.
+             */
             if (index < 0) {
-                index = slides.length - 1;
+
+                index =
+                    slides.length - 1;
             }
 
-            if (index >= slides.length) {
-                index = 0;
+
+            /*
+             * Go from last
+             * to first.
+             */
+            if (
+                index
+                >=
+                slides.length
+            ) {
+
+                index =
+                    0;
             }
 
-            currentIndex = index;
+
+            currentIndex =
+                index;
 
 
+            /*
+             * Show current slide.
+             */
             slides.forEach(
-                function (slide, slideIndex) {
+                function (
+                    slide,
+                    slideIndex
+                ) {
 
                     slide.classList.toggle(
                         'hidden',
-                        slideIndex !== currentIndex
+                        slideIndex
+                        !==
+                        currentIndex
                     );
                 }
             );
 
 
+            /*
+             * Update dots.
+             */
             dots.forEach(
-                function (dot, dotIndex) {
+                function (
+                    dot,
+                    dotIndex
+                ) {
 
-                    dot.classList.toggle(
-                        'bg-violet-600',
-                        dotIndex === currentIndex
-                    );
+                    if (
+                        dotIndex
+                        ===
+                        currentIndex
+                    ) {
 
-                    dot.classList.toggle(
-                        'bg-violet-200',
-                        dotIndex !== currentIndex
-                    );
+                        dot.classList.add(
+                            'bg-violet-600'
+                        );
+
+                        dot.classList.remove(
+                            'bg-violet-200'
+                        );
+
+                    } else {
+
+                        dot.classList.remove(
+                            'bg-violet-600'
+                        );
+
+                        dot.classList.add(
+                            'bg-violet-200'
+                        );
+                    }
                 }
             );
 
 
+            /*
+             * Update counter.
+             */
             if (counter) {
 
                 counter.textContent =
@@ -830,22 +1864,43 @@ document.addEventListener(
         }
 
 
-        prev?.addEventListener(
-            'click',
-            function () {
-                showSlide(currentIndex - 1);
-            }
-        );
+        /*
+         * Previous.
+         */
+        if (prevButton) {
+
+            prevButton.addEventListener(
+                'click',
+                function () {
+
+                    showSlide(
+                        currentIndex - 1
+                    );
+                }
+            );
+        }
 
 
-        next?.addEventListener(
-            'click',
-            function () {
-                showSlide(currentIndex + 1);
-            }
-        );
+        /*
+         * Next.
+         */
+        if (nextButton) {
+
+            nextButton.addEventListener(
+                'click',
+                function () {
+
+                    showSlide(
+                        currentIndex + 1
+                    );
+                }
+            );
+        }
 
 
+        /*
+         * Dot navigation.
+         */
         dots.forEach(
             function (dot) {
 

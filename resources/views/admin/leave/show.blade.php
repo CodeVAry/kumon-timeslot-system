@@ -59,7 +59,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Leave Status
+    | Status
     |--------------------------------------------------------------------------
     */
 
@@ -67,13 +67,51 @@
         now()->startOfDay();
 
 
-    if ($leave->actual_return_date) {
+    if (
+        $leave->status
+        ===
+        'pending'
+    ) {
+
+        $leaveStatus =
+            'Pending Approval';
+
+        $leaveStatusClass =
+            'bg-amber-100 text-amber-700';
+
+    }
+    elseif (
+        $leave->status
+        ===
+        'rejected'
+    ) {
+
+        $leaveStatus =
+            'Rejected';
+
+        $leaveStatusClass =
+            'bg-red-100 text-red-700';
+
+    }
+    elseif (
+        $leave->status
+        ===
+        'cancelled'
+    ) {
+
+        $leaveStatus =
+            'Cancelled';
+
+        $leaveStatusClass =
+            'bg-slate-200 text-slate-600';
+
+    }
+    elseif ($leave->actual_return_date) {
 
         $leaveStatus =
             $leave->returned_early
                 ? 'Returned Early'
                 : 'Completed';
-
 
         $leaveStatusClass =
             'bg-green-100 text-green-700';
@@ -90,7 +128,6 @@
         $leaveStatus =
             'Upcoming Leave';
 
-
         $leaveStatusClass =
             'bg-purple-100 text-purple-700';
 
@@ -100,7 +137,6 @@
         $leaveStatus =
             'Current Leave';
 
-
         $leaveStatusClass =
             'bg-blue-100 text-blue-700';
     }
@@ -108,11 +144,15 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Can Return
+    | Can Record Return
     |--------------------------------------------------------------------------
     */
 
     $canRecordReturn =
+        $leave->status
+            ===
+            'approved'
+        &&
         !$leave->actual_return_date
         &&
         $leave
@@ -124,7 +164,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Is Expected Return Still Future?
+    | Early Return
     |--------------------------------------------------------------------------
     */
 
@@ -136,6 +176,44 @@
                 ->expected_return_date
                 ->copy()
                 ->startOfDay()
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Can Edit
+    |--------------------------------------------------------------------------
+    */
+
+    $canEdit =
+        in_array(
+            $leave->status,
+            [
+                'pending',
+                'approved',
+            ]
+        )
+        &&
+        !$leave->actual_return_date;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Can Delete
+    |--------------------------------------------------------------------------
+    |
+    | Approved leave is preserved as history.
+    |
+    */
+
+    $canDelete =
+        in_array(
+            $leave->status,
+            [
+                'pending',
+                'rejected',
+                'cancelled',
+            ]
         );
 
 @endphp
@@ -173,7 +251,7 @@
 
 
     {{-- =========================================================
-        SUCCESS
+        SUCCESS MESSAGE
     ========================================================== --}}
 
     @if (session('success'))
@@ -196,7 +274,7 @@
 
 
     {{-- =========================================================
-        ERROR
+        ERROR MESSAGE
     ========================================================== --}}
 
     @if (session('error'))
@@ -323,6 +401,7 @@
 
                     <span>
                         Student ID:
+
                         {{
                             $student
                                 ?->external_id
@@ -378,6 +457,465 @@
 
 
     {{-- =========================================================
+        PENDING REQUEST REVIEW
+    ========================================================== --}}
+
+    @if ($leave->status === 'pending')
+
+        <section
+            class="rounded-2xl
+                   border
+                   border-amber-200
+                   bg-amber-50
+                   p-6
+                   shadow-sm"
+        >
+
+            <div
+                class="flex
+                       flex-col
+                       gap-4
+                       lg:flex-row
+                       lg:items-start
+                       lg:justify-between"
+            >
+
+                <div>
+
+                    <p
+                        class="text-xs
+                               font-bold
+                               uppercase
+                               tracking-wide
+                               text-amber-700"
+                    >
+                        Parent Leave Request
+                    </p>
+
+
+                    <h2
+                        class="mt-2
+                               text-xl
+                               font-bold
+                               text-slate-900"
+                    >
+                        Review Request
+                    </h2>
+
+
+                    <p
+                        class="mt-2
+                               text-sm
+                               text-slate-600"
+                    >
+                        Review the requested leave information,
+                        homework requirement and parent notes
+                        before approving or rejecting.
+                    </p>
+
+                </div>
+
+
+                <span
+                    class="inline-flex
+                           self-start
+                           rounded-full
+                           bg-amber-100
+                           px-3 py-1.5
+                           text-xs
+                           font-bold
+                           text-amber-700"
+                >
+                    Waiting for Review
+                </span>
+
+            </div>
+
+
+
+            {{-- Homework request warning --}}
+            @if (
+                $leave->homework_requirement
+                ===
+                'increase'
+            )
+
+                <div
+                    class="mt-5
+                           rounded-xl
+                           border
+                           border-violet-200
+                           bg-violet-50
+                           p-4"
+                >
+
+                    <p
+                        class="font-semibold
+                               text-violet-800"
+                    >
+                        Increased homework requested
+                    </p>
+
+
+                    <p
+                        class="mt-1
+                               text-sm
+                               text-violet-700"
+                    >
+                        The parent requested additional homework.
+                        Add instructions in the Admin Review Note
+                        if required.
+                    </p>
+
+                </div>
+
+            @elseif (
+                $leave->homework_requirement
+                ===
+                'decrease'
+            )
+
+                <div
+                    class="mt-5
+                           rounded-xl
+                           border
+                           border-orange-200
+                           bg-orange-50
+                           p-4"
+                >
+
+                    <p
+                        class="font-semibold
+                               text-orange-800"
+                    >
+                        Reduced homework requested
+                    </p>
+
+
+                    <p
+                        class="mt-1
+                               text-sm
+                               text-orange-700"
+                    >
+                        The parent requested less homework
+                        during this leave.
+                    </p>
+
+                </div>
+
+            @else
+
+                <div
+                    class="mt-5
+                           rounded-xl
+                           border
+                           border-blue-200
+                           bg-blue-50
+                           p-4"
+                >
+
+                    <p
+                        class="font-semibold
+                               text-blue-800"
+                    >
+                        Normal homework requested
+                    </p>
+
+
+                    <p
+                        class="mt-1
+                               text-sm
+                               text-blue-700"
+                    >
+                        Homework should remain the same as normal.
+                    </p>
+
+                </div>
+
+            @endif
+
+
+
+            {{-- Review Note --}}
+            <div class="mt-6">
+
+                <label
+                    for="review_note"
+                    class="mb-2
+                           block
+                           text-sm
+                           font-semibold
+                           text-slate-700"
+                >
+                    Admin Review Note
+                </label>
+
+
+                <textarea
+                    id="review_note"
+                    rows="4"
+                    maxlength="2000"
+                    placeholder="Add homework instructions, approval comments or rejection reason..."
+                    class="w-full
+                           rounded-xl
+                           border
+                           border-slate-300
+                           bg-white
+                           p-4
+                           text-sm
+                           text-slate-800
+                           outline-none
+                           transition
+                           focus:border-blue-500
+                           focus:ring-4
+                           focus:ring-blue-100"
+                >{{ old('review_note') }}</textarea>
+
+
+                <p
+                    class="mt-2
+                           text-xs
+                           text-slate-500"
+                >
+                    Optional for approval.
+                    Required when rejecting the request.
+                </p>
+
+            </div>
+
+
+
+            {{-- Review Actions --}}
+            <div
+                class="mt-6
+                       flex
+                       flex-wrap
+                       items-center
+                       justify-end
+                       gap-3"
+            >
+
+
+                {{-- Edit --}}
+                @if (
+                    auth()
+                        ->user()
+                        ->hasPermission(
+                            'leave.edit'
+                        )
+                )
+
+                    <a
+                        href="{{ route(
+                            'admin.leave.edit',
+                            $leave
+                        ) }}"
+                        class="inline-flex
+                               h-11
+                               items-center
+                               justify-center
+                               rounded-xl
+                               border
+                               border-blue-300
+                               bg-white
+                               px-5
+                               text-sm
+                               font-semibold
+                               text-blue-700
+                               transition
+                               hover:bg-blue-50"
+                    >
+                        Edit Request
+                    </a>
+
+                @endif
+
+
+
+                {{-- Delete --}}
+                @if (
+                    $canDelete
+                    &&
+                    auth()
+                        ->user()
+                        ->hasPermission(
+                            'leave.edit'
+                        )
+                )
+
+                    <form
+                        method="POST"
+                        action="{{ route(
+                            'admin.leave.destroy',
+                            $leave
+                        ) }}"
+                    >
+
+                        @csrf
+                        @method('DELETE')
+
+
+                        <button
+                            type="submit"
+                            onclick="
+                                return confirm(
+                                    'Delete this leave request permanently?'
+                                );
+                            "
+                            class="inline-flex
+                                   h-11
+                                   items-center
+                                   justify-center
+                                   rounded-xl
+                                   border
+                                   border-red-300
+                                   bg-red-50
+                                   px-5
+                                   text-sm
+                                   font-semibold
+                                   text-red-700
+                                   transition
+                                   hover:bg-red-100"
+                        >
+                            Delete
+                        </button>
+
+                    </form>
+
+                @endif
+
+
+
+                {{-- Reject --}}
+                @if (
+                    auth()
+                        ->user()
+                        ->hasPermission(
+                            'leave.edit'
+                        )
+                )
+
+                    <form
+                        method="POST"
+                        action="{{ route(
+                            'admin.leave.reject',
+                            $leave
+                        ) }}"
+                        onsubmit="
+                            document.getElementById(
+                                'reject_review_note'
+                            ).value =
+                            document.getElementById(
+                                'review_note'
+                            ).value;
+                        "
+                    >
+
+                        @csrf
+                        @method('PATCH')
+
+
+                        <input
+                            type="hidden"
+                            name="review_note"
+                            id="reject_review_note"
+                        >
+
+
+                        <button
+                            type="submit"
+                            onclick="
+                                return confirm(
+                                    'Reject this leave request?'
+                                );
+                            "
+                            class="inline-flex
+                                   h-11
+                                   items-center
+                                   justify-center
+                                   rounded-xl
+                                   border
+                                   border-red-300
+                                   bg-white
+                                   px-6
+                                   text-sm
+                                   font-semibold
+                                   text-red-700
+                                   transition
+                                   hover:bg-red-50"
+                        >
+                            Reject Request
+                        </button>
+
+                    </form>
+
+
+
+                    {{-- Approve --}}
+                    <form
+                        method="POST"
+                        action="{{ route(
+                            'admin.leave.approve',
+                            $leave
+                        ) }}"
+                        onsubmit="
+                            document.getElementById(
+                                'approve_review_note'
+                            ).value =
+                            document.getElementById(
+                                'review_note'
+                            ).value;
+                        "
+                    >
+
+                        @csrf
+                        @method('PATCH')
+
+
+                        <input
+                            type="hidden"
+                            name="review_note"
+                            id="approve_review_note"
+                        >
+
+
+                        <button
+                            type="submit"
+                            onclick="
+                                return confirm(
+                                    'Approve this leave request?'
+                                );
+                            "
+                            class="inline-flex
+                                   h-11
+                                   items-center
+                                   justify-center
+                                   rounded-xl
+                                   bg-green-600
+                                   px-6
+                                   text-sm
+                                   font-semibold
+                                   text-white
+                                   shadow-sm
+                                   transition
+                                   hover:bg-green-700"
+                        >
+                            Approve Request
+                        </button>
+
+                    </form>
+
+                @endif
+
+            </div>
+
+        </section>
+
+    @endif
+
+
+
+    {{-- =========================================================
         MAIN INFORMATION
     ========================================================== --}}
 
@@ -417,7 +955,15 @@
                 </h2>
 
 
-                @if (!$leave->actual_return_date)
+                @if (
+                    $canEdit
+                    &&
+                    auth()
+                        ->user()
+                        ->hasPermission(
+                            'leave.edit'
+                        )
+                )
 
                     <a
                         href="{{ route(
@@ -437,7 +983,21 @@
                                text-blue-700
                                hover:bg-blue-50"
                     >
-                        Edit / Extend
+
+                        @if (
+                            $leave->status
+                            ===
+                            'pending'
+                        )
+
+                            Edit Request
+
+                        @else
+
+                            Edit / Extend
+
+                        @endif
+
                     </a>
 
                 @endif
@@ -711,10 +1271,8 @@
 
 
 
-            {{-- Notes --}}
-            <div
-                class="mt-5"
-            >
+            {{-- Parent Notes --}}
+            <div class="mt-5">
 
                 <p
                     class="text-xs
@@ -723,7 +1281,7 @@
                            tracking-wide
                            text-slate-400"
                 >
-                    Notes
+                    Parent / Leave Notes
                 </p>
 
 
@@ -742,12 +1300,51 @@
 
             </div>
 
+
+
+            {{-- Admin Review Note --}}
+            @if ($leave->review_note)
+
+                <div
+                    class="mt-5
+                           rounded-xl
+                           border
+                           border-blue-100
+                           bg-blue-50
+                           p-4"
+                >
+
+                    <p
+                        class="text-xs
+                               font-semibold
+                               uppercase
+                               tracking-wide
+                               text-blue-500"
+                    >
+                        Admin Review Note
+                    </p>
+
+
+                    <p
+                        class="mt-2
+                               whitespace-pre-line
+                               text-sm
+                               leading-6
+                               text-blue-800"
+                    >
+                        {{ $leave->review_note }}
+                    </p>
+
+                </div>
+
+            @endif
+
         </section>
 
 
 
         {{-- =====================================================
-            CLASSES AFFECTED
+            ENROLLED CLASSES
         ====================================================== --}}
 
         <section
@@ -775,8 +1372,23 @@
                            text-sm
                            text-slate-500"
                 >
-                    This leave applies automatically
-                    to all active enrolled classes.
+
+                    @if (
+                        $leave->status
+                        ===
+                        'approved'
+                    )
+
+                        This leave applies automatically
+                        to all active enrolled classes.
+
+                    @else
+
+                        These are the student's current
+                        active enrolled classes.
+
+                    @endif
+
                 </p>
 
             </div>
@@ -788,7 +1400,11 @@
                        space-y-3"
             >
 
-                @forelse ($student?->enrolments ?? collect() as $enrolment)
+                @forelse (
+                    $student?->enrolments
+                    ?? collect()
+                    as $enrolment
+                )
 
                     @php
 
@@ -878,18 +1494,41 @@
                             </div>
 
 
-                            <span
-                                class="inline-flex
-                                       self-start
-                                       rounded-full
-                                       bg-blue-100
-                                       px-3 py-1
-                                       text-xs
-                                       font-semibold
-                                       text-blue-700"
-                            >
-                                Included in Leave
-                            </span>
+                            @if (
+                                $leave->status
+                                ===
+                                'approved'
+                            )
+
+                                <span
+                                    class="inline-flex
+                                           self-start
+                                           rounded-full
+                                           bg-blue-100
+                                           px-3 py-1
+                                           text-xs
+                                           font-semibold
+                                           text-blue-700"
+                                >
+                                    Included in Leave
+                                </span>
+
+                            @else
+
+                                <span
+                                    class="inline-flex
+                                           self-start
+                                           rounded-full
+                                           bg-slate-200
+                                           px-3 py-1
+                                           text-xs
+                                           font-semibold
+                                           text-slate-600"
+                                >
+                                    Active Class
+                                </span>
+
+                            @endif
 
                         </div>
 
@@ -897,7 +1536,6 @@
 
 
                 @empty
-
 
                     <div
                         class="rounded-xl
@@ -922,26 +1560,34 @@
             </div>
 
 
-            <div
-                class="mt-5
-                       rounded-xl
-                       border
-                       border-blue-100
-                       bg-blue-50
-                       p-4"
-            >
+            @if (
+                $leave->status
+                ===
+                'approved'
+            )
 
-                <p
-                    class="text-sm
-                           leading-6
-                           text-blue-800"
+                <div
+                    class="mt-5
+                           rounded-xl
+                           border
+                           border-blue-100
+                           bg-blue-50
+                           p-4"
                 >
-                    When the student returns,
-                    the leave ends for all of these
-                    classes together.
-                </p>
 
-            </div>
+                    <p
+                        class="text-sm
+                               leading-6
+                               text-blue-800"
+                    >
+                        When the student returns,
+                        the leave ends for all of these
+                        classes together.
+                    </p>
+
+                </div>
+
+            @endif
 
         </section>
 
@@ -950,7 +1596,7 @@
 
 
     {{-- =========================================================
-        EARLY RETURN / RETURN STUDENT
+        RETURN STUDENT
     ========================================================== --}}
 
     @if ($canRecordReturn)
@@ -1017,10 +1663,8 @@
                     <p
                         class="mt-2
                                text-sm
-                               leading-6
                                text-slate-600"
                     >
-
                         Expected return date:
 
                         <span
@@ -1035,24 +1679,7 @@
                                     )
                             }}
                         </span>
-
                     </p>
-
-
-                    @if ($isEarlyReturnPossible)
-
-                        <p
-                            class="mt-1
-                                   text-sm
-                                   text-slate-500"
-                        >
-                            Enter the actual return date.
-                            If it is before the expected return
-                            date, the system will automatically
-                            record this as an early return.
-                        </p>
-
-                    @endif
 
                 </div>
 
@@ -1128,7 +1755,7 @@
                         type="submit"
                         onclick="
                             return confirm(
-                                'Record this student return? This will end the leave for all active enrolled classes.'
+                                'Record this student return?'
                             );
                         "
                         class="inline-flex
@@ -1165,8 +1792,12 @@
 
         </section>
 
+
     @elseif (
-        !$leave->actual_return_date &&
+        $leave->status === 'approved'
+        &&
+        !$leave->actual_return_date
+        &&
         $leave
             ->start_date
             ->copy()
@@ -1174,7 +1805,6 @@
             ->gt($today)
     )
 
-        {{-- Upcoming Leave --}}
         <section
             class="rounded-2xl
                    border
@@ -1208,10 +1838,14 @@
 
 
     {{-- =========================================================
-        COMPLETED RETURN SUMMARY
+        COMPLETED SUMMARY
     ========================================================== --}}
 
-    @if ($leave->actual_return_date)
+    @if (
+        $leave->status === 'approved'
+        &&
+        $leave->actual_return_date
+    )
 
         <section
             class="rounded-2xl
@@ -1326,10 +1960,12 @@
             class="mt-5
                    grid
                    gap-5
-                   sm:grid-cols-3"
+                   sm:grid-cols-2
+                   xl:grid-cols-4"
         >
 
 
+            {{-- Requested By --}}
             <div>
 
                 <p
@@ -1338,7 +1974,68 @@
                            uppercase
                            text-slate-400"
                 >
-                    Created By
+                    Requested By
+                </p>
+
+
+                <p
+                    class="mt-2
+                           text-sm
+                           font-semibold
+                           text-slate-800"
+                >
+
+                    @if (
+                        $leave
+                            ->requestedByGuardian
+                    )
+
+                        {{
+                            $leave
+                                ->requestedByGuardian
+                                ->first_name
+                        }}
+
+                        {{
+                            $leave
+                                ->requestedByGuardian
+                                ->last_name
+                        }}
+
+                    @elseif ($leave->createdBy)
+
+                        {{
+                            $leave
+                                ->createdBy
+                                ->name
+                            ??
+                            $leave
+                                ->createdBy
+                                ->email
+                        }}
+
+                    @else
+
+                        —
+
+                    @endif
+
+                </p>
+
+            </div>
+
+
+
+            {{-- Reviewed By --}}
+            <div>
+
+                <p
+                    class="text-xs
+                           font-semibold
+                           uppercase
+                           text-slate-400"
+                >
+                    Reviewed By
                 </p>
 
 
@@ -1350,11 +2047,11 @@
                 >
                     {{
                         $leave
-                            ->createdBy
+                            ->reviewedBy
                             ?->name
                         ??
                         $leave
-                            ->createdBy
+                            ->reviewedBy
                             ?->email
                         ??
                         '—'
@@ -1365,6 +2062,41 @@
 
 
 
+            {{-- Reviewed At --}}
+            <div>
+
+                <p
+                    class="text-xs
+                           font-semibold
+                           uppercase
+                           text-slate-400"
+                >
+                    Reviewed At
+                </p>
+
+
+                <p
+                    class="mt-2
+                           text-sm
+                           font-semibold
+                           text-slate-800"
+                >
+                    {{
+                        $leave
+                            ->reviewed_at
+                            ?->format(
+                                'd M Y, g:i A'
+                            )
+                        ??
+                        '—'
+                    }}
+                </p>
+
+            </div>
+
+
+
+            {{-- Created At --}}
             <div>
 
                 <p
@@ -1389,39 +2121,8 @@
                             ?->format(
                                 'd M Y, g:i A'
                             )
-                        ?? '—'
-                    }}
-                </p>
-
-            </div>
-
-
-
-            <div>
-
-                <p
-                    class="text-xs
-                           font-semibold
-                           uppercase
-                           text-slate-400"
-                >
-                    Last Updated
-                </p>
-
-
-                <p
-                    class="mt-2
-                           text-sm
-                           font-semibold
-                           text-slate-800"
-                >
-                    {{
-                        $leave
-                            ->updated_at
-                            ?->format(
-                                'd M Y, g:i A'
-                            )
-                        ?? '—'
+                        ??
+                        '—'
                     }}
                 </p>
 
@@ -1460,13 +2161,24 @@
                    text-sm
                    font-semibold
                    text-slate-600
+                   transition
                    hover:bg-slate-50"
         >
             Back
         </a>
 
 
-        @if (!$leave->actual_return_date)
+
+        {{-- Edit --}}
+        @if (
+            $canEdit
+            &&
+            auth()
+                ->user()
+                ->hasPermission(
+                    'leave.edit'
+                )
+        )
 
             <a
                 href="{{ route(
@@ -1485,10 +2197,79 @@
                        text-sm
                        font-semibold
                        text-blue-700
+                       transition
                        hover:bg-blue-50"
             >
-                Edit / Extend Leave
+
+                @if (
+                    $leave->status
+                    ===
+                    'pending'
+                )
+
+                    Edit Request
+
+                @else
+
+                    Edit / Extend Leave
+
+                @endif
+
             </a>
+
+        @endif
+
+
+
+        {{-- Delete --}}
+        @if (
+            $canDelete
+            &&
+            auth()
+                ->user()
+                ->hasPermission(
+                    'leave.edit'
+                )
+        )
+
+            <form
+                method="POST"
+                action="{{ route(
+                    'admin.leave.destroy',
+                    $leave
+                ) }}"
+            >
+
+                @csrf
+                @method('DELETE')
+
+
+                <button
+                    type="submit"
+                    onclick="
+                        return confirm(
+                            'Delete this leave request permanently?'
+                        );
+                    "
+                    class="inline-flex
+                           h-11
+                           items-center
+                           justify-center
+                           rounded-xl
+                           border
+                           border-red-300
+                           bg-red-50
+                           px-6
+                           text-sm
+                           font-semibold
+                           text-red-700
+                           transition
+                           hover:bg-red-100"
+                >
+                    Delete
+                </button>
+
+            </form>
 
         @endif
 

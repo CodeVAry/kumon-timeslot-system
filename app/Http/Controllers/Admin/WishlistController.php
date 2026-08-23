@@ -15,6 +15,7 @@ class WishlistController extends Controller
     | Wishlist List
     |--------------------------------------------------------------------------
     */
+
     public function index(Request $request)
     {
         $search =
@@ -43,6 +44,27 @@ class WishlistController extends Controller
                 ->where(
                     'is_active',
                     true
+                )
+                ->where(
+                    function ($query) {
+
+                        /*
+                         * New wishlist records use:
+                         *
+                         * wishlist_status = pending
+                         *
+                         * Old wishlist records may still
+                         * have wishlist_status = NULL.
+                         */
+                        $query
+                            ->where(
+                                'wishlist_status',
+                                'pending'
+                            )
+                            ->orWhereNull(
+                                'wishlist_status'
+                            );
+                    }
                 );
 
 
@@ -99,7 +121,7 @@ class WishlistController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Counts
+        | Active Wishlist Count
         |--------------------------------------------------------------------------
         */
 
@@ -112,8 +134,27 @@ class WishlistController extends Controller
                     'is_active',
                     true
                 )
+                ->where(
+                    function ($query) {
+
+                        $query
+                            ->where(
+                                'wishlist_status',
+                                'pending'
+                            )
+                            ->orWhereNull(
+                                'wishlist_status'
+                            );
+                    }
+                )
                 ->count();
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Wishlist With Available Seat
+        |--------------------------------------------------------------------------
+        */
 
         $availableWishlist =
             Enrolment::where(
@@ -124,13 +165,29 @@ class WishlistController extends Controller
                     'is_active',
                     true
                 )
-                ->with('sectionOffering')
+                ->where(
+                    function ($query) {
+
+                        $query
+                            ->where(
+                                'wishlist_status',
+                                'pending'
+                            )
+                            ->orWhereNull(
+                                'wishlist_status'
+                            );
+                    }
+                )
+                ->with(
+                    'sectionOffering'
+                )
                 ->get()
                 ->filter(
                     function ($wishlist) {
 
                         $offering =
-                            $wishlist->sectionOffering;
+                            $wishlist
+                                ->sectionOffering;
 
 
                         if (!$offering) {
@@ -158,7 +215,8 @@ class WishlistController extends Controller
                         return
                             $confirmedCount
                             <
-                            $offering->max_seats;
+                            $offering
+                                ->max_seats;
                     }
                 )
                 ->count();
@@ -176,31 +234,30 @@ class WishlistController extends Controller
     }
 
 
-
     /*
     |--------------------------------------------------------------------------
     | Create / Edit Wishlist
     |--------------------------------------------------------------------------
     */
+
     public function create(
         Enrolment $enrolment
     ) {
         /*
-        |--------------------------------------------------------------------------
-        | Validate Current Confirmed Enrolment
-        |--------------------------------------------------------------------------
-        */
-
+         * Wishlist move request must start
+         * from an active confirmed class.
+         */
         if (
             !$enrolment->is_active
             ||
             $enrolment->is_wishlist
         ) {
 
-            return back()->with(
-                'error',
-                'Wishlist can only be created from an active confirmed enrolment.'
-            );
+            return back()
+                ->with(
+                    'error',
+                    'Wishlist can only be created from an active confirmed enrolment.'
+                );
         }
 
 
@@ -212,21 +269,23 @@ class WishlistController extends Controller
 
 
         $currentOffering =
-            $enrolment->sectionOffering;
+            $enrolment
+                ->sectionOffering;
 
 
         if (!$currentOffering) {
 
-            return back()->with(
-                'error',
-                'Current class offering could not be found.'
-            );
+            return back()
+                ->with(
+                    'error',
+                    'Current class offering could not be found.'
+                );
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Other Offerings Of Same Section
+        | Other Offerings Of Same Class
         |--------------------------------------------------------------------------
         */
 
@@ -237,7 +296,8 @@ class WishlistController extends Controller
             ])
                 ->where(
                     'section_id',
-                    $currentOffering->section_id
+                    $currentOffering
+                        ->section_id
                 )
                 ->where(
                     'is_active',
@@ -259,7 +319,7 @@ class WishlistController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Find Existing Wishlist
+        | Existing Wishlist For Current Enrolment
         |--------------------------------------------------------------------------
         */
 
@@ -280,70 +340,20 @@ class WishlistController extends Controller
                     'is_active',
                     true
                 )
-                ->first();
+                ->where(
+                    function ($query) {
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Support Old Wishlist Records
-        |--------------------------------------------------------------------------
-        |
-        | Older wishlist rows may have wishlist_for_enrolment_id = NULL.
-        | Find them using the same student + same section.
-        |--------------------------------------------------------------------------
-        */
-
-        if (!$existingWishlist) {
-
-            $existingWishlist =
-                Enrolment::with([
-                    'sectionOffering.section',
-                    'sectionOffering.day',
-                ])
-                    ->where(
-                        'student_id',
-                        $enrolment->student_id
-                    )
-                    ->where(
-                        'is_wishlist',
-                        true
-                    )
-                    ->where(
-                        'is_active',
-                        true
-                    )
-                    ->whereNull(
-                        'wishlist_for_enrolment_id'
-                    )
-                    ->whereHas(
-                        'sectionOffering',
-                        function ($query) use ($currentOffering) {
-
-                            $query->where(
-                                'section_id',
-                                $currentOffering->section_id
+                        $query
+                            ->where(
+                                'wishlist_status',
+                                'pending'
+                            )
+                            ->orWhereNull(
+                                'wishlist_status'
                             );
-                        }
-                    )
-                    ->first();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Repair Old Wishlist Record
-            |--------------------------------------------------------------------------
-            */
-
-            if ($existingWishlist) {
-
-                $existingWishlist->update([
-
-                    'wishlist_for_enrolment_id' =>
-                        $enrolment->id,
-
-                ]);
-            }
-        }
+                    }
+                )
+                ->first();
 
 
         return view(
@@ -357,43 +367,37 @@ class WishlistController extends Controller
     }
 
 
-
     /*
     |--------------------------------------------------------------------------
     | Store / Update Wishlist
     |--------------------------------------------------------------------------
     */
+
     public function store(
         Request $request,
         Enrolment $enrolment
     ) {
-        /*
-        |--------------------------------------------------------------------------
-        | Validate Current Enrolment
-        |--------------------------------------------------------------------------
-        */
-
         if (
             !$enrolment->is_active
             ||
             $enrolment->is_wishlist
         ) {
 
-            return back()->with(
-                'error',
-                'Invalid enrolment.'
-            );
+            return back()
+                ->with(
+                    'error',
+                    'Invalid enrolment.'
+                );
         }
 
 
         $validated =
             $request->validate([
-
                 'section_offering_id' => [
                     'required',
+                    'integer',
                     'exists:section_offerings,id',
                 ],
-
             ]);
 
 
@@ -404,21 +408,23 @@ class WishlistController extends Controller
 
 
         $currentOffering =
-            $enrolment->sectionOffering;
+            $enrolment
+                ->sectionOffering;
 
 
         if (!$currentOffering) {
 
-            return back()->with(
-                'error',
-                'Current class offering could not be found.'
-            );
+            return back()
+                ->with(
+                    'error',
+                    'Current class offering could not be found.'
+                );
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Target Offering
+        | Requested Offering
         |--------------------------------------------------------------------------
         */
 
@@ -437,54 +443,51 @@ class WishlistController extends Controller
 
 
         /*
-        |--------------------------------------------------------------------------
-        | Must Stay In Same Section
-        |--------------------------------------------------------------------------
-        */
-
+         * Must stay in same class/section.
+         */
         if (
-            $targetOffering->section_id
+            (int)
+            $targetOffering
+                ->section_id
             !==
-            $currentOffering->section_id
+            (int)
+            $currentOffering
+                ->section_id
         ) {
 
             return back()
                 ->withInput()
                 ->withErrors([
-
                     'section_offering_id' =>
                         'Wishlist must be for the same class.',
-
                 ]);
         }
 
 
         /*
-        |--------------------------------------------------------------------------
-        | Cannot Select Current Offering
-        |--------------------------------------------------------------------------
-        */
-
+         * Cannot select existing class.
+         */
         if (
+            (int)
             $targetOffering->id
             ===
-            $enrolment->section_offering_id
+            (int)
+            $enrolment
+                ->section_offering_id
         ) {
 
             return back()
                 ->withInput()
                 ->withErrors([
-
                     'section_offering_id' =>
                         'Please select a different class time.',
-
                 ]);
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Find Existing Wishlist
+        | Existing Pending Wishlist
         |--------------------------------------------------------------------------
         */
 
@@ -501,22 +504,45 @@ class WishlistController extends Controller
                     'is_active',
                     true
                 )
+                ->where(
+                    function ($query) {
+
+                        $query
+                            ->where(
+                                'wishlist_status',
+                                'pending'
+                            )
+                            ->orWhereNull(
+                                'wishlist_status'
+                            );
+                    }
+                )
                 ->first();
 
 
         /*
         |--------------------------------------------------------------------------
-        | Update Existing Wishlist
+        | Update Existing Request
         |--------------------------------------------------------------------------
         */
 
         if ($existingWishlist) {
 
             $existingWishlist->update([
-
                 'section_offering_id' =>
                     $targetOffering->id,
 
+                'wishlist_status' =>
+                    'pending',
+
+                'reviewed_by_user_id' =>
+                    null,
+
+                'reviewed_at' =>
+                    null,
+
+                'wishlist_review_note' =>
+                    null,
             ]);
 
 
@@ -534,15 +560,11 @@ class WishlistController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Create New Wishlist
-        |--------------------------------------------------------------------------
-        |
-        | Wishlist does not consume a seat.
+        | Create New Move Wishlist
         |--------------------------------------------------------------------------
         */
 
         Enrolment::create([
-
             'student_id' =>
                 $enrolment->student_id,
 
@@ -558,9 +580,11 @@ class WishlistController extends Controller
             'is_wishlist' =>
                 true,
 
+            'wishlist_status' =>
+                'pending',
+
             'is_active' =>
                 true,
-
         ]);
 
 
@@ -576,239 +600,352 @@ class WishlistController extends Controller
     }
 
 
-
     /*
     |--------------------------------------------------------------------------
-    | Approve Wishlist / Move Student
+    | Approve Wishlist
     |--------------------------------------------------------------------------
+    |
+    | Supports:
+    |
+    | 1. Move wishlist
+    |    Current class -> requested class
+    |
+    | 2. Direct wishlist
+    |    No current class -> requested class
+    |
     */
+
     public function approve(
+        Request $request,
         Enrolment $wishlist
     ) {
         /*
         |--------------------------------------------------------------------------
-        | Validate Wishlist
+        | Pending Check
         |--------------------------------------------------------------------------
+        |
+        | NULL is accepted for old wishlist records.
+        |
         */
 
         if (
-            !$wishlist->is_wishlist
-            ||
-            !$wishlist->is_active
+            !in_array(
+                $wishlist
+                    ->wishlist_status,
+                [
+                    null,
+                    'pending',
+                ],
+                true
+            )
         ) {
 
-            return back()->with(
-                'error',
-                'This wishlist request is no longer active.'
-            );
+            return back()
+                ->with(
+                    'error',
+                    'Only pending wishlist requests can be approved.'
+                );
         }
 
 
-        try {
+        if (
+            !$wishlist
+                ->is_wishlist
+        ) {
 
-            DB::transaction(
-                function () use ($wishlist) {
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Lock Wishlist Record
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $lockedWishlist =
-                        Enrolment::where(
-                            'id',
-                            $wishlist->id
-                        )
-                            ->lockForUpdate()
-                            ->firstOrFail();
+            return back()
+                ->with(
+                    'error',
+                    'This wishlist request has already been processed.'
+                );
+        }
 
 
-                    if (
-                        !$lockedWishlist->is_wishlist
-                        ||
-                        !$lockedWishlist->is_active
-                    ) {
+        if (
+            !$wishlist
+                ->is_active
+        ) {
 
-                        throw new \Exception(
-                            'Wishlist is no longer active.'
-                        );
-                    }
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Source Confirmed Enrolment
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $sourceEnrolment =
-                        Enrolment::where(
-                            'id',
-                            $lockedWishlist
-                                ->wishlist_for_enrolment_id
-                        )
-                            ->lockForUpdate()
-                            ->first();
+            return back()
+                ->with(
+                    'error',
+                    'This wishlist request is no longer active.'
+                );
+        }
 
 
-                    if (
-                        !$sourceEnrolment
-                        ||
-                        !$sourceEnrolment->is_active
-                        ||
-                        $sourceEnrolment->is_wishlist
-                    ) {
+        /*
+        |--------------------------------------------------------------------------
+        | Review Note
+        |--------------------------------------------------------------------------
+        */
 
-                        throw new \Exception(
-                            'The original enrolment is no longer active.'
-                        );
-                    }
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Lock Target Offering
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $targetOffering =
-                        SectionOffering::where(
-                            'id',
-                            $lockedWishlist
-                                ->section_offering_id
-                        )
-                            ->lockForUpdate()
-                            ->firstOrFail();
+        $validated =
+            $request->validate([
+                'wishlist_review_note' => [
+                    'nullable',
+                    'string',
+                    'max:2000',
+                ],
+            ]);
 
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Re-check Capacity
-                    |--------------------------------------------------------------------------
-                    */
+        /*
+        |--------------------------------------------------------------------------
+        | Load Relationships
+        |--------------------------------------------------------------------------
+        */
 
-                    $confirmedCount =
-                        Enrolment::where(
-                            'section_offering_id',
-                            $targetOffering->id
-                        )
-                            ->where(
-                                'is_active',
-                                true
-                            )
-                            ->where(
-                                'is_wishlist',
-                                false
-                            )
-                            ->lockForUpdate()
-                            ->count();
+        $wishlist->load([
+            'student',
+            'sectionOffering',
+            'wishlistForEnrolment',
+        ]);
 
 
-                    if (
-                        $confirmedCount
-                        >=
-                        $targetOffering->max_seats
-                    ) {
-
-                        throw new \Exception(
-                            'The requested class is currently full.'
-                        );
-                    }
+        $requestedOffering =
+            $wishlist
+                ->sectionOffering;
 
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Extra Safety:
-                    | Student Cannot Already Be Confirmed In Target Offering
-                    |--------------------------------------------------------------------------
-                    */
+        if (!$requestedOffering) {
 
-                    $alreadyConfirmed =
-                        Enrolment::where(
-                            'student_id',
-                            $lockedWishlist->student_id
-                        )
-                            ->where(
-                                'section_offering_id',
-                                $targetOffering->id
-                            )
-                            ->where(
-                                'is_active',
-                                true
-                            )
-                            ->where(
-                                'is_wishlist',
-                                false
-                            )
-                            ->exists();
+            return back()
+                ->with(
+                    'error',
+                    'The requested class is no longer available.'
+                );
+        }
 
 
-                    if ($alreadyConfirmed) {
+        if (
+            !$requestedOffering
+                ->is_active
+        ) {
 
-                        throw new \Exception(
-                            'Student is already enrolled in the requested class.'
-                        );
-                    }
+            return back()
+                ->with(
+                    'error',
+                    'The requested class is currently inactive.'
+                );
+        }
 
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Deactivate Old Enrolment
-                    |--------------------------------------------------------------------------
-                    */
+        /*
+        |--------------------------------------------------------------------------
+        | Capacity Check
+        |--------------------------------------------------------------------------
+        */
+
+        $occupiedSeats =
+            Enrolment::where(
+                'section_offering_id',
+                $requestedOffering->id
+            )
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->where(
+                    'is_wishlist',
+                    false
+                )
+                ->count();
+
+
+        if (
+            $occupiedSeats
+            >=
+            $requestedOffering
+                ->max_seats
+        ) {
+
+            return back()
+                ->with(
+                    'error',
+                    'The requested class is currently full.'
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Approve
+        |--------------------------------------------------------------------------
+        */
+
+        DB::transaction(
+            function () use (
+                $wishlist,
+                $validated
+            ) {
+
+                /*
+                 * MOVE REQUEST
+                 *
+                 * If the wishlist is connected
+                 * to an existing confirmed class,
+                 * deactivate the old class.
+                 */
+                $sourceEnrolment =
+                    $wishlist
+                        ->wishlistForEnrolment;
+
+
+                if (
+                    $sourceEnrolment
+                    &&
+                    $sourceEnrolment
+                        ->is_active
+                    &&
+                    !$sourceEnrolment
+                        ->is_wishlist
+                ) {
 
                     $sourceEnrolment->update([
-
                         'is_active' =>
                             false,
-
-                    ]);
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Convert Wishlist Into Confirmed Enrolment
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $lockedWishlist->update([
-
-                        'wishlist_for_enrolment_id' =>
-                            null,
-
-                        'enrolment_date' =>
-                            now()->toDateString(),
-
-                        'is_wishlist' =>
-                            false,
-
-                        'is_active' =>
-                            true,
-
                     ]);
                 }
-            );
 
+
+                /*
+                 * Convert wishlist row into
+                 * confirmed enrolment.
+                 */
+                $wishlist->update([
+                    'is_wishlist' =>
+                        false,
+
+                    'wishlist_status' =>
+                        'approved',
+
+                    'is_active' =>
+                        true,
+
+                    'reviewed_by_user_id' =>
+                        auth()->id(),
+
+                    'reviewed_at' =>
+                        now(),
+
+                    'wishlist_review_note' =>
+                        $validated[
+                            'wishlist_review_note'
+                        ] ?? null,
+                ]);
+            }
+        );
+
+
+        return redirect()
+            ->route(
+                'admin.wishlist.index'
+            )
+            ->with(
+                'success',
+                'Wishlist request approved successfully.'
+            );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reject Wishlist
+    |--------------------------------------------------------------------------
+    */
+
+    public function reject(
+        Request $request,
+        Enrolment $wishlist
+    ) {
+        /*
+         * Support old NULL-status wishlist records.
+         */
+        if (
+            !in_array(
+                $wishlist
+                    ->wishlist_status,
+                [
+                    null,
+                    'pending',
+                ],
+                true
+            )
+        ) {
 
             return redirect()
                 ->route(
                     'admin.wishlist.index'
                 )
                 ->with(
-                    'success',
-                    'Wishlist approved. Student moved successfully.'
+                    'error',
+                    'Only pending wishlist requests can be rejected.'
                 );
-
-        } catch (\Exception $e) {
-
-            return back()->with(
-                'error',
-                $e->getMessage()
-            );
         }
-    }
 
+
+        if (
+            !$wishlist
+                ->is_wishlist
+        ) {
+
+            return redirect()
+                ->route(
+                    'admin.wishlist.index'
+                )
+                ->with(
+                    'error',
+                    'This wishlist request has already been processed.'
+                );
+        }
+
+
+        $validated =
+            $request->validate(
+                [
+                    'wishlist_review_note' => [
+                        'required',
+                        'string',
+                        'max:2000',
+                    ],
+                ],
+                [
+                    'wishlist_review_note.required' =>
+                        'Please enter a reason before rejecting the wishlist request.',
+                ]
+            );
+
+
+        $wishlist->update([
+            'wishlist_status' =>
+                'rejected',
+
+            'is_active' =>
+                false,
+
+            'reviewed_by_user_id' =>
+                auth()->id(),
+
+            'reviewed_at' =>
+                now(),
+
+            'wishlist_review_note' =>
+                $validated[
+                    'wishlist_review_note'
+                ],
+        ]);
+
+
+        return redirect()
+            ->route(
+                'admin.wishlist.index'
+            )
+            ->with(
+                'success',
+                'Wishlist request rejected successfully.'
+            );
+    }
 
 
     /*
@@ -816,6 +953,7 @@ class WishlistController extends Controller
     | Cancel Wishlist
     |--------------------------------------------------------------------------
     */
+
     public function cancel(
         Enrolment $wishlist
     ) {
@@ -825,18 +963,46 @@ class WishlistController extends Controller
             !$wishlist->is_active
         ) {
 
-            return back()->with(
-                'error',
-                'Wishlist request is already inactive.'
-            );
+            return back()
+                ->with(
+                    'error',
+                    'Wishlist request is already inactive.'
+                );
+        }
+
+
+        if (
+            !in_array(
+                $wishlist
+                    ->wishlist_status,
+                [
+                    null,
+                    'pending',
+                ],
+                true
+            )
+        ) {
+
+            return back()
+                ->with(
+                    'error',
+                    'Only pending wishlist requests can be cancelled.'
+                );
         }
 
 
         $wishlist->update([
+            'wishlist_status' =>
+                'cancelled',
 
             'is_active' =>
                 false,
 
+            'reviewed_by_user_id' =>
+                auth()->id(),
+
+            'reviewed_at' =>
+                now(),
         ]);
 
 

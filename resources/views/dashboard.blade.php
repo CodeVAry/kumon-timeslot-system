@@ -238,10 +238,7 @@
     >
 
 
-        {{-- =====================================================
-            STUDENTS TODAY
-        ====================================================== --}}
-
+        {{-- Students Today --}}
         <div
             class="rounded-[24px]
                    border
@@ -338,10 +335,7 @@
 
 
 
-        {{-- =====================================================
-            CURRENTLY SCHEDULED
-        ====================================================== --}}
-
+        {{-- Currently Scheduled --}}
         <div
             class="rounded-[24px]
                    border
@@ -433,10 +427,7 @@
 
 
 
-        {{-- =====================================================
-            UPCOMING CLASS
-        ====================================================== --}}
-
+        {{-- Upcoming Class --}}
         <div
             class="rounded-[24px]
                    border
@@ -537,10 +528,7 @@
 
 
 
-        {{-- =====================================================
-            ABSENT TODAY
-        ====================================================== --}}
-
+        {{-- Absent Today --}}
         <div
             class="rounded-[24px]
                    border
@@ -652,7 +640,6 @@
                    xl:col-span-2"
         >
 
-            {{-- Header --}}
             <div
                 class="flex
                        flex-col
@@ -720,7 +707,6 @@
 
 
 
-            {{-- Table --}}
             <div class="overflow-x-auto">
 
                 <table class="min-w-full">
@@ -1103,13 +1089,8 @@
                                     class="font-semibold
                                            text-slate-800"
                                 >
-                                    {{
-                                        data_get(
-                                            $student,
-                                            'student_name',
-                                            'Student'
-                                        )
-                                    }}
+                                    {{ $student->first_name ?? '' }}
+                                    {{ $student->last_name ?? '' }}
                                 </p>
 
 
@@ -1118,55 +1099,33 @@
                                            text-xs
                                            text-slate-500"
                                 >
-
-                                    {{
-                                        data_get(
-                                            $student,
-                                            'class_name',
-                                            'Class not available'
-                                        )
-                                    }}
-
-
-                                    @if (
-                                        data_get(
-                                            $student,
-                                            'class_time'
-                                        )
-                                    )
-
-                                        <span class="mx-1">
-                                            ·
-                                        </span>
-
-                                        {{
-                                            data_get(
-                                                $student,
-                                                'class_time'
-                                            )
-                                        }}
-
-                                    @endif
-
+                                    Student ID:
+                                    {{ $student->external_id ?? '—' }}
                                 </p>
 
                             </div>
 
 
-                            <p
-                                class="text-right
-                                       text-xs
-                                       font-semibold
-                                       text-cyan-700"
-                            >
-                                {{
-                                    data_get(
-                                        $student,
-                                        'return_text',
-                                        'Return not set'
-                                    )
-                                }}
-                            </p>
+                            @if (
+                                Route::has(
+                                    'admin.students.show'
+                                )
+                            )
+
+                                <a
+                                    href="{{ route(
+                                        'admin.students.show',
+                                        $student
+                                    ) }}"
+                                    class="text-xs
+                                           font-semibold
+                                           text-cyan-700
+                                           hover:text-cyan-900"
+                                >
+                                    View
+                                </a>
+
+                            @endif
 
                         </div>
 
@@ -1219,19 +1178,13 @@
 
                 @if (
                     Route::has(
-                        'admin.leave.index'
+                        'admin.attendance.index'
                     )
-                    &&
-                    auth()
-                        ->user()
-                        ->hasPermission(
-                            'leave.view'
-                        )
                 )
 
                     <a
                         href="{{ route(
-                            'admin.leave.index'
+                            'admin.attendance.index'
                         ) }}"
                         class="mt-4
                                inline-flex
@@ -1247,7 +1200,7 @@
                                text-cyan-800
                                hover:bg-cyan-100"
                     >
-                        Review Leave Management
+                        Review Attendance
                     </a>
 
                 @endif
@@ -1257,7 +1210,7 @@
 
 
             {{-- =================================================
-                ADMIN REMINDERS
+                STUDENT REVIEWS
             ================================================== --}}
 
             <section
@@ -1271,18 +1224,31 @@
 
                 <div
                     class="flex
-                           items-center
+                           items-start
                            justify-between
                            gap-4"
                 >
 
-                    <h2
-                        class="text-2xl
-                               font-bold
-                               text-slate-900"
-                    >
-                        Admin reminders
-                    </h2>
+                    <div>
+
+                        <h2
+                            class="text-2xl
+                                   font-bold
+                                   text-slate-900"
+                        >
+                            Student Reviews
+                        </h2>
+
+
+                        <p
+                            class="mt-1
+                                   text-sm
+                                   text-slate-500"
+                        >
+                            Trial, absence and inactive reviews
+                        </p>
+
+                    </div>
 
 
                     <span
@@ -1314,65 +1280,260 @@
                         as $reminder
                     )
 
-                        <div
-                            class="rounded-xl
-                                   border
-                                   border-purple-100
-                                   bg-purple-50
-                                   px-4 py-3"
-                        >
+                        @php
 
-                            <div
-                                class="flex
-                                       items-start
-                                       gap-3"
+                            $reminderType =
+                                data_get(
+                                    $reminder,
+                                    'type',
+                                    'review'
+                                );
+
+
+                            $reminderTitle =
+                                data_get(
+                                    $reminder,
+                                    'title',
+                                    'Student review required'
+                                );
+
+
+                            $reminderMessage =
+                                data_get(
+                                    $reminder,
+                                    'message',
+                                    'A student requires review.'
+                                );
+
+
+                            $reminderUrl =
+                                data_get(
+                                    $reminder,
+                                    'url'
+                                );
+
+
+                            /*
+                             * Card Style
+                             */
+                            if (
+                                $reminderType
+                                ===
+                                'absence'
+                                ||
+                                $reminderType
+                                ===
+                                'deletion'
+                            ) {
+
+                                $reminderCardStyle =
+                                    'border-red-200 bg-red-50';
+
+                                $reminderDotStyle =
+                                    'bg-red-500';
+
+                                $reminderTitleStyle =
+                                    'text-red-700';
+
+                                $reminderTextStyle =
+                                    'text-red-600';
+
+                            }
+                            elseif (
+                                $reminderType
+                                ===
+                                'inactive-warning'
+                            ) {
+
+                                $reminderCardStyle =
+                                    'border-amber-200 bg-amber-50';
+
+                                $reminderDotStyle =
+                                    'bg-amber-500';
+
+                                $reminderTitleStyle =
+                                    'text-amber-700';
+
+                                $reminderTextStyle =
+                                    'text-amber-600';
+
+                            }
+                            else {
+
+                                $reminderCardStyle =
+                                    'border-purple-200 bg-purple-50';
+
+                                $reminderDotStyle =
+                                    'bg-purple-500';
+
+                                $reminderTitleStyle =
+                                    'text-purple-700';
+
+                                $reminderTextStyle =
+                                    'text-purple-600';
+                            }
+
+                        @endphp
+
+
+                        @if ($reminderUrl)
+
+                            <a
+                                href="{{ $reminderUrl }}"
+                                class="group
+                                       block
+                                       rounded-xl
+                                       border
+                                       px-4 py-4
+                                       transition
+                                       hover:-translate-y-0.5
+                                       hover:shadow-sm
+                                       {{ $reminderCardStyle }}"
                             >
 
-                                <span
-                                    class="mt-1
-                                           h-2 w-2
-                                           shrink-0
-                                           rounded-full
-                                           bg-purple-500"
-                                ></span>
-
-
-                                <p
-                                    class="text-sm
-                                           font-medium
-                                           text-purple-800"
+                                <div
+                                    class="flex
+                                           items-start
+                                           gap-3"
                                 >
-                                    {{
-                                        is_string(
-                                            $reminder
-                                        )
-                                            ? $reminder
-                                            : data_get(
-                                                $reminder,
-                                                'message',
-                                                'Reminder'
-                                            )
-                                    }}
-                                </p>
+
+                                    <span
+                                        class="mt-2
+                                               h-2.5 w-2.5
+                                               shrink-0
+                                               rounded-full
+                                               {{ $reminderDotStyle }}"
+                                    ></span>
+
+
+                                    <div class="min-w-0 flex-1">
+
+                                        <div
+                                            class="flex
+                                                   items-start
+                                                   justify-between
+                                                   gap-3"
+                                        >
+
+                                            <p
+                                                class="font-semibold
+                                                       {{ $reminderTitleStyle }}"
+                                            >
+                                                {{ $reminderTitle }}
+                                            </p>
+
+
+                                            <span
+                                                class="shrink-0
+                                                       font-bold
+                                                       {{ $reminderTitleStyle }}
+                                                       transition
+                                                       group-hover:translate-x-1"
+                                            >
+                                                →
+                                            </span>
+
+                                        </div>
+
+
+                                        <p
+                                            class="mt-1
+                                                   text-sm
+                                                   {{ $reminderTextStyle }}"
+                                        >
+                                            {{ $reminderMessage }}
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+                            </a>
+
+
+                        @else
+
+                            <div
+                                class="rounded-xl
+                                       border
+                                       px-4 py-4
+                                       {{ $reminderCardStyle }}"
+                            >
+
+                                <div
+                                    class="flex
+                                           items-start
+                                           gap-3"
+                                >
+
+                                    <span
+                                        class="mt-2
+                                               h-2.5 w-2.5
+                                               shrink-0
+                                               rounded-full
+                                               {{ $reminderDotStyle }}"
+                                    ></span>
+
+
+                                    <div>
+
+                                        <p
+                                            class="font-semibold
+                                                   {{ $reminderTitleStyle }}"
+                                        >
+                                            {{ $reminderTitle }}
+                                        </p>
+
+
+                                        <p
+                                            class="mt-1
+                                                   text-sm
+                                                   {{ $reminderTextStyle }}"
+                                        >
+                                            {{ $reminderMessage }}
+                                        </p>
+
+                                    </div>
+
+                                </div>
 
                             </div>
 
-                        </div>
+                        @endif
 
 
                     @empty
 
                         <div
-                            class="py-8
+                            class="rounded-xl
+                                   border
+                                   border-slate-100
+                                   bg-slate-50
+                                   px-4 py-7
                                    text-center"
                         >
 
+                            <div
+                                class="mx-auto
+                                       flex
+                                       h-10 w-10
+                                       items-center
+                                       justify-center
+                                       rounded-full
+                                       bg-green-100
+                                       text-green-600"
+                            >
+                                ✓
+                            </div>
+
+
                             <p
-                                class="text-sm
+                                class="mt-3
+                                       text-sm
                                        font-semibold
                                        text-slate-700"
                             >
-                                No reminders
+                                No reviews requiring attention
                             </p>
 
 
@@ -1381,8 +1542,7 @@
                                        text-xs
                                        text-slate-500"
                             >
-                                Important administrative
-                                tasks will appear here.
+                                New student review warnings will appear here.
                             </p>
 
                         </div>
@@ -1390,6 +1550,49 @@
                     @endforelse
 
                 </div>
+
+
+
+                @if (
+                    Route::has(
+                        'admin.student-reviews.index'
+                    )
+                    &&
+                    auth()
+                        ->user()
+                        ->hasPermission(
+                            'students.view'
+                        )
+                )
+
+                    <a
+                        href="{{ route(
+                            'admin.student-reviews.index'
+                        ) }}"
+                        class="mt-5
+                               inline-flex
+                               h-11 w-full
+                               items-center
+                               justify-center
+                               gap-2
+                               rounded-xl
+                               border
+                               border-purple-300
+                               bg-purple-50
+                               text-sm
+                               font-semibold
+                               text-purple-700
+                               transition
+                               hover:bg-purple-100"
+                    >
+                        Open Student Reviews
+
+                        <span>
+                            →
+                        </span>
+                    </a>
+
+                @endif
 
             </section>
 
@@ -1433,7 +1636,6 @@
                                hover:shadow-md"
                     >
 
-                        {{-- Notification Count --}}
                         @if ($wishlistCount > 0)
 
                             <div
@@ -1572,7 +1774,6 @@
 
 
 
-                            {{-- Wishlist Icon --}}
                             <div
                                 class="relative
                                        flex
@@ -1619,7 +1820,6 @@
                                 </svg>
 
 
-                                {{-- Animated Dot --}}
                                 @if ($wishlistCount > 0)
 
                                     <span
@@ -1666,7 +1866,6 @@
 
             @else
 
-                {{-- No Wishlist Permission --}}
                 <section
                     class="rounded-[26px]
                            border
@@ -1768,12 +1967,6 @@ document.addEventListener(
             );
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Update Current Time
-        |--------------------------------------------------------------------------
-        */
-
         function updateDashboardTime() {
 
             const now =
@@ -1806,15 +1999,9 @@ document.addEventListener(
         }
 
 
-        /*
-         * Initial value.
-         */
         updateDashboardTime();
 
 
-        /*
-         * Keep time updated.
-         */
         setInterval(
             updateDashboardTime,
             1000

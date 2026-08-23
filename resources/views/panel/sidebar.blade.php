@@ -76,7 +76,7 @@
                             {{ request()->routeIs('admin.roles.*')
                                 ? 'bg-blue-600 text-white'
                                 : 'text-slate-300 hover:bg-slate-800
-                                                                                                                                                                                                                                                                                               hover:text-white' }}">
+                                                                                                                                                                                                                                                                                                                           hover:text-white' }}">
 
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -107,7 +107,7 @@
                             {{ request()->routeIs('admin.permissions.*')
                                 ? 'bg-blue-600 text-white'
                                 : 'text-slate-300 hover:bg-slate-800
-                                                                                                                                                                                                                                                                                               hover:text-white' }}">
+                                                                                                                                                                                                                                                                                                                           hover:text-white' }}">
 
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -134,7 +134,7 @@
                             {{ request()->routeIs('admin.users.*')
                                 ? 'bg-blue-600 text-white'
                                 : 'text-slate-300 hover:bg-slate-800
-                                                                                                                                                                                                                                                                                               hover:text-white' }}">
+                                                                                                                                                                                                                                                                                                                           hover:text-white' }}">
 
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -163,7 +163,7 @@
                             {{ request()->is('admin/audit-logs*')
                                 ? 'bg-blue-600 text-white'
                                 : 'text-slate-300 hover:bg-slate-800
-                                                                                                                                                                                                                                                                                               hover:text-white' }}">
+                                                                                                                                                                                                                                                                                                                           hover:text-white' }}">
 
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -253,8 +253,8 @@
                 {{ request()->routeIs('admin.sections.*')
                     ? 'bg-blue-600 text-white'
                     : 'text-slate-300
-                                                                                                                                                                       hover:bg-slate-800
-                                                                                                                                                                       hover:text-white' }}">
+                                                                                                                                                                                       hover:bg-slate-800
+                                                                                                                                                                                       hover:text-white' }}">
 
                             <span class="h-2 w-2 rounded-full
                          bg-current">
@@ -277,8 +277,8 @@
             {{ request()->routeIs('admin.section-offerings.*')
                 ? 'bg-blue-600 text-white'
                 : 'text-slate-300
-                                                                                                                   hover:bg-slate-800
-                                                                                                                   hover:text-white' }}">
+                                                                                                                               hover:bg-slate-800
+                                                                                                                               hover:text-white' }}">
                         <span class="h-2 w-2 rounded-full
                      bg-current">
                         </span>
@@ -311,7 +311,7 @@
                     {{ request()->routeIs('admin.student-statuses.*')
                         ? 'bg-blue-600 text-white'
                         : 'text-slate-300 hover:bg-slate-800
-                                                                                                                                                                                           hover:text-white' }}">
+                                                                                                                                                                                                               hover:text-white' }}">
                         <span class="h-2 w-2 rounded-full bg-current">
                         </span>
 
@@ -341,7 +341,7 @@
             {{ request()->routeIs('admin.students.*')
                 ? 'bg-blue-600 text-white'
                 : 'text-slate-300 hover:bg-slate-800
-                                                                                           hover:text-white' }}">
+                                                                                                       hover:text-white' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0
@@ -456,7 +456,7 @@
         @endif
 
 
-        @if (auth()->user()->hasPermission('wishlist.view'))
+        @if ($loggedInUser->hasPermission('wishlist.view'))
             <a href="{{ route('admin.wishlist.index') }}"
                 class="flex items-center
                gap-3
@@ -479,10 +479,7 @@
 
                 </svg>
 
-
-                <span>
-                    Wishlist
-                </span>
+                <span>Wishlist</span>
 
             </a>
         @endif

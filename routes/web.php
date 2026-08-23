@@ -18,6 +18,9 @@ use App\Http\Controllers\Admin\LeaveController;
 use App\Http\Controllers\Admin\WishlistController;
 use App\Http\Controllers\Parent\Auth\ParentLoginController;
 use App\Http\Controllers\Parent\ParentPortalController;
+use App\Http\Controllers\Parent\ParentWishlistController;
+use App\Http\Controllers\Parent\ParentLeaveController;
+use App\Http\Controllers\Admin\StudentReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -257,6 +260,8 @@ Route::middleware(['auth'])
             ->middleware('permission:sections.delete')
             ->name('sections.destroy');
 
+
+
         /*
 |--------------------------------------------------------------------------
 | Section Offering Routes
@@ -352,6 +357,168 @@ Route::middleware(['auth'])
         )
             ->middleware('permission:student_statuses.delete')
             ->name('student-statuses.destroy');
+
+        /*
+|--------------------------------------------------------------------------
+| Student Status Review
+|--------------------------------------------------------------------------
+*/
+
+        Route::get(
+            '/student-reviews',
+            [
+                StudentReviewController::class,
+                'index',
+            ]
+        )
+            ->middleware(
+                'permission:students.view'
+            )
+            ->name(
+                'student-reviews.index'
+            );
+
+
+        Route::patch(
+            '/student-reviews/{student}/continue',
+            [
+                StudentReviewController::class,
+                'continueStudent',
+            ]
+        )
+            ->middleware(
+                'permission:students.edit'
+            )
+            ->name(
+                'student-reviews.continue'
+            );
+
+
+        Route::patch(
+            '/student-reviews/{student}/remove',
+            [
+                StudentReviewController::class,
+                'removeStudent',
+            ]
+        )
+            ->middleware(
+                'permission:students.edit'
+            )
+            ->name(
+                'student-reviews.remove'
+            );
+        /*
+|--------------------------------------------------------------------------
+| Student Reviews
+|--------------------------------------------------------------------------
+*/
+
+        Route::get(
+            '/student-reviews',
+            [
+                StudentReviewController::class,
+                'index',
+            ]
+        )
+            ->middleware(
+                'permission:students.view'
+            )
+            ->name(
+                'student-reviews.index'
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Trial Review
+        |--------------------------------------------------------------------------
+        */
+
+        Route::patch(
+            '/student-reviews/{student}/trial/continue',
+            [
+                StudentReviewController::class,
+                'continueTrial',
+            ]
+        )
+            ->middleware(
+                'permission:students.edit'
+            )
+            ->name(
+                'student-reviews.trial.continue'
+            );
+
+
+        Route::patch(
+            '/student-reviews/{student}/trial/reject',
+            [
+                StudentReviewController::class,
+                'rejectTrial',
+            ]
+        )
+            ->middleware(
+                'permission:students.edit'
+            )
+            ->name(
+                'student-reviews.trial.reject'
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Absence Review
+        |--------------------------------------------------------------------------
+        */
+
+        Route::patch(
+            '/student-reviews/{student}/absence/keep',
+            [
+                StudentReviewController::class,
+                'keepAfterAbsence',
+            ]
+        )
+            ->middleware(
+                'permission:students.edit'
+            )
+            ->name(
+                'student-reviews.absence.keep'
+            );
+
+
+        Route::patch(
+            '/student-reviews/{student}/absence/remove',
+            [
+                StudentReviewController::class,
+                'removeAfterAbsence',
+            ]
+        )
+            ->middleware(
+                'permission:students.edit'
+            )
+            ->name(
+                'student-reviews.absence.remove'
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Six-Month Deletion
+        |--------------------------------------------------------------------------
+        */
+
+        Route::delete(
+            '/student-reviews/{student}/delete',
+            [
+                StudentReviewController::class,
+                'deleteStudent',
+            ]
+        )
+            ->middleware(
+                'permission:students.edit'
+            )
+            ->name(
+                'student-reviews.delete'
+            );
 
         /*
 |--------------------------------------------------------------------------
@@ -648,6 +815,7 @@ Route::middleware(['auth'])
             ->name(
                 'schedule.class-students'
             );
+
         Route::get(
             '/attendance',
             [
@@ -682,6 +850,18 @@ Route::middleware(['auth'])
             ->name(
                 'attendance.store'
             );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Leave Management
+        |--------------------------------------------------------------------------
+        */
+
+        /*
+        |--------------------------------------------------------------------------
+        | Leave Management
+        |--------------------------------------------------------------------------
+        */
 
         Route::get(
             '/leave',
@@ -727,6 +907,40 @@ Route::middleware(['auth'])
             ->name('leave.history');
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Parent Request Approval / Rejection
+        |--------------------------------------------------------------------------
+        */
+
+        Route::patch(
+            '/leave/{leave}/approve',
+            [
+                LeaveController::class,
+                'approve',
+            ]
+        )
+            ->middleware('permission:leave.edit')
+            ->name('leave.approve');
+
+
+        Route::patch(
+            '/leave/{leave}/reject',
+            [
+                LeaveController::class,
+                'reject',
+            ]
+        )
+            ->middleware('permission:leave.edit')
+            ->name('leave.reject');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Leave Details
+        |--------------------------------------------------------------------------
+        */
+
         Route::get(
             '/leave/{leave}',
             [
@@ -737,6 +951,12 @@ Route::middleware(['auth'])
             ->middleware('permission:leave.view')
             ->name('leave.show');
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Edit
+        |--------------------------------------------------------------------------
+        */
 
         Route::get(
             '/leave/{leave}/edit',
@@ -759,6 +979,50 @@ Route::middleware(['auth'])
             ->middleware('permission:leave.edit')
             ->name('leave.update');
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Delete
+        |--------------------------------------------------------------------------
+        |
+        | Using leave.edit permission for now because your existing Leave
+        | module does not currently have a separate leave.delete permission.
+        |
+        */
+
+        Route::delete(
+            '/leave/{leave}',
+            [
+                LeaveController::class,
+                'destroy',
+            ]
+        )
+            ->middleware('permission:leave.edit')
+            ->name('leave.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return
+        |--------------------------------------------------------------------------
+        */
+
+        Route::patch(
+            '/leave/{leave}/return',
+            [
+                LeaveController::class,
+                'returnStudent',
+            ]
+        )
+            ->middleware('permission:leave.edit')
+            ->name('leave.return');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return Student
+        |--------------------------------------------------------------------------
+        */
 
         Route::patch(
             '/leave/{leave}/return',
@@ -843,6 +1107,15 @@ Route::middleware(['auth'])
             ->name(
                 'wishlist.cancel'
             );
+        Route::patch(
+            '/wishlist/{wishlist}/reject',
+            [
+                WishlistController::class,
+                'reject',
+            ]
+        )
+            ->middleware('permission:wishlist.edit')
+            ->name('wishlist.reject');
 
     });
 
@@ -890,7 +1163,7 @@ Route::prefix('parent')
                 'verifyOtp'
             ]
         )->name('otp.verify');
-        
+
         Route::post(
             '/logout',
             [
@@ -986,6 +1259,209 @@ Route::prefix('parent')
                 ]
             )->name(
                     'dashboard'
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Parent Wishlist
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get(
+                '/wishlist',
+                [
+                    ParentWishlistController::class,
+                    'index',
+                ]
+            )->name(
+                    'wishlist.index'
+                );
+
+
+            Route::get(
+                '/wishlist/create',
+                [
+                    ParentWishlistController::class,
+                    'create',
+                ]
+            )->name(
+                    'wishlist.create'
+                );
+
+
+            Route::post(
+                '/wishlist',
+                [
+                    ParentWishlistController::class,
+                    'store',
+                ]
+            )->name(
+                    'wishlist.store'
+                );
+
+
+            Route::get(
+                '/wishlist/{wishlist}',
+                [
+                    ParentWishlistController::class,
+                    'show',
+                ]
+            )->name(
+                    'wishlist.show'
+                );
+
+
+            Route::get(
+                '/wishlist/{wishlist}/edit',
+                [
+                    ParentWishlistController::class,
+                    'edit',
+                ]
+            )->name(
+                    'wishlist.edit'
+                );
+
+
+            Route::patch(
+                '/wishlist/{wishlist}',
+                [
+                    ParentWishlistController::class,
+                    'update',
+                ]
+            )->name(
+                    'wishlist.update'
+                );
+
+
+            Route::patch(
+                '/wishlist/{wishlist}/cancel',
+                [
+                    ParentWishlistController::class,
+                    'cancel',
+                ]
+            )->name(
+                    'wishlist.cancel'
+                );
+
+
+            Route::delete(
+                '/wishlist/{wishlist}',
+                [
+                    ParentWishlistController::class,
+                    'destroy',
+                ]
+            )->name(
+                    'wishlist.destroy'
+                );
+
+            /*
+|--------------------------------------------------------------------------
+| Parent Leave Management
+|--------------------------------------------------------------------------
+*/
+
+            /*
+    |--------------------------------------------------------------------------
+    | Parent Leave Management
+    |--------------------------------------------------------------------------
+    */
+
+            Route::get(
+                '/leave',
+                [
+                    ParentLeaveController::class,
+                    'index',
+                ]
+            )->name(
+                    'leave.index'
+                );
+
+
+            Route::get(
+                '/leave/create',
+                [
+                    ParentLeaveController::class,
+                    'create',
+                ]
+            )->name(
+                    'leave.create'
+                );
+
+
+            Route::post(
+                '/leave',
+                [
+                    ParentLeaveController::class,
+                    'store',
+                ]
+            )->name(
+                    'leave.store'
+                );
+
+
+            Route::get(
+                '/leave/{leave}',
+                [
+                    ParentLeaveController::class,
+                    'show',
+                ]
+            )->name(
+                    'leave.show'
+                );
+
+
+            Route::get(
+                '/leave/{leave}/edit',
+                [
+                    ParentLeaveController::class,
+                    'edit',
+                ]
+            )->name(
+                    'leave.edit'
+                );
+
+
+            Route::patch(
+                '/leave/{leave}',
+                [
+                    ParentLeaveController::class,
+                    'update',
+                ]
+            )->name(
+                    'leave.update'
+                );
+
+
+            Route::patch(
+                '/leave/{leave}/cancel',
+                [
+                    ParentLeaveController::class,
+                    'cancel',
+                ]
+            )->name(
+                    'leave.cancel'
+                );
+
+
+            Route::delete(
+                '/leave/{leave}',
+                [
+                    ParentLeaveController::class,
+                    'destroy',
+                ]
+            )->name(
+                    'leave.destroy'
+                );
+
+
+            Route::patch(
+                '/leave/{leave}/return-early',
+                [
+                    ParentLeaveController::class,
+                    'returnEarly',
+                ]
+            )->name(
+                    'leave.return-early'
                 );
 
         });

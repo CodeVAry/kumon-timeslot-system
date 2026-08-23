@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin\Enrolment;
 use App\Models\Admin\Guardian;
 use App\Models\Admin\Student;
+use App\Models\Admin\StudentLeave;
 use Illuminate\Support\Facades\Auth;
 
 class ParentPortalController extends Controller
@@ -14,9 +15,6 @@ class ParentPortalController extends Controller
     |--------------------------------------------------------------------------
     | Parent Email
     |--------------------------------------------------------------------------
-    |
-    | Email is the parent identity.
-    |
     */
 
     private function getParentEmail()
@@ -61,15 +59,74 @@ class ParentPortalController extends Controller
 
     /*
     |--------------------------------------------------------------------------
+    | Get Selected Student
+    |--------------------------------------------------------------------------
+    |
+    | Do not use only:
+    |
+    | $guardian->students()
+    |
+    | because the same parent email may exist
+    | on multiple Guardian records.
+    |
+    */
+
+    private function getSelectedStudent()
+    {
+        $studentId =
+            session(
+                'parent_student_id'
+            );
+
+
+        if (!$studentId) {
+
+            return null;
+        }
+
+
+        $guardianIds =
+            $this->getParentGuardianIds();
+
+
+        if ($guardianIds->isEmpty()) {
+
+            return null;
+        }
+
+
+        return Student::where(
+            'id',
+            $studentId
+        )
+            ->where(
+                'is_active',
+                true
+            )
+            ->whereHas(
+                'guardians',
+                function ($query) use (
+                    $guardianIds
+                ) {
+
+                    $query->whereIn(
+                        'guardians.id',
+                        $guardianIds
+                    );
+                }
+            )
+            ->first();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
     | Welcome Page
     |--------------------------------------------------------------------------
     */
 
     public function welcome()
     {
-        /*
-         * Laravel authenticated Guardian.
-         */
         $guardian =
             Auth::guard(
                 'parent'
@@ -85,13 +142,28 @@ class ParentPortalController extends Controller
         }
 
 
-        /*
-         * Get every Guardian record
-         * using the same email.
-         */
         $guardianIds =
-            $this
-                ->getParentGuardianIds();
+            $this->getParentGuardianIds();
+
+
+        if ($guardianIds->isEmpty()) {
+
+            Auth::guard(
+                'parent'
+            )->logout();
+
+
+            session()->forget([
+                'parent_auth_email',
+                'parent_student_id',
+            ]);
+
+
+            return redirect()
+                ->route(
+                    'parent.login'
+                );
+        }
 
 
         /*
@@ -99,8 +171,8 @@ class ParentPortalController extends Controller
         | Get ALL Students
         |--------------------------------------------------------------------------
         |
-        | Student may be attached to any Guardian row
-        | using the same parent email.
+        | Get students connected to any Guardian row
+        | that uses this parent email.
         |
         */
 
@@ -111,7 +183,9 @@ class ParentPortalController extends Controller
             )
                 ->whereHas(
                     'guardians',
-                    function ($query) use ($guardianIds) {
+                    function ($query) use (
+                        $guardianIds
+                    ) {
 
                         $query->whereIn(
                             'guardians.id',
@@ -148,21 +222,40 @@ class ParentPortalController extends Controller
         Student $student
     ) {
         $guardianIds =
-            $this
-                ->getParentGuardianIds();
+            $this->getParentGuardianIds();
+
+
+        if ($guardianIds->isEmpty()) {
+
+            abort(403);
+        }
 
 
         /*
          * Security:
          * selected student must belong
-         * to this parent's email group.
+         * to one of the matching Guardian records.
          */
         $hasStudent =
-            $student
-                ->guardians()
-                ->whereIn(
-                    'guardians.id',
-                    $guardianIds
+            Student::where(
+                'id',
+                $student->id
+            )
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->whereHas(
+                    'guardians',
+                    function ($query) use (
+                        $guardianIds
+                    ) {
+
+                        $query->whereIn(
+                            'guardians.id',
+                            $guardianIds
+                        );
+                    }
                 )
                 ->exists();
 
@@ -173,9 +266,6 @@ class ParentPortalController extends Controller
         }
 
 
-        /*
-         * Save selected student.
-         */
         session([
             'parent_student_id' =>
                 $student->id,
@@ -197,6 +287,12 @@ class ParentPortalController extends Controller
 
     public function dashboard()
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Authenticated Parent
+        |--------------------------------------------------------------------------
+        */
+
         $guardian =
             Auth::guard(
                 'parent'
@@ -212,52 +308,14 @@ class ParentPortalController extends Controller
         }
 
 
-        $studentId =
-            session(
-                'parent_student_id'
-            );
-
-
-        if (!$studentId) {
-
-            return redirect()
-                ->route(
-                    'parent.welcome'
-                );
-        }
-
-
-        $guardianIds =
-            $this
-                ->getParentGuardianIds();
-
-
         /*
         |--------------------------------------------------------------------------
-        | Secure Student Lookup
+        | Selected Student
         |--------------------------------------------------------------------------
         */
 
         $student =
-            Student::where(
-                'id',
-                $studentId
-            )
-                ->where(
-                    'is_active',
-                    true
-                )
-                ->whereHas(
-                    'guardians',
-                    function ($query) use ($guardianIds) {
-
-                        $query->whereIn(
-                            'guardians.id',
-                            $guardianIds
-                        );
-                    }
-                )
-                ->first();
+            $this->getSelectedStudent();
 
 
         if (!$student) {
@@ -276,7 +334,7 @@ class ParentPortalController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Confirmed Classes
+        | Active Confirmed Classes
         |--------------------------------------------------------------------------
         */
 
@@ -297,16 +355,284 @@ class ParentPortalController extends Controller
                     'is_wishlist',
                     false
                 )
+                ->orderBy(
+                    'id'
+                )
                 ->get();
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Latest Wishlist Activity
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        |
+        | Do NOT filter:
+        |
+        | is_active = true
+        | is_wishlist = true
+        |
+        | because:
+        |
+        | Rejected / Cancelled:
+        | is_active may be false.
+        |
+        | Approved:
+        | is_wishlist becomes false.
+        |
+        | wishlist_status is what identifies
+        | wishlist request/history records.
+        |
+        */
+
+        $latestWishlist =
+            Enrolment::with([
+                'sectionOffering.section',
+                'sectionOffering.day',
+
+                'wishlistForEnrolment.sectionOffering.section',
+                'wishlistForEnrolment.sectionOffering.day',
+
+                'reviewedBy',
+            ])
+                ->where(
+                    'student_id',
+                    $student->id
+                )
+                ->whereIn(
+                    'wishlist_status',
+                    [
+                        'pending',
+                        'approved',
+                        'rejected',
+                        'cancelled',
+                    ]
+                )
+                ->orderByDesc(
+                    'updated_at'
+                )
+                ->orderByDesc(
+                    'id'
+                )
+                ->first();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Wishlist Counts
+        |--------------------------------------------------------------------------
+        */
+
+        $pendingWishlistCount =
+            Enrolment::where(
+                'student_id',
+                $student->id
+            )
+                ->where(
+                    'wishlist_status',
+                    'pending'
+                )
+                ->count();
+
+
+        $approvedWishlistCount =
+            Enrolment::where(
+                'student_id',
+                $student->id
+            )
+                ->where(
+                    'wishlist_status',
+                    'approved'
+                )
+                ->count();
+
+
+        $rejectedWishlistCount =
+            Enrolment::where(
+                'student_id',
+                $student->id
+            )
+                ->where(
+                    'wishlist_status',
+                    'rejected'
+                )
+                ->count();
+
+
+        $cancelledWishlistCount =
+            Enrolment::where(
+                'student_id',
+                $student->id
+            )
+                ->where(
+                    'wishlist_status',
+                    'cancelled'
+                )
+                ->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Leave Summary
+        |--------------------------------------------------------------------------
+        */
+
+        $today =
+            now()->toDateString();
+
+
+        /*
+         * Pending Leave
+         */
+        $pendingLeaveCount =
+            StudentLeave::where(
+                'student_id',
+                $student->id
+            )
+                ->where(
+                    'status',
+                    'pending'
+                )
+                ->count();
+
+
+        /*
+         * Current Leave
+         */
+        $currentLeave =
+            StudentLeave::where(
+                'student_id',
+                $student->id
+            )
+                ->where(
+                    'status',
+                    'approved'
+                )
+                ->whereNull(
+                    'actual_return_date'
+                )
+                ->whereDate(
+                    'start_date',
+                    '<=',
+                    $today
+                )
+                ->whereDate(
+                    'expected_return_date',
+                    '>=',
+                    $today
+                )
+                ->orderBy(
+                    'start_date'
+                )
+                ->first();
+
+
+        /*
+         * Upcoming Leave
+         */
+        $upcomingLeave =
+            StudentLeave::where(
+                'student_id',
+                $student->id
+            )
+                ->where(
+                    'status',
+                    'approved'
+                )
+                ->whereNull(
+                    'actual_return_date'
+                )
+                ->whereDate(
+                    'start_date',
+                    '>',
+                    $today
+                )
+                ->orderBy(
+                    'start_date'
+                )
+                ->first();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Latest Leave Activity
+        |--------------------------------------------------------------------------
+        |
+        | Allows dashboard to show:
+        |
+        | Pending
+        | Approved
+        | Rejected
+        | Cancelled
+        |
+        */
+
+        $latestLeave =
+            StudentLeave::where(
+                'student_id',
+                $student->id
+            )
+                ->orderByDesc(
+                    'updated_at'
+                )
+                ->orderByDesc(
+                    'id'
+                )
+                ->first();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return Dashboard
+        |--------------------------------------------------------------------------
+        */
+
         return view(
             'parent.dashboard',
-            compact(
-                'guardian',
-                'student',
-                'enrolments'
-            )
+            [
+                'guardian' =>
+                    $guardian,
+
+                'student' =>
+                    $student,
+
+                'enrolments' =>
+                    $enrolments,
+
+                /*
+                 * Wishlist
+                 */
+                'latestWishlist' =>
+                    $latestWishlist,
+
+                'pendingWishlistCount' =>
+                    $pendingWishlistCount,
+
+                'approvedWishlistCount' =>
+                    $approvedWishlistCount,
+
+                'rejectedWishlistCount' =>
+                    $rejectedWishlistCount,
+
+                'cancelledWishlistCount' =>
+                    $cancelledWishlistCount,
+
+                /*
+                 * Leave
+                 */
+                'pendingLeaveCount' =>
+                    $pendingLeaveCount,
+
+                'currentLeave' =>
+                    $currentLeave,
+
+                'upcomingLeave' =>
+                    $upcomingLeave,
+
+                'latestLeave' =>
+                    $latestLeave,
+            ]
         );
     }
 }

@@ -14,27 +14,39 @@ use Illuminate\Validation\Rule;
 class StudentController extends Controller
 {
     /*
-     * Student List
-     */
+    |--------------------------------------------------------------------------
+    | Student List
+    |--------------------------------------------------------------------------
+    */
+
     public function index(Request $request)
     {
-        $studentsQuery = Student::with([
-            'studentStatus',
-            'guardians',
-            'enrolments.sectionOffering.section',
-            'enrolments.sectionOffering.day',
-        ]);
+        $studentsQuery =
+            Student::with([
+                'studentStatus',
+                'guardians',
+                'enrolments.sectionOffering.section',
+                'enrolments.sectionOffering.day',
+            ]);
+
 
         /*
-         * Search student by name or student ID.
-         */
+        |--------------------------------------------------------------------------
+        | Search Student
+        |--------------------------------------------------------------------------
+        */
+
         if ($request->filled('search')) {
-            $search = trim(
-                $request->input('search')
-            );
+
+            $search =
+                trim(
+                    $request->input('search')
+                );
+
 
             $studentsQuery->where(
                 function ($query) use ($search) {
+
                     $query
                         ->where(
                             'first_name',
@@ -61,10 +73,19 @@ class StudentController extends Controller
             );
         }
 
+
         /*
-         * Status filter.
-         */
-        if ($request->filled('student_status_id')) {
+        |--------------------------------------------------------------------------
+        | Status Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $request->filled(
+                'student_status_id'
+            )
+        ) {
+
             $studentsQuery->where(
                 'student_status_id',
                 $request->input(
@@ -73,39 +94,66 @@ class StudentController extends Controller
             );
         }
 
+
         /*
-         * Guardian text filter.
-         */
-        if ($request->filled('guardian')) {
-            $guardianSearch = trim(
-                $request->input('guardian')
-            );
+        |--------------------------------------------------------------------------
+        | Guardian Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $request->filled(
+                'guardian'
+            )
+        ) {
+
+            $guardianSearch =
+                trim(
+                    $request->input(
+                        'guardian'
+                    )
+                );
+
 
             $studentsQuery->whereHas(
                 'guardians',
-                function ($query) use ($guardianSearch) {
+                function ($query) use (
+                    $guardianSearch
+                ) {
+
                     $query->where(
-                        function ($guardianQuery) use ($guardianSearch) {
+                        function ($guardianQuery) use (
+                            $guardianSearch
+                        ) {
+
                             $guardianQuery
                                 ->where(
                                     'first_name',
                                     'like',
-                                    '%' . $guardianSearch . '%'
+                                    '%' .
+                                    $guardianSearch .
+                                    '%'
                                 )
                                 ->orWhere(
                                     'last_name',
                                     'like',
-                                    '%' . $guardianSearch . '%'
+                                    '%' .
+                                    $guardianSearch .
+                                    '%'
                                 )
                                 ->orWhere(
                                     'phone',
                                     'like',
-                                    '%' . $guardianSearch . '%'
+                                    '%' .
+                                    $guardianSearch .
+                                    '%'
                                 )
                                 ->orWhere(
                                     'email',
                                     'like',
-                                    '%' . $guardianSearch . '%'
+                                    '%' .
+                                    $guardianSearch .
+                                    '%'
                                 )
                                 ->orWhereRaw(
                                     "CONCAT(first_name, ' ', last_name) LIKE ?",
@@ -121,17 +169,27 @@ class StudentController extends Controller
             );
         }
 
+
         /*
-         * Day, time and section filters.
-         */
+        |--------------------------------------------------------------------------
+        | Day / Time / Section Filters
+        |--------------------------------------------------------------------------
+        */
+
         if (
-            $request->filled('day_id') ||
-            $request->filled('timeslot') ||
+            $request->filled('day_id')
+            ||
+            $request->filled('timeslot')
+            ||
             $request->filled('section_id')
         ) {
+
             $studentsQuery->whereHas(
                 'enrolments',
-                function ($enrolmentQuery) use ($request) {
+                function (
+                    $enrolmentQuery
+                ) use ($request) {
+
                     $enrolmentQuery
                         ->where(
                             'is_active',
@@ -143,12 +201,16 @@ class StudentController extends Controller
                         )
                         ->whereHas(
                             'sectionOffering',
-                            function ($offeringQuery) use ($request) {
+                            function (
+                                $offeringQuery
+                            ) use ($request) {
+
                                 if (
                                     $request->filled(
                                         'day_id'
                                     )
                                 ) {
+
                                     $offeringQuery->where(
                                         'day_id',
                                         $request->input(
@@ -157,11 +219,13 @@ class StudentController extends Controller
                                     );
                                 }
 
+
                                 if (
                                     $request->filled(
                                         'timeslot'
                                     )
                                 ) {
+
                                     $offeringQuery->where(
                                         'start_time',
                                         $request->input(
@@ -170,11 +234,13 @@ class StudentController extends Controller
                                     );
                                 }
 
+
                                 if (
                                     $request->filled(
                                         'section_id'
                                     )
                                 ) {
+
                                     $offeringQuery->where(
                                         'section_id',
                                         $request->input(
@@ -188,47 +254,80 @@ class StudentController extends Controller
             );
         }
 
-        /*
-         * Fixed 20 students per page.
-         */
-        $students = $studentsQuery
-            ->orderBy('first_name')
-            ->orderBy('last_name')
-            ->paginate(20)
-            ->withQueryString();
 
         /*
-         * Filter values.
-         */
-        $studentStatuses = StudentStatus::where(
-            'is_active',
-            true
-        )
-            ->orderBy('status_name')
-            ->get();
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
 
-        $days = Day::where(
-            'is_active',
-            true
-        )
-            ->orderBy('sort_order')
-            ->get();
+        $students =
+            $studentsQuery
+                ->orderBy(
+                    'first_name'
+                )
+                ->orderBy(
+                    'last_name'
+                )
+                ->paginate(20)
+                ->withQueryString();
 
-        $sections = Section::where(
-            'is_active',
-            true
-        )
-            ->orderBy('section_name')
-            ->get();
 
-        $timeslots = SectionOffering::where(
-            'is_active',
-            true
-        )
-            ->select('start_time')
-            ->distinct()
-            ->orderBy('start_time')
-            ->pluck('start_time');
+        /*
+        |--------------------------------------------------------------------------
+        | Filter Values
+        |--------------------------------------------------------------------------
+        */
+
+        $studentStatuses =
+            StudentStatus::where(
+                'is_active',
+                true
+            )
+                ->orderBy(
+                    'status_name'
+                )
+                ->get();
+
+
+        $days =
+            Day::where(
+                'is_active',
+                true
+            )
+                ->orderBy(
+                    'sort_order'
+                )
+                ->get();
+
+
+        $sections =
+            Section::where(
+                'is_active',
+                true
+            )
+                ->orderBy(
+                    'section_name'
+                )
+                ->get();
+
+
+        $timeslots =
+            SectionOffering::where(
+                'is_active',
+                true
+            )
+                ->select(
+                    'start_time'
+                )
+                ->distinct()
+                ->orderBy(
+                    'start_time'
+                )
+                ->pluck(
+                    'start_time'
+                );
+
 
         return view(
             'admin.students.index',
@@ -242,11 +341,16 @@ class StudentController extends Controller
         );
     }
 
+
     /*
-     * Student Profile
-     */
-    public function show(Student $student)
-    {
+    |--------------------------------------------------------------------------
+    | Student Profile
+    |--------------------------------------------------------------------------
+    */
+
+    public function show(
+        Student $student
+    ) {
         $student->load([
             'studentStatus',
             'guardians',
@@ -254,32 +358,85 @@ class StudentController extends Controller
             'enrolments.sectionOffering.day',
         ]);
 
-        $primaryGuardian = $student->guardians
-            ->first(function ($guardian) {
-                return (bool)
-                    $guardian->pivot->is_primary;
-            });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Primary Guardian
+        |--------------------------------------------------------------------------
+        |
+        | Keep this because your current profile
+        | displays primary guardian first.
+        |
+        */
+
+        $primaryGuardian =
+            $student
+                ->guardians
+                ->first(
+                    function ($guardian) {
+
+                        return (bool)
+                            $guardian
+                                ->pivot
+                                ->is_primary;
+                    }
+                );
+
 
         if (!$primaryGuardian) {
+
             $primaryGuardian =
-                $student->guardians->first();
+                $student
+                    ->guardians
+                    ->first();
         }
 
-        $confirmedEnrolments = $student->enrolments
-            ->filter(function ($enrolment) {
-                return
-                    $enrolment->is_active &&
-                    !$enrolment->is_wishlist;
-            })
-            ->values();
 
-        $wishlistEnrolments = $student->enrolments
-            ->filter(function ($enrolment) {
-                return
-                    $enrolment->is_active &&
-                    $enrolment->is_wishlist;
-            })
-            ->values();
+        /*
+        |--------------------------------------------------------------------------
+        | Confirmed Enrolments
+        |--------------------------------------------------------------------------
+        */
+
+        $confirmedEnrolments =
+            $student
+                ->enrolments
+                ->filter(
+                    function ($enrolment) {
+
+                        return
+                            $enrolment
+                                ->is_active
+                            &&
+                            !$enrolment
+                                ->is_wishlist;
+                    }
+                )
+                ->values();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Active Wishlist
+        |--------------------------------------------------------------------------
+        */
+
+        $wishlistEnrolments =
+            $student
+                ->enrolments
+                ->filter(
+                    function ($enrolment) {
+
+                        return
+                            $enrolment
+                                ->is_active
+                            &&
+                            $enrolment
+                                ->is_wishlist;
+                    }
+                )
+                ->values();
+
 
         return view(
             'admin.students.show',
@@ -292,9 +449,13 @@ class StudentController extends Controller
         );
     }
 
+
     /*
-     * Edit Student / Guardian / Status / Notes
-     */
+    |--------------------------------------------------------------------------
+    | Edit Student / Guardians / Status / Notes
+    |--------------------------------------------------------------------------
+    */
+
     public function edit(
         Request $request,
         Student $student
@@ -304,28 +465,63 @@ class StudentController extends Controller
             'guardians',
         ]);
 
-        $studentStatuses = StudentStatus::where(
-            'is_active',
-            true
-        )
-            ->orderBy('status_name')
-            ->get();
 
-        $primaryGuardian = $student->guardians
-            ->first(function ($guardian) {
-                return (bool)
-                    $guardian->pivot->is_primary;
-            });
+        /*
+        |--------------------------------------------------------------------------
+        | Student Statuses
+        |--------------------------------------------------------------------------
+        */
 
-        if (!$primaryGuardian) {
-            $primaryGuardian =
-                $student->guardians->first();
-        }
+        $studentStatuses =
+            StudentStatus::where(
+                'is_active',
+                true
+            )
+                ->orderBy(
+                    'status_name'
+                )
+                ->get();
 
-        $section = $request->input(
-            'section',
-            'information'
-        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | ALL Guardians
+        |--------------------------------------------------------------------------
+        |
+        | This is the main fix.
+        |
+        | Instead of using only $primaryGuardian,
+        | now load every guardian linked to student.
+        |
+        */
+
+        $guardians =
+            $student
+                ->guardians()
+                ->orderByDesc(
+                    'guardian_student.is_primary'
+                )
+                ->orderBy(
+                    'guardians.first_name'
+                )
+                ->orderBy(
+                    'guardians.last_name'
+                )
+                ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Section
+        |--------------------------------------------------------------------------
+        */
+
+        $section =
+            $request->input(
+                'section',
+                'information'
+            );
+
 
         $allowedSections = [
             'information',
@@ -334,217 +530,125 @@ class StudentController extends Controller
             'notes',
         ];
 
+
         if (
             !in_array(
                 $section,
                 $allowedSections
             )
         ) {
-            $section = 'information';
+
+            $section =
+                'information';
         }
+
 
         return view(
             'admin.students.edit',
             compact(
                 'student',
                 'studentStatuses',
-                'primaryGuardian',
+                'guardians',
                 'section'
             )
         );
     }
 
+
     /*
-     * Update selected part of Student Profile.
-     */
+    |--------------------------------------------------------------------------
+    | Update Selected Student Profile Section
+    |--------------------------------------------------------------------------
+    */
+
     public function update(
         Request $request,
         Student $student
     ) {
-        $section = $request->input(
-            'section'
-        );
+        $section =
+            $request->input(
+                'section'
+            );
+
 
         /*
-         * Student Information
-         */
-        if ($section === 'information') {
-            $validated = $request->validate([
-                'external_id' => [
-                    'required',
-                    'string',
-                    'max:50',
+        |--------------------------------------------------------------------------
+        | Student Information
+        |--------------------------------------------------------------------------
+        */
 
-                    Rule::unique(
-                        'students',
-                        'external_id'
-                    )->ignore(
-                        $student->id
-                    ),
-                ],
+        if (
+            $section
+            ===
+            'information'
+        ) {
 
-                'first_name' => [
-                    'required',
-                    'string',
-                    'max:100',
-                ],
+            $validated =
+                $request->validate([
+                    'external_id' => [
+                        'required',
+                        'string',
+                        'max:50',
 
-                'last_name' => [
-                    'required',
-                    'string',
-                    'max:100',
-                ],
+                        Rule::unique(
+                            'students',
+                            'external_id'
+                        )->ignore(
+                            $student->id
+                        ),
+                    ],
 
-                'email' => [
-                    'required',
-                    'email',
-                    'max:150',
-                ],
+                    'first_name' => [
+                        'required',
+                        'string',
+                        'max:100',
+                    ],
 
-                'phone' => [
-                    'required',
-                    'string',
-                    'max:30',
-                ],
+                    'last_name' => [
+                        'required',
+                        'string',
+                        'max:100',
+                    ],
 
-                'date_of_birth' => [
-                    'required',
-                    'date',
-                    'before_or_equal:today',
-                ],
+                    'email' => [
+                        'required',
+                        'email',
+                        'max:150',
+                    ],
 
-                'address' => [
-                    'required',
-                    'string',
-                    'max:1000',
-                ],
+                    'phone' => [
+                        'required',
+                        'string',
+                        'max:30',
+                    ],
 
-                'can_leave_alone' => [
-                    'required',
-                    'boolean',
-                ],
-            ]);
+                    'date_of_birth' => [
+                        'required',
+                        'date',
+                        'before_or_equal:today',
+                    ],
+
+                    'address' => [
+                        'required',
+                        'string',
+                        'max:1000',
+                    ],
+
+                    'can_leave_alone' => [
+                        'required',
+                        'boolean',
+                    ],
+                ]);
+
 
             $student->update([
                 'external_id' =>
                     trim(
-                        $validated['external_id']
+                        $validated[
+                            'external_id'
+                        ]
                     ),
 
-                'first_name' =>
-                    trim(
-                        $validated['first_name']
-                    ),
-
-                'last_name' =>
-                    trim(
-                        $validated['last_name']
-                    ),
-
-                'email' =>
-                    trim(
-                        $validated['email']
-                    ),
-
-                'phone' =>
-                    trim(
-                        $validated['phone']
-                    ),
-
-                'date_of_birth' =>
-                    $validated[
-                        'date_of_birth'
-                    ],
-
-                'address' =>
-                    trim(
-                        $validated['address']
-                    ),
-
-                'can_leave_alone' =>
-                    $validated[
-                        'can_leave_alone'
-                    ],
-            ]);
-
-            return redirect()
-                ->route(
-                    'admin.students.show',
-                    $student
-                )
-                ->with(
-                    'success',
-                    'Student information updated successfully.'
-                );
-        }
-
-        /*
-         * Guardian Information
-         */
-        if ($section === 'guardian') {
-            $validated = $request->validate([
-                'guardian_id' => [
-                    'required',
-                    'integer',
-                ],
-
-                'first_name' => [
-                    'required',
-                    'string',
-                    'max:100',
-                ],
-
-                'last_name' => [
-                    'required',
-                    'string',
-                    'max:100',
-                ],
-
-                'email' => [
-                    'nullable',
-                    'email',
-                    'max:150',
-                ],
-
-                'phone' => [
-                    'required',
-                    'string',
-                    'max:30',
-                ],
-
-                'address' => [
-                    'nullable',
-                    'string',
-                    'max:1000',
-                ],
-
-                'relationship' => [
-                    'nullable',
-                    'string',
-                    'max:50',
-                ],
-
-                'is_emergency_contact' => [
-                    'required',
-                    'boolean',
-                ],
-            ]);
-
-            /*
-             * Make sure this guardian belongs
-             * to this student.
-             */
-            $guardian = $student
-                ->guardians()
-                ->where(
-                    'guardians.id',
-                    $validated[
-                        'guardian_id'
-                    ]
-                )
-                ->firstOrFail();
-
-            $guardian->update([
                 'first_name' =>
                     trim(
                         $validated[
@@ -560,57 +664,299 @@ class StudentController extends Controller
                     ),
 
                 'email' =>
-                    !empty(
-                        $validated['email']
-                    )
-                        ? trim(
-                            $validated[
-                                'email'
-                            ]
-                        )
-                        : null,
+                    trim(
+                        $validated[
+                            'email'
+                        ]
+                    ),
 
                 'phone' =>
                     trim(
-                        $validated['phone']
+                        $validated[
+                            'phone'
+                        ]
                     ),
 
+                'date_of_birth' =>
+                    $validated[
+                        'date_of_birth'
+                    ],
+
                 'address' =>
-                    !empty(
-                        $validated['address']
-                    )
-                        ? trim(
-                            $validated[
+                    trim(
+                        $validated[
+                            'address'
+                        ]
+                    ),
+
+                'can_leave_alone' =>
+                    $validated[
+                        'can_leave_alone'
+                    ],
+            ]);
+
+
+            return redirect()
+                ->route(
+                    'admin.students.show',
+                    $student
+                )
+                ->with(
+                    'success',
+                    'Student information updated successfully.'
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Guardian Information
+        |--------------------------------------------------------------------------
+        |
+        | Update ALL guardians submitted
+        | from the edit page.
+        |
+        */
+
+        if (
+            $section
+            ===
+            'guardian'
+        ) {
+
+            $validated =
+                $request->validate([
+                    'guardians' => [
+                        'required',
+                        'array',
+                        'min:1',
+                    ],
+
+                    'guardians.*.id' => [
+                        'required',
+                        'integer',
+                        'exists:guardians,id',
+                    ],
+
+                    'guardians.*.first_name' => [
+                        'required',
+                        'string',
+                        'max:100',
+                    ],
+
+                    'guardians.*.last_name' => [
+                        'required',
+                        'string',
+                        'max:100',
+                    ],
+
+                    'guardians.*.email' => [
+                        'nullable',
+                        'email',
+                        'max:150',
+                    ],
+
+                    'guardians.*.phone' => [
+                        'required',
+                        'string',
+                        'max:30',
+                    ],
+
+                    'guardians.*.address' => [
+                        'nullable',
+                        'string',
+                        'max:1000',
+                    ],
+
+                    'guardians.*.relationship' => [
+                        'nullable',
+                        'string',
+                        'max:50',
+                    ],
+
+                    'guardians.*.is_emergency_contact' => [
+                        'required',
+                        'boolean',
+                    ],
+
+                    'primary_guardian_id' => [
+                        'nullable',
+                        'integer',
+                        'exists:guardians,id',
+                    ],
+                ]);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Validate Primary Guardian
+            |--------------------------------------------------------------------------
+            */
+
+            $primaryGuardianId =
+                $validated[
+                    'primary_guardian_id'
+                ] ?? null;
+
+
+            if ($primaryGuardianId) {
+
+                $primaryGuardianExists =
+                    $student
+                        ->guardians()
+                        ->where(
+                            'guardians.id',
+                            $primaryGuardianId
+                        )
+                        ->exists();
+
+
+                if (
+                    !$primaryGuardianExists
+                ) {
+
+                    abort(403);
+                }
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Update Each Guardian
+            |--------------------------------------------------------------------------
+            */
+
+            foreach (
+                $validated[
+                    'guardians'
+                ]
+                as $guardianData
+            ) {
+
+                /*
+                 * Security:
+                 * Guardian must belong
+                 * to this student.
+                 */
+                $guardian =
+                    $student
+                        ->guardians()
+                        ->where(
+                            'guardians.id',
+                            $guardianData['id']
+                        )
+                        ->first();
+
+
+                if (!$guardian) {
+
+                    abort(403);
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Update Guardian Table
+                |--------------------------------------------------------------------------
+                |
+                | normalized_email and normalized_phone
+                | will automatically update through
+                | your Guardian model mutators.
+                |
+                */
+
+                $guardian->update([
+                    'first_name' =>
+                        trim(
+                            $guardianData[
+                                'first_name'
+                            ]
+                        ),
+
+                    'last_name' =>
+                        trim(
+                            $guardianData[
+                                'last_name'
+                            ]
+                        ),
+
+                    'email' =>
+                        !empty(
+                            $guardianData[
+                                'email'
+                            ]
+                        )
+                            ? trim(
+                                $guardianData[
+                                    'email'
+                                ]
+                            )
+                            : null,
+
+                    'phone' =>
+                        trim(
+                            $guardianData[
+                                'phone'
+                            ]
+                        ),
+
+                    'address' =>
+                        !empty(
+                            $guardianData[
                                 'address'
                             ]
                         )
-                        : null,
-            ]);
-
-            $student
-                ->guardians()
-                ->updateExistingPivot(
-                    $guardian->id,
-                    [
-                        'relationship' =>
-                            !empty(
-                                $validated[
-                                    'relationship'
+                            ? trim(
+                                $guardianData[
+                                    'address'
                                 ]
                             )
-                                ? trim(
-                                    $validated[
+                            : null,
+                ]);
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Update Pivot
+                |--------------------------------------------------------------------------
+                */
+
+                $student
+                    ->guardians()
+                    ->updateExistingPivot(
+                        $guardian->id,
+                        [
+                            'relationship' =>
+                                !empty(
+                                    $guardianData[
                                         'relationship'
                                     ]
                                 )
-                                : null,
+                                    ? trim(
+                                        $guardianData[
+                                            'relationship'
+                                        ]
+                                    )
+                                    : null,
 
-                        'is_emergency_contact' =>
-                            $validated[
-                                'is_emergency_contact'
-                            ],
-                    ]
-                );
+                            'is_primary' =>
+                                $primaryGuardianId
+                                &&
+                                (int)
+                                $primaryGuardianId
+                                ===
+                                (int)
+                                $guardian->id,
+
+                            'is_emergency_contact' =>
+                                (bool)
+                                $guardianData[
+                                    'is_emergency_contact'
+                                ],
+                        ]
+                    );
+            }
+
 
             return redirect()
                 ->route(
@@ -623,49 +969,70 @@ class StudentController extends Controller
                 );
         }
 
+
         /*
-         * Student Status
-         */
-        if ($section === 'status') {
-            $validated = $request->validate([
-                'student_status_id' => [
-                    'required',
-                    'integer',
+        |--------------------------------------------------------------------------
+        | Student Status
+        |--------------------------------------------------------------------------
+        */
 
-                    Rule::exists(
-                        'student_statuses',
-                        'id'
-                    )->where(
-                        function ($query) {
-                            $query->where(
-                                'is_active',
-                                true
-                            );
-                        }
-                    ),
-                ],
+        if (
+            $section
+            ===
+            'status'
+        ) {
 
-                'is_active' => [
-                    'required',
-                    'boolean',
-                ],
-            ]);
+            $validated =
+                $request->validate([
+                    'student_status_id' => [
+                        'required',
+                        'integer',
+
+                        Rule::exists(
+                            'student_statuses',
+                            'id'
+                        )->where(
+                            function ($query) {
+
+                                $query->where(
+                                    'is_active',
+                                    true
+                                );
+                            }
+                        ),
+                    ],
+
+                    'is_active' => [
+                        'required',
+                        'boolean',
+                    ],
+                ]);
+
 
             $isActive =
                 (bool)
-                $validated['is_active'];
+                $validated[
+                    'is_active'
+                ];
+
 
             /*
-             * Set inactive date when
-             * student becomes inactive.
+             * Inactive Date
              */
-            $inactiveSince = null;
+            $inactiveSince =
+                null;
+
 
             if (!$isActive) {
+
                 $inactiveSince =
-                    $student->inactive_since
-                    ?? now()->toDateString();
+                    $student
+                        ->inactive_since
+                    ??
+                    now()
+                        ->toDateString();
             }
+
 
             $student->update([
                 'student_status_id' =>
@@ -680,6 +1047,7 @@ class StudentController extends Controller
                     $inactiveSince,
             ]);
 
+
             return redirect()
                 ->route(
                     'admin.students.show',
@@ -691,22 +1059,35 @@ class StudentController extends Controller
                 );
         }
 
+
         /*
-         * Student Notes
-         */
-        if ($section === 'notes') {
-            $validated = $request->validate([
-                'notes' => [
-                    'nullable',
-                    'string',
-                    'max:2000',
-                ],
-            ]);
+        |--------------------------------------------------------------------------
+        | Student Notes
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $section
+            ===
+            'notes'
+        ) {
+
+            $validated =
+                $request->validate([
+                    'notes' => [
+                        'nullable',
+                        'string',
+                        'max:2000',
+                    ],
+                ]);
+
 
             $student->update([
                 'notes' =>
                     !empty(
-                        $validated['notes']
+                        $validated[
+                            'notes'
+                        ]
                     )
                         ? trim(
                             $validated[
@@ -715,6 +1096,7 @@ class StudentController extends Controller
                         )
                         : null,
             ]);
+
 
             return redirect()
                 ->route(
@@ -726,6 +1108,13 @@ class StudentController extends Controller
                     'Student notes updated successfully.'
                 );
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Invalid Section
+        |--------------------------------------------------------------------------
+        */
 
         return redirect()
             ->route(

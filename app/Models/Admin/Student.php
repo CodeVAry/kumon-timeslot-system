@@ -8,9 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 class Student extends Model
 {
     use HasFactory;
+
+
     protected $fillable = [
         'external_id',
         'student_status_id',
+        'status_changed_at',
         'first_name',
         'last_name',
         'email',
@@ -24,13 +27,80 @@ class Student extends Model
         'inactive_since',
     ];
 
+
     protected $casts = [
-        'date_of_birth' => 'date',
-        'join_date' => 'date',
-        'inactive_since' => 'date',
-        'can_leave_alone' => 'boolean',
-        'is_active' => 'boolean',
+        'date_of_birth' =>
+            'date',
+
+        'join_date' =>
+            'date',
+
+        'inactive_since' =>
+            'date',
+
+        'status_changed_at' =>
+            'datetime',
+
+        'can_leave_alone' =>
+            'boolean',
+
+        'is_active' =>
+            'boolean',
     ];
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Automatically Track Status Change Date
+    |--------------------------------------------------------------------------
+    */
+
+    protected static function booted()
+    {
+        /*
+         * When student is first created,
+         * record when the starting status began.
+         */
+        static::creating(
+            function ($student) {
+
+                if (
+                    !$student->status_changed_at
+                ) {
+
+                    $student->status_changed_at =
+                        now();
+                }
+            }
+        );
+
+
+        /*
+         * Whenever student_status_id changes,
+         * automatically reset status_changed_at.
+         */
+        static::updating(
+            function ($student) {
+
+                if (
+                    $student->isDirty(
+                        'student_status_id'
+                    )
+                ) {
+
+                    $student->status_changed_at =
+                        now();
+                }
+            }
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student Status
+    |--------------------------------------------------------------------------
+    */
 
     public function studentStatus()
     {
@@ -40,6 +110,13 @@ class Student extends Model
             'id'
         );
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Guardians
+    |--------------------------------------------------------------------------
+    */
 
     public function guardians()
     {
@@ -57,6 +134,13 @@ class Student extends Model
             ->withTimestamps();
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Enrolments
+    |--------------------------------------------------------------------------
+    */
+
     public function enrolments()
     {
         return $this->hasMany(
@@ -65,12 +149,18 @@ class Student extends Model
             'id'
         );
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Leaves
+    |--------------------------------------------------------------------------
+    */
+
     public function leaves()
     {
         return $this->hasMany(
             StudentLeave::class
         );
     }
-
-
 }
