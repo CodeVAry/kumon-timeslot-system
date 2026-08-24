@@ -422,7 +422,7 @@
                             class="mt-7 text-center
                                    text-sm text-slate-600"
                         >
-                            Donot have an account?
+                            Don't have an account?
 
                             <a
                                 href="{{ route('register') }}"

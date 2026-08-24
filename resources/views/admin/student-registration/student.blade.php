@@ -118,7 +118,7 @@
                         @enderror
                     </div>
 
-                    <div>
+                    {{-- <div>
                         <label class="mb-2 block text-sm
                                   font-semibold text-gray-700">
                             Email *
@@ -138,7 +138,7 @@
                         <input type="text" name="phone"
                             value="{{ old('phone', $studentData['phone'] ?? '') }}"
                             required class="w-full rounded-lg border-gray-300">
-                    </div>
+                    </div> --}}
 
                     <div>
                         <label class="mb-2 block text-sm
@@ -174,7 +174,7 @@
                         @enderror
                     </div>
 
-                    <div class="md:col-span-2">
+                    {{-- <div class="md:col-span-2">
                         <label class="mb-2 block text-sm
                                   font-semibold text-gray-700">
                             Address *
@@ -210,7 +210,7 @@
                         </label>
 
                         <textarea name="notes" rows="3" class="w-full rounded-lg border-gray-300">{{ old('notes', $studentData['notes'] ?? '') }}</textarea>
-                    </div>
+                    </div> --}}
 
                 </div>
 
