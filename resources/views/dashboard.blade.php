@@ -675,33 +675,110 @@
                 </div>
 
 
-                @if (
-                    Route::has(
-                        'admin.schedule.index'
-                    )
-                )
 
-                    <a
-                        href="{{ route(
+                {{-- =================================================
+                    SCHEDULE / PRINT BUTTONS
+                ================================================== --}}
+
+                <div
+                    class="flex
+                           flex-wrap
+                           items-center
+                           gap-3"
+                >
+
+                    {{-- Open Schedule --}}
+                    @if (
+                        Route::has(
                             'admin.schedule.index'
-                        ) }}"
-                        class="inline-flex
-                               h-11
-                               items-center
-                               justify-center
-                               rounded-xl
-                               bg-cyan-500
-                               px-6
-                               text-sm
-                               font-semibold
-                               text-white
-                               transition
-                               hover:bg-cyan-600"
-                    >
-                        Open Schedule
-                    </a>
+                        )
+                    )
 
-                @endif
+                        <a
+                            href="{{ route(
+                                'admin.schedule.index'
+                            ) }}"
+                            class="inline-flex
+                                   h-11
+                                   items-center
+                                   justify-center
+                                   rounded-xl
+                                   bg-cyan-500
+                                   px-6
+                                   text-sm
+                                   font-semibold
+                                   text-white
+                                   transition
+                                   hover:bg-cyan-600"
+                        >
+                            Open Schedule
+                        </a>
+
+                    @endif
+
+
+
+                    {{-- Print / Export --}}
+                    @if (
+                        Route::has(
+                            'admin.schedule.export.form'
+                        )
+                        &&
+                        auth()
+                            ->user()
+                            ->hasPermission(
+                                'enrolments.print'
+                            )
+                    )
+
+                        <a
+                            href="{{ route(
+                                'admin.schedule.export.form'
+                            ) }}"
+                            class="inline-flex
+                                   h-11
+                                   items-center
+                                   justify-center
+                                   gap-2
+                                   rounded-xl
+                                   border
+                                   border-blue-300
+                                   bg-blue-50
+                                   px-6
+                                   text-sm
+                                   font-semibold
+                                   text-blue-700
+                                   transition
+                                   hover:bg-blue-100"
+                        >
+
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                class="h-5 w-5"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M6 9V2h12v7
+                                       M6 18H4a2 2 0 0 1-2-2v-5
+                                       a2 2 0 0 1 2-2h16
+                                       a2 2 0 0 1 2 2v5
+                                       a2 2 0 0 1-2 2h-2
+                                       M6 14h12v8H6z"
+                                />
+                            </svg>
+
+                            Print / Export
+
+                        </a>
+
+                    @endif
+
+                </div>
 
             </div>
 
@@ -1313,9 +1390,6 @@
                                 );
 
 
-                            /*
-                             * Card Style
-                             */
                             if (
                                 $reminderType
                                 ===
