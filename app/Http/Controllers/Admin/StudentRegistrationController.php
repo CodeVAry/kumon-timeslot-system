@@ -22,21 +22,23 @@ class StudentRegistrationController extends Controller
 
     public function studentStep()
     {
-        $studentStatuses = StudentStatus::where(
-            'is_active',
-            true
-        )
-            ->orderBy(
-                'status_name',
-                'asc'
+        $studentStatuses =
+            StudentStatus::where(
+                'is_active',
+                true
             )
-            ->get();
+                ->orderBy(
+                    'status_name',
+                    'asc'
+                )
+                ->get();
 
 
-        $studentData = session(
-            'student_registration.student',
-            []
-        );
+        $studentData =
+            session(
+                'student_registration.student',
+                []
+            );
 
 
         return view(
@@ -95,7 +97,7 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Check Selected Status Is Active
+        | Check Status Is Active
         |--------------------------------------------------------------------------
         */
 
@@ -126,7 +128,7 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Clean Data
+        | Clean Student Data
         |--------------------------------------------------------------------------
         */
 
@@ -354,6 +356,7 @@ class StudentRegistrationController extends Controller
         ) {
 
             $guardianData[] = [
+
                 'first_name' =>
                     trim(
                         $guardian[
@@ -431,12 +434,13 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Store Guardian Data In Session
+        | Store Guardian Data
         |--------------------------------------------------------------------------
         */
 
         session([
             'student_registration.guardians' => [
+
                 'new' =>
                     $guardianData,
 
@@ -511,10 +515,6 @@ class StudentRegistrationController extends Controller
         |--------------------------------------------------------------------------
         | Load Active Class Offerings
         |--------------------------------------------------------------------------
-        |
-        | Confirmed active enrolments use seats.
-        | Wishlist records do not use seats.
-        |--------------------------------------------------------------------------
         */
 
         $sectionOfferings =
@@ -584,15 +584,21 @@ class StudentRegistrationController extends Controller
                     'asc'
                 )
                 ->orderBy(
-                    'section_offerings.start_time',
+                    'sections.section_name',
                     'asc'
                 )
                 ->orderBy(
-                    'sections.section_name',
+                    'section_offerings.start_time',
                     'asc'
                 )
                 ->get();
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Calculate Available Seats
+        |--------------------------------------------------------------------------
+        */
 
         foreach (
             $sectionOfferings
@@ -666,12 +672,13 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Validate Selected Classes
+        | Validate Selections
         |--------------------------------------------------------------------------
         */
 
         $validated =
             $request->validate([
+
                 'confirmed_ids' => [
                     'nullable',
                     'array',
@@ -741,7 +748,7 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Same Class Cannot Be Confirmed And Wishlist
+        | Same Offering Cannot Be Confirmed And Wishlist
         |--------------------------------------------------------------------------
         */
 
@@ -762,14 +769,14 @@ class StudentRegistrationController extends Controller
                 ->withInput()
                 ->withErrors([
                     'classes' =>
-                        'A class cannot be selected as both confirmed and wishlist.',
+                        'A class offering cannot be selected as both confirmed and wishlist.',
                 ]);
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Combined Selected IDs
+        | Combined Selected Offering IDs
         |--------------------------------------------------------------------------
         */
 
@@ -784,31 +791,46 @@ class StudentRegistrationController extends Controller
             );
 
 
-        sort(
-            $selectedIds
-        );
-
-
         /*
         |--------------------------------------------------------------------------
-        | Make Sure Offerings Are Still Active
+        | Load Selected Offerings
+        |--------------------------------------------------------------------------
+        |
+        | This is also used to enforce:
+        |
+        | ONE OFFERING PER CLASS / SECTION.
+        |
+        | Example:
+        | English Monday 6 PM + English Tuesday 6 PM = NOT allowed.
+        |
+        | English + 3A Math = allowed.
         |--------------------------------------------------------------------------
         */
 
-        $activeOfferingCount =
-            SectionOffering::whereIn(
-                'id',
-                $selectedIds
-            )
+        $selectedOfferings =
+            SectionOffering::with([
+                'section',
+                'day',
+            ])
+                ->whereIn(
+                    'id',
+                    $selectedIds
+                )
                 ->where(
                     'is_active',
                     true
                 )
-                ->count();
+                ->get();
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Make Sure Every Selected Offering Is Active
+        |--------------------------------------------------------------------------
+        */
 
         if (
-            $activeOfferingCount
+            $selectedOfferings->count()
             !==
             count(
                 $selectedIds
@@ -820,6 +842,64 @@ class StudentRegistrationController extends Controller
                 ->withErrors([
                     'classes' =>
                         'One or more selected classes are unavailable.',
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Only One Time / Offering Per Class
+        |--------------------------------------------------------------------------
+        */
+
+        $duplicateSections =
+            $selectedOfferings
+                ->groupBy(
+                    'section_id'
+                )
+                ->filter(
+                    function ($offerings) {
+
+                        return
+                            $offerings->count()
+                            >
+                            1;
+                    }
+                );
+
+
+        if (
+            $duplicateSections
+                ->isNotEmpty()
+        ) {
+
+            $duplicateClassNames =
+                $duplicateSections
+                    ->map(
+                        function ($offerings) {
+
+                            return
+                                $offerings
+                                    ->first()
+                                    ->section
+                                    ?->section_name
+                                ??
+                                'Class';
+                        }
+                    )
+                    ->unique()
+                    ->implode(', ');
+
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'classes' =>
+                        'Only one class time can be selected for each class. Please choose only one offering for: '
+                        .
+                        $duplicateClassNames
+                        .
+                        '.',
                 ]);
         }
 
@@ -875,7 +955,7 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Recheck Student Status
+        | Recheck Status
         |--------------------------------------------------------------------------
         */
 
@@ -893,9 +973,7 @@ class StudentRegistrationController extends Controller
                 ->exists();
 
 
-        if (
-            !$statusAvailable
-        ) {
+        if (!$statusAvailable) {
 
             return redirect()
                 ->route(
@@ -910,7 +988,7 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Save Student, Guardians And Enrolments
+        | Save Everything
         |--------------------------------------------------------------------------
         */
 
@@ -926,14 +1004,11 @@ class StudentRegistrationController extends Controller
                 |--------------------------------------------------------------------------
                 | Create Student
                 |--------------------------------------------------------------------------
-                |
-                | Student contact information is optional and is
-                | not collected in Step 1 anymore.
-                |--------------------------------------------------------------------------
                 */
 
                 $student =
                     Student::create([
+
                         'external_id' =>
                             $studentData[
                                 'external_id'
@@ -1001,6 +1076,7 @@ class StudentRegistrationController extends Controller
 
                     $guardian =
                         Guardian::create([
+
                             'user_id' =>
                                 null,
 
@@ -1039,6 +1115,7 @@ class StudentRegistrationController extends Controller
                         ->attach(
                             $guardian->id,
                             [
+
                                 'relationship' =>
                                     $newGuardian[
                                         'relationship'
@@ -1078,8 +1155,8 @@ class StudentRegistrationController extends Controller
 
 
                     /*
-                     * Lock selected offering while capacity
-                     * is checked.
+                     * Lock offering during
+                     * capacity check.
                      */
                     $offering =
                         SectionOffering::where(
@@ -1094,9 +1171,7 @@ class StudentRegistrationController extends Controller
                             ->first();
 
 
-                    if (
-                        !$offering
-                    ) {
+                    if (!$offering) {
 
                         throw ValidationException::withMessages([
                             'classes' =>
@@ -1107,16 +1182,11 @@ class StudentRegistrationController extends Controller
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Confirmed Class Capacity
-                    |--------------------------------------------------------------------------
-                    |
-                    | Wishlist does not occupy a seat.
+                    | Capacity Check
                     |--------------------------------------------------------------------------
                     */
 
-                    if (
-                        !$isWishlist
-                    ) {
+                    if (!$isWishlist) {
 
                         $allocatedSeats =
                             Enrolment::where(
@@ -1156,6 +1226,7 @@ class StudentRegistrationController extends Controller
                     */
 
                     Enrolment::create([
+
                         'student_id' =>
                             $student->id,
 
@@ -1172,9 +1243,6 @@ class StudentRegistrationController extends Controller
                         'is_wishlist' =>
                             $isWishlist,
 
-                        /*
-                         * New wishlist records must be pending.
-                         */
                         'wishlist_status' =>
                             $isWishlist
                                 ? 'pending'
