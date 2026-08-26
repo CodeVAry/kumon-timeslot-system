@@ -101,7 +101,8 @@
 
         <div
             class="mt-3
-                   flex flex-wrap
+                   flex
+                   flex-wrap
                    items-center
                    gap-2
                    text-sm
@@ -170,7 +171,7 @@
 
 
     {{-- =========================================================
-        SUCCESS
+        SUCCESS MESSAGE
     ========================================================== --}}
 
     @if (session('success'))
@@ -193,7 +194,7 @@
 
 
     {{-- =========================================================
-        ERRORS
+        VALIDATION ERRORS
     ========================================================== --}}
 
     @if ($errors->any())
@@ -210,8 +211,7 @@
                 class="font-semibold
                        text-red-700"
             >
-                Please mark attendance
-                for every student.
+                Please mark attendance for every student.
             </p>
 
         </div>
@@ -221,7 +221,7 @@
 
 
     {{-- =========================================================
-        FORM
+        ATTENDANCE FORM
     ========================================================== --}}
 
     <form
@@ -257,9 +257,13 @@
         >
 
 
-            {{-- Header --}}
+            {{-- =================================================
+                TABLE HEADER
+            ================================================== --}}
+
             <div
-                class="flex flex-col
+                class="flex
+                       flex-col
                        gap-4
                        border-b
                        border-slate-100
@@ -285,16 +289,22 @@
                                text-sm
                                text-slate-500"
                     >
-                        Select Present, Absent
-                        or Vacation for each student.
+                        Select Present, Absent or Vacation
+                        for each student. Students on current
+                        leave are automatically locked as Vacation.
                     </p>
 
                 </div>
 
 
 
+                {{-- =============================================
+                    MARK ALL BUTTONS
+                ============================================== --}}
+
                 <div
-                    class="flex flex-wrap
+                    class="flex
+                           flex-wrap
                            gap-2"
                 >
 
@@ -308,7 +318,8 @@
                                px-4 py-2
                                text-xs
                                font-semibold
-                               text-green-700"
+                               text-green-700
+                               hover:bg-green-100"
                     >
                         Mark All Present
                     </button>
@@ -324,7 +335,8 @@
                                px-4 py-2
                                text-xs
                                font-semibold
-                               text-red-600"
+                               text-red-600
+                               hover:bg-red-100"
                     >
                         Mark All Absent
                     </button>
@@ -340,7 +352,8 @@
                                px-4 py-2
                                text-xs
                                font-semibold
-                               text-amber-700"
+                               text-amber-700
+                               hover:bg-amber-100"
                     >
                         Mark All Vacation
                     </button>
@@ -351,7 +364,10 @@
 
 
 
-            {{-- Table --}}
+            {{-- =================================================
+                TABLE
+            ================================================== --}}
+
             <div class="overflow-x-auto">
 
                 <table class="min-w-full">
@@ -431,12 +447,16 @@
                                divide-slate-100"
                     >
 
-                        @forelse ($enrolments as $enrolment)
+                        @forelse (
+                            $enrolments
+                            as $enrolment
+                        )
 
                             @php
 
                                 $student =
-                                    $enrolment->student;
+                                    $enrolment
+                                        ->student;
 
 
                                 $guardian =
@@ -456,7 +476,8 @@
 
 
                                 if (
-                                    !$guardian &&
+                                    !$guardian
+                                    &&
                                     $student
                                 ) {
 
@@ -470,23 +491,55 @@
                                 $existing =
                                     $attendanceRecords
                                         ->get(
-                                            $enrolment->id
+                                            $enrolment
+                                                ->id
                                         );
 
 
-                                $selectedStatus =
-                                    old(
-                                        'attendance.'
-                                        .
-                                        $enrolment->id,
-                                        $existing
-                                            ?->status
-                                    );
+                                $isAutomaticVacation =
+                                    $vacationEnrolmentIds
+                                        ->contains(
+                                            $enrolment
+                                                ->id
+                                        );
+
+
+                                if (
+                                    $isAutomaticVacation
+                                ) {
+
+                                    $selectedStatus =
+                                        'vacation';
+
+                                } else {
+
+                                    $selectedStatus =
+                                        old(
+                                            'attendance.'
+                                            .
+                                            $enrolment
+                                                ->id,
+                                            $existing
+                                                ?->status
+                                        );
+                                }
 
                             @endphp
 
 
-                            <tr>
+
+                            <tr
+                                class="{{
+                                    $isAutomaticVacation
+                                        ? 'bg-amber-50/30'
+                                        : ''
+                                }}"
+                            >
+
+
+                                {{-- =========================================
+                                    NUMBER
+                                ========================================== --}}
 
                                 <td
                                     class="px-5 py-5
@@ -498,14 +551,17 @@
 
 
 
-                                <td
-                                    class="px-5 py-5"
-                                >
+                                {{-- =========================================
+                                    STUDENT
+                                ========================================== --}}
+
+                                <td class="px-5 py-5">
 
                                     <p
                                         class="font-bold
                                                text-slate-900"
                                     >
+
                                         {{
                                             $student
                                                 ?->first_name
@@ -515,6 +571,7 @@
                                             $student
                                                 ?->last_name
                                         }}
+
                                     </p>
 
 
@@ -523,16 +580,23 @@
                                                text-xs
                                                text-slate-400"
                                     >
+
                                         {{
                                             $student
                                                 ?->external_id
-                                            ?? '—'
+                                            ??
+                                            '—'
                                         }}
+
                                     </p>
 
                                 </td>
 
 
+
+                                {{-- =========================================
+                                    GUARDIAN
+                                ========================================== --}}
 
                                 <td
                                     class="px-5 py-5
@@ -562,9 +626,11 @@
 
 
 
-                                <td
-                                    class="px-5 py-5"
-                                >
+                                {{-- =========================================
+                                    STUDENT STATUS
+                                ========================================== --}}
+
+                                <td class="px-5 py-5">
 
                                     <span
                                         class="inline-flex
@@ -580,7 +646,8 @@
                                             $student
                                                 ?->studentStatus
                                                 ?->status_name
-                                            ?? 'Active'
+                                            ??
+                                            'Active'
                                         }}
 
                                     </span>
@@ -589,10 +656,11 @@
 
 
 
-                                {{-- Attendance --}}
-                                <td
-                                    class="px-5 py-5"
-                                >
+                                {{-- =========================================
+                                    ATTENDANCE OPTIONS
+                                ========================================== --}}
+
+                                <td class="px-5 py-5">
 
                                     <div
                                         class="flex
@@ -601,10 +669,16 @@
                                     >
 
 
-                                        {{-- Present --}}
+                                        {{-- =================================
+                                            PRESENT
+                                        ================================== --}}
+
                                         <label
-                                            class="attendance-option
-                                                   cursor-pointer"
+                                            class="{{
+                                                $isAutomaticVacation
+                                                    ? 'cursor-not-allowed opacity-30'
+                                                    : 'attendance-option cursor-pointer'
+                                            }}"
                                         >
 
                                             <input
@@ -612,10 +686,17 @@
                                                 name="attendance[{{ $enrolment->id }}]"
                                                 value="present"
                                                 class="peer sr-only"
+
                                                 @checked(
+                                                    !$isAutomaticVacation
+                                                    &&
                                                     $selectedStatus
                                                     ===
                                                     'present'
+                                                )
+
+                                                @disabled(
+                                                    $isAutomaticVacation
                                                 )
                                             >
 
@@ -645,10 +726,16 @@
 
 
 
-                                        {{-- Absent --}}
+                                        {{-- =================================
+                                            ABSENT
+                                        ================================== --}}
+
                                         <label
-                                            class="attendance-option
-                                                   cursor-pointer"
+                                            class="{{
+                                                $isAutomaticVacation
+                                                    ? 'cursor-not-allowed opacity-30'
+                                                    : 'attendance-option cursor-pointer'
+                                            }}"
                                         >
 
                                             <input
@@ -656,10 +743,17 @@
                                                 name="attendance[{{ $enrolment->id }}]"
                                                 value="absent"
                                                 class="peer sr-only"
+
                                                 @checked(
+                                                    !$isAutomaticVacation
+                                                    &&
                                                     $selectedStatus
                                                     ===
                                                     'absent'
+                                                )
+
+                                                @disabled(
+                                                    $isAutomaticVacation
                                                 )
                                             >
 
@@ -689,10 +783,16 @@
 
 
 
-                                        {{-- Vacation --}}
+                                        {{-- =================================
+                                            VACATION
+                                        ================================== --}}
+
                                         <label
-                                            class="attendance-option
-                                                   cursor-pointer"
+                                            class="{{
+                                                $isAutomaticVacation
+                                                    ? 'cursor-not-allowed'
+                                                    : 'attendance-option cursor-pointer'
+                                            }}"
                                         >
 
                                             <input
@@ -700,10 +800,17 @@
                                                 name="attendance[{{ $enrolment->id }}]"
                                                 value="vacation"
                                                 class="peer sr-only"
+
                                                 @checked(
+                                                    $isAutomaticVacation
+                                                    ||
                                                     $selectedStatus
                                                     ===
                                                     'vacation'
+                                                )
+
+                                                @disabled(
+                                                    $isAutomaticVacation
                                                 )
                                             >
 
@@ -715,23 +822,65 @@
                                                        justify-center
                                                        rounded-xl
                                                        border
-                                                       border-slate-200
-                                                       bg-white
                                                        px-4 py-2.5
                                                        text-xs
                                                        font-semibold
-                                                       text-slate-600
                                                        transition
-                                                       peer-checked:border-amber-500
-                                                       peer-checked:bg-amber-500
-                                                       peer-checked:text-white"
+
+                                                       {{ $isAutomaticVacation
+                                                           ? 'border-amber-500 bg-amber-500 text-white shadow-sm ring-2 ring-amber-200'
+                                                           : 'border-slate-200 bg-white text-slate-600
+                                                              peer-checked:border-amber-500
+                                                              peer-checked:bg-amber-500
+                                                              peer-checked:text-white' }}"
                                             >
                                                 Vacation
                                             </span>
 
                                         </label>
 
+
+
+                                        {{-- =================================
+                                            HIDDEN LOCKED VACATION VALUE
+                                        ================================== --}}
+
+                                        @if (
+                                            $isAutomaticVacation
+                                        )
+
+                                            <input
+                                                type="hidden"
+                                                name="attendance[{{ $enrolment->id }}]"
+                                                value="vacation"
+                                            >
+
+                                        @endif
+
                                     </div>
+
+
+
+                                    {{-- =====================================
+                                        LEAVE MESSAGE
+                                    ====================================== --}}
+
+                                    @if (
+                                        $isAutomaticVacation
+                                    )
+
+                                        <p
+                                            class="mt-2
+                                                   text-center
+                                                   text-[11px]
+                                                   font-semibold
+                                                   text-amber-700"
+                                        >
+                                            Automatically marked as Vacation
+                                            because the student is currently on leave.
+                                        </p>
+
+                                    @endif
 
                                 </td>
 
@@ -766,8 +915,14 @@
 
 
 
-            {{-- Buttons --}}
-            @if ($enrolments->isNotEmpty())
+            {{-- =================================================
+                SAVE BUTTON
+            ================================================== --}}
+
+            @if (
+                $enrolments
+                    ->isNotEmpty()
+            )
 
                 <div
                     class="flex
@@ -816,6 +971,15 @@
 
 <script>
 
+/*
+|--------------------------------------------------------------------------
+| Mark All
+|--------------------------------------------------------------------------
+|
+| Automatically locked Vacation students are ignored.
+|--------------------------------------------------------------------------
+*/
+
 function markAll(status) {
 
     const radios =
@@ -824,7 +988,7 @@ function markAll(status) {
             +
             status
             +
-            '"]'
+            '"]:not(:disabled)'
         );
 
 
@@ -838,9 +1002,14 @@ function markAll(status) {
 }
 
 
+
 /*
 |--------------------------------------------------------------------------
-| Make sure every student is marked
+| Validate Attendance
+|--------------------------------------------------------------------------
+|
+| Only normal enabled radio groups are checked.
+| Students automatically on Vacation have a hidden Vacation value.
 |--------------------------------------------------------------------------
 */
 
@@ -855,6 +1024,7 @@ document.addEventListener(
 
 
         if (!form) {
+
             return;
         }
 
@@ -869,7 +1039,7 @@ document.addEventListener(
 
                 document
                     .querySelectorAll(
-                        'input[type="radio"][name^="attendance["]'
+                        'input[type="radio"][name^="attendance["]:not(:disabled)'
                     )
                     .forEach(
                         function (radio) {
@@ -892,7 +1062,7 @@ document.addEventListener(
                             +
                             groupName
                             +
-                            '"]:checked'
+                            '"]:checked:not(:disabled)'
                         );
 
 

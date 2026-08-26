@@ -7,10 +7,12 @@ use App\Models\Admin\Attendance;
 use App\Models\Admin\Day;
 use App\Models\Admin\Enrolment;
 use App\Models\Admin\SectionOffering;
+use App\Models\Admin\StudentLeave;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class AttendanceController extends Controller
 {
@@ -19,14 +21,16 @@ class AttendanceController extends Controller
     | Attendance Overview
     |--------------------------------------------------------------------------
     */
+
     public function index(Request $request)
     {
-        $days = Day::where(
-            'is_active',
-            true
-        )
-            ->orderBy('sort_order')
-            ->get();
+        $days =
+            Day::where(
+                'is_active',
+                true
+            )
+                ->orderBy('sort_order')
+                ->get();
 
 
         /*
@@ -35,9 +39,13 @@ class AttendanceController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $today = now()->startOfDay();
+        $today =
+            now()->startOfDay();
 
-        $todayName = $today->format('l');
+
+        $todayName =
+            $today->format('l');
+
 
         $dayDates = [];
 
@@ -50,19 +58,23 @@ class AttendanceController extends Controller
                 strtolower($todayName)
             ) {
 
-                $date = $today->copy();
+                $date =
+                    $today->copy();
 
             } else {
 
-                $date = $today
-                    ->copy()
-                    ->next(
-                        $day->day_name
-                    );
+                $date =
+                    $today
+                        ->copy()
+                        ->next(
+                            $day->day_name
+                        );
             }
 
 
-            $dayDates[$day->id] =
+            $dayDates[
+                $day->id
+            ] =
                 $date;
         }
 
@@ -73,32 +85,40 @@ class AttendanceController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $todayDay = $days->first(
-            function ($day) use ($todayName) {
+        $todayDay =
+            $days->first(
+                function ($day) use ($todayName) {
 
-                return strtolower(
-                    $day->day_name
-                )
-                ===
-                strtolower(
-                    $todayName
-                );
-            }
-        );
+                    return
+                        strtolower(
+                            $day->day_name
+                        )
+                        ===
+                        strtolower(
+                            $todayName
+                        );
+                }
+            );
 
 
         if (!$todayDay) {
 
-            $todayDay = $days
-                ->sortBy(
-                    function ($day) use ($dayDates) {
+            $todayDay =
+                $days
+                    ->sortBy(
+                        function (
+                            $day
+                        ) use (
+                            $dayDates
+                        ) {
 
-                        return $dayDates[
-                            $day->id
-                        ]->timestamp;
-                    }
-                )
-                ->first();
+                            return
+                                $dayDates[
+                                    $day->id
+                                ]->timestamp;
+                        }
+                    )
+                    ->first();
         }
 
 
@@ -121,6 +141,7 @@ class AttendanceController extends Controller
             $selectedDay =
                 $todayDay;
 
+
             $selectedDayId =
                 $selectedDay?->id;
         }
@@ -140,7 +161,8 @@ class AttendanceController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $offerings = collect();
+        $offerings =
+            collect();
 
 
         if ($selectedDay) {
@@ -204,8 +226,10 @@ class AttendanceController extends Controller
 
 
         if (
-            $selectedDate &&
-            $offeringIds->isNotEmpty()
+            $selectedDate
+            &&
+            $offeringIds
+                ->isNotEmpty()
         ) {
 
             $studentsEnrolled =
@@ -232,7 +256,9 @@ class AttendanceController extends Controller
                 )
                     ->whereHas(
                         'enrolment',
-                        function ($query) use (
+                        function (
+                            $query
+                        ) use (
                             $offeringIds
                         ) {
 
@@ -284,8 +310,11 @@ class AttendanceController extends Controller
                     function ($offering) {
 
                         return Carbon::parse(
-                            $offering->start_time
-                        )->format('H:i:s');
+                            $offering
+                                ->start_time
+                        )->format(
+                            'H:i:s'
+                        );
                     }
                 );
 
@@ -303,7 +332,8 @@ class AttendanceController extends Controller
 
 
         if (
-            !$selectedTime ||
+            !$selectedTime
+            ||
             !$classTimes->has(
                 $selectedTime
             )
@@ -349,9 +379,10 @@ class AttendanceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Take Attendance Page
+    | Take Attendance
     |--------------------------------------------------------------------------
     */
+
     public function takeAttendance(
         Request $request,
         SectionOffering $sectionOffering
@@ -367,8 +398,11 @@ class AttendanceController extends Controller
 
         $attendanceDate =
             Carbon::parse(
-                $validated['date']
-            );
+                $validated[
+                    'date'
+                ]
+            )
+                ->startOfDay();
 
 
         $sectionOffering->load([
@@ -376,6 +410,12 @@ class AttendanceController extends Controller
             'day',
         ]);
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Confirmed Active Enrolments
+        |--------------------------------------------------------------------------
+        */
 
         $enrolments =
             Enrolment::with([
@@ -401,12 +441,73 @@ class AttendanceController extends Controller
 
 
         /*
-         * Existing attendance records.
-         */
+        |--------------------------------------------------------------------------
+        | Students Automatically On Vacation
+        |--------------------------------------------------------------------------
+        |
+        | An approved/current leave automatically makes attendance Vacation.
+        |
+        | If actual_return_date is null:
+        |     leave remains active until expected_return_date.
+        |
+        | If actual_return_date exists:
+        |     the actual return date itself is treated as a returned day,
+        |     therefore Vacation only applies BEFORE actual_return_date.
+        |--------------------------------------------------------------------------
+        */
+
+        $vacationStudentIds =
+            $this->getVacationStudentIds(
+                $enrolments
+                    ->pluck(
+                        'student_id'
+                    )
+                    ->unique()
+                    ->values(),
+                $attendanceDate
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Convert Student IDs To Enrolment IDs
+        |--------------------------------------------------------------------------
+        */
+
+        $vacationEnrolmentIds =
+            $enrolments
+                ->filter(
+                    function (
+                        $enrolment
+                    ) use (
+                        $vacationStudentIds
+                    ) {
+
+                        return
+                            $vacationStudentIds
+                                ->contains(
+                                    $enrolment
+                                        ->student_id
+                                );
+                    }
+                )
+                ->pluck(
+                    'id'
+                )
+                ->values();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Existing Attendance
+        |--------------------------------------------------------------------------
+        */
+
         $attendanceRecords =
             Attendance::whereIn(
                 'enrolment_id',
-                $enrolments->pluck('id')
+                $enrolments
+                    ->pluck('id')
             )
                 ->whereDate(
                     'attendance_date',
@@ -425,7 +526,8 @@ class AttendanceController extends Controller
                 'sectionOffering',
                 'attendanceDate',
                 'enrolments',
-                'attendanceRecords'
+                'attendanceRecords',
+                'vacationEnrolmentIds'
             )
         );
     }
@@ -436,6 +538,7 @@ class AttendanceController extends Controller
     | Save Attendance
     |--------------------------------------------------------------------------
     */
+
     public function store(
         Request $request,
         SectionOffering $sectionOffering
@@ -455,6 +558,7 @@ class AttendanceController extends Controller
 
                 'attendance.*' => [
                     'required',
+
                     Rule::in([
                         'present',
                         'absent',
@@ -464,11 +568,22 @@ class AttendanceController extends Controller
             ]);
 
 
+        $attendanceDate =
+            Carbon::parse(
+                $validated[
+                    'attendance_date'
+                ]
+            )
+                ->startOfDay();
+
+
         /*
-         * Get valid enrolments for
-         * this exact class.
-         */
-        $validEnrolmentIds =
+        |--------------------------------------------------------------------------
+        | Get Valid Enrolments For This Class
+        |--------------------------------------------------------------------------
+        */
+
+        $validEnrolments =
             Enrolment::where(
                 'section_offering_id',
                 $sectionOffering->id
@@ -481,53 +596,105 @@ class AttendanceController extends Controller
                     'is_wishlist',
                     false
                 )
-                ->pluck('id')
-                ->map(
-                    fn ($id) =>
-                        (int) $id
-                )
-                ->toArray();
+                ->get([
+                    'id',
+                    'student_id',
+                ]);
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Automatically Determine Vacation Students
+        |--------------------------------------------------------------------------
+        */
+
+        $vacationStudentIds =
+            $this->getVacationStudentIds(
+                $validEnrolments
+                    ->pluck(
+                        'student_id'
+                    )
+                    ->unique()
+                    ->values(),
+                $attendanceDate
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Save
+        |--------------------------------------------------------------------------
+        */
 
         DB::transaction(
             function () use (
                 $validated,
-                $validEnrolmentIds
+                $validEnrolments,
+                $vacationStudentIds,
+                $attendanceDate
             ) {
 
                 foreach (
-                    $validated['attendance']
-                    as $enrolmentId => $status
+                    $validEnrolments
+                    as $enrolment
                 ) {
 
-                    $enrolmentId =
-                        (int) $enrolmentId;
-
-
                     /*
-                     * Prevent someone from
-                     * submitting an enrolment
-                     * from another class.
-                     */
+                    |--------------------------------------------------------------------------
+                    | Force Vacation From Leave
+                    |--------------------------------------------------------------------------
+                    |
+                    | Even if someone manually changes the HTML request,
+                    | an approved/current leave cannot be changed to Present
+                    | or Absent.
+                    |--------------------------------------------------------------------------
+                    */
+
                     if (
-                        !in_array(
-                            $enrolmentId,
-                            $validEnrolmentIds
-                        )
+                        $vacationStudentIds
+                            ->contains(
+                                $enrolment
+                                    ->student_id
+                            )
                     ) {
-                        continue;
+
+                        $status =
+                            'vacation';
+
+                    } else {
+
+                        $status =
+                            $validated[
+                                'attendance'
+                            ][
+                                $enrolment->id
+                            ]
+                            ?? null;
+
+
+                        /*
+                         * Backend protection.
+                         * Every non-vacation student
+                         * must still have attendance.
+                         */
+                        if (!$status) {
+
+                            throw ValidationException::withMessages([
+                                'attendance' =>
+                                    'Please mark attendance for every student.',
+                            ]);
+                        }
                     }
 
 
                     Attendance::updateOrCreate(
                         [
                             'enrolment_id' =>
-                                $enrolmentId,
+                                $enrolment->id,
 
                             'attendance_date' =>
-                                $validated[
-                                    'attendance_date'
-                                ],
+                                $attendanceDate
+                                    ->toDateString(),
                         ],
                         [
                             'status' =>
@@ -547,14 +714,140 @@ class AttendanceController extends Controller
                         $sectionOffering->id,
 
                     'date' =>
-                        $validated[
-                            'attendance_date'
-                        ],
+                        $attendanceDate
+                            ->toDateString(),
                 ]
             )
             ->with(
                 'success',
                 'Attendance saved successfully.'
             );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Get Students On Vacation
+    |--------------------------------------------------------------------------
+    |
+    | Only approved leave is used.
+    |
+    | NULL status is also accepted for older/admin-created leave records
+    | created before leave approval status was introduced.
+    |--------------------------------------------------------------------------
+    */
+
+    private function getVacationStudentIds(
+        $studentIds,
+        Carbon $attendanceDate
+    ) {
+        if (
+            $studentIds
+                ->isEmpty()
+        ) {
+
+            return collect();
+        }
+
+
+        $date =
+            $attendanceDate
+                ->toDateString();
+
+
+        return StudentLeave::whereIn(
+            'student_id',
+            $studentIds
+        )
+
+            /*
+             * Do not use Pending, Rejected
+             * or Cancelled parent requests.
+             */
+            ->where(
+                function ($query) {
+
+                    $query
+                        ->where(
+                            'status',
+                            'approved'
+                        )
+
+                        /*
+                         * Supports older/admin-created
+                         * leave rows if status was NULL.
+                         */
+                        ->orWhereNull(
+                            'status'
+                        );
+                }
+            )
+
+            /*
+             * Leave must already have started.
+             */
+            ->whereDate(
+                'start_date',
+                '<=',
+                $date
+            )
+
+            /*
+             * Determine the effective end.
+             */
+            ->where(
+                function ($query) use (
+                    $date
+                ) {
+
+                    /*
+                     * No actual return yet:
+                     * use expected return date.
+                     */
+                    $query->where(
+                        function ($query) use (
+                            $date
+                        ) {
+
+                            $query
+                                ->whereNull(
+                                    'actual_return_date'
+                                )
+                                ->whereDate(
+                                    'expected_return_date',
+                                    '>=',
+                                    $date
+                                );
+                        }
+                    )
+
+                    /*
+                     * Returned already:
+                     * vacation applies only before
+                     * the return date.
+                     */
+                    ->orWhere(
+                        function ($query) use (
+                            $date
+                        ) {
+
+                            $query
+                                ->whereNotNull(
+                                    'actual_return_date'
+                                )
+                                ->whereDate(
+                                    'actual_return_date',
+                                    '>',
+                                    $date
+                                );
+                        }
+                    );
+                }
+            )
+            ->pluck(
+                'student_id'
+            )
+            ->unique()
+            ->values();
     }
 }
