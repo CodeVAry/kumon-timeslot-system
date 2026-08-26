@@ -550,12 +550,6 @@ Route::middleware('auth')
             ->name('student-reviews.index');
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Trial Review
-        |--------------------------------------------------------------------------
-        */
-
         Route::patch(
             '/student-reviews/{student}/trial/continue',
             [
@@ -577,12 +571,6 @@ Route::middleware('auth')
             ->middleware('permission:students.edit')
             ->name('student-reviews.trial.reject');
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Absence Review
-        |--------------------------------------------------------------------------
-        */
 
         Route::patch(
             '/student-reviews/{student}/absence/keep',
@@ -606,12 +594,6 @@ Route::middleware('auth')
             ->name('student-reviews.absence.remove');
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Six-Month Deletion
-        |--------------------------------------------------------------------------
-        */
-
         Route::delete(
             '/student-reviews/{student}/delete',
             [
@@ -625,7 +607,7 @@ Route::middleware('auth')
 
         /*
         |--------------------------------------------------------------------------
-        | Student Registration Wizard
+        | Student Registration
         |--------------------------------------------------------------------------
         */
 
@@ -761,15 +743,16 @@ Route::middleware('auth')
             ->middleware('permission:students.edit')
             ->name('students.update');
 
+
         Route::delete(
-    '/students/{student}',
-    [
-        StudentController::class,
-        'destroy',
-    ]
-)
-    ->middleware('permission:students.delete')
-    ->name('students.destroy');
+            '/students/{student}',
+            [
+                StudentController::class,
+                'destroy',
+            ]
+        )
+            ->middleware('permission:students.delete')
+            ->name('students.destroy');
 
 
         /*
@@ -872,6 +855,44 @@ Route::middleware('auth')
             ->name('schedule.index');
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | New Print / Export Routes
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/schedule/export',
+            [
+                ScheduleController::class,
+                'exportForm',
+            ]
+        )
+            ->middleware('permission:enrolments.print')
+            ->name('schedule.export.form');
+
+
+        Route::post(
+            '/schedule/export',
+            [
+                ScheduleController::class,
+                'export',
+            ]
+        )
+            ->middleware('permission:enrolments.print')
+            ->name('schedule.export');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Existing Print Routes
+        |--------------------------------------------------------------------------
+        |
+        | These remain so old buttons still work.
+        | Controller redirects them to the new filter page.
+        |--------------------------------------------------------------------------
+        */
+
         Route::get(
             '/schedule/print-day',
             [
@@ -943,7 +964,7 @@ Route::middleware('auth')
 
         /*
         |--------------------------------------------------------------------------
-        | Leave Management Routes
+        | Leave Management
         |--------------------------------------------------------------------------
         */
 
@@ -1151,12 +1172,6 @@ Route::prefix('parent')
     ->name('parent.')
     ->group(function () {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Parent Guest Routes
-        |--------------------------------------------------------------------------
-        */
-
         Route::get(
             '/login',
             [
@@ -1196,12 +1211,6 @@ Route::prefix('parent')
         )
             ->name('otp.verify');
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Parent Authenticated Routes
-        |--------------------------------------------------------------------------
-        */
 
         Route::middleware('auth:parent')
             ->group(function () {
@@ -1324,7 +1333,7 @@ Route::prefix('parent')
 
                 /*
                 |--------------------------------------------------------------------------
-                | Parent Leave Management
+                | Parent Leave
                 |--------------------------------------------------------------------------
                 */
 
@@ -1418,12 +1427,6 @@ Route::prefix('parent')
                     ->name('leave.return-early');
 
 
-                /*
-                |--------------------------------------------------------------------------
-                | Parent Logout
-                |--------------------------------------------------------------------------
-                */
-
                 Route::post(
                     '/logout',
                     [
@@ -1438,7 +1441,7 @@ Route::prefix('parent')
 
 /*
 |--------------------------------------------------------------------------
-| Laravel Breeze Authentication Routes
+| Breeze Authentication
 |--------------------------------------------------------------------------
 */
 
