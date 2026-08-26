@@ -117,14 +117,10 @@ class StudentController extends Controller
 
             $studentsQuery->whereHas(
                 'guardians',
-                function ($query) use (
-                    $guardianSearch
-                ) {
+                function ($query) use ($guardianSearch) {
 
                     $query->where(
-                        function ($guardianQuery) use (
-                            $guardianSearch
-                        ) {
+                        function ($guardianQuery) use ($guardianSearch) {
 
                             $guardianQuery
                                 ->where(
@@ -186,9 +182,7 @@ class StudentController extends Controller
 
             $studentsQuery->whereHas(
                 'enrolments',
-                function (
-                    $enrolmentQuery
-                ) use ($request) {
+                function ($enrolmentQuery) use ($request) {
 
                     $enrolmentQuery
                         ->where(
@@ -201,9 +195,7 @@ class StudentController extends Controller
                         )
                         ->whereHas(
                             'sectionOffering',
-                            function (
-                                $offeringQuery
-                            ) use ($request) {
+                            function ($offeringQuery) use ($request) {
 
                                 if (
                                     $request->filled(
@@ -375,7 +367,7 @@ class StudentController extends Controller
                 ->first(
                     function ($guardian) {
 
-                        return (bool)
+                        return (bool) 
                             $guardian
                                 ->pivot
                                 ->is_primary;
@@ -594,8 +586,8 @@ class StudentController extends Controller
                             'students',
                             'external_id'
                         )->ignore(
-                            $student->id
-                        ),
+                                $student->id
+                            ),
                     ],
 
                     'first_name' => [
@@ -882,16 +874,16 @@ class StudentController extends Controller
 
                     'email' =>
                         !empty(
+                        $guardianData[
+                            'email'
+                        ]
+                    )
+                        ? trim(
                             $guardianData[
                                 'email'
                             ]
                         )
-                            ? trim(
-                                $guardianData[
-                                    'email'
-                                ]
-                            )
-                            : null,
+                        : null,
 
                     'phone' =>
                         trim(
@@ -902,16 +894,16 @@ class StudentController extends Controller
 
                     'address' =>
                         !empty(
+                        $guardianData[
+                            'address'
+                        ]
+                    )
+                        ? trim(
                             $guardianData[
                                 'address'
                             ]
                         )
-                            ? trim(
-                                $guardianData[
-                                    'address'
-                                ]
-                            )
-                            : null,
+                        : null,
                 ]);
 
 
@@ -928,28 +920,28 @@ class StudentController extends Controller
                         [
                             'relationship' =>
                                 !empty(
+                                $guardianData[
+                                    'relationship'
+                                ]
+                            )
+                                ? trim(
                                     $guardianData[
                                         'relationship'
                                     ]
                                 )
-                                    ? trim(
-                                        $guardianData[
-                                            'relationship'
-                                        ]
-                                    )
-                                    : null,
+                                : null,
 
                             'is_primary' =>
                                 $primaryGuardianId
                                 &&
-                                (int)
+                                (int) 
                                 $primaryGuardianId
                                 ===
-                                (int)
+                                (int) 
                                 $guardian->id,
 
                             'is_emergency_contact' =>
-                                (bool)
+                                (bool) 
                                 $guardianData[
                                     'is_emergency_contact'
                                 ],
@@ -992,14 +984,14 @@ class StudentController extends Controller
                             'student_statuses',
                             'id'
                         )->where(
-                            function ($query) {
+                                function ($query) {
 
-                                $query->where(
-                                    'is_active',
-                                    true
-                                );
-                            }
-                        ),
+                                    $query->where(
+                                        'is_active',
+                                        true
+                                    );
+                                }
+                            ),
                     ],
 
                     'is_active' => [
@@ -1010,7 +1002,7 @@ class StudentController extends Controller
 
 
             $isActive =
-                (bool)
+                (bool) 
                 $validated[
                     'is_active'
                 ];
@@ -1085,16 +1077,16 @@ class StudentController extends Controller
             $student->update([
                 'notes' =>
                     !empty(
+                    $validated[
+                        'notes'
+                    ]
+                )
+                    ? trim(
                         $validated[
                             'notes'
                         ]
                     )
-                        ? trim(
-                            $validated[
-                                'notes'
-                            ]
-                        )
-                        : null,
+                    : null,
             ]);
 
 
@@ -1121,5 +1113,36 @@ class StudentController extends Controller
                 'admin.students.show',
                 $student
             );
+    }
+
+
+    public function destroy(Student $student)
+    {
+        try {
+
+            $studentName =
+                $student->first_name
+                . ' '
+                . $student->last_name;
+
+            $student->delete();
+
+            return redirect()
+                ->route('admin.students.index')
+                ->with(
+                    'success',
+                    $studentName
+                    . ' has been deleted successfully.'
+                );
+
+        } catch (\Throwable $e) {
+
+            return redirect()
+                ->route('admin.students.index')
+                ->with(
+                    'error',
+                    'This student cannot be deleted because related records still exist.'
+                );
+        }
     }
 }

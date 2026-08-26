@@ -1,26 +1,28 @@
 <?php
 
+use App\Http\Controllers\Admin\AttendanceController;
+use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\LeaveController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\ScheduleController;
+use App\Http\Controllers\Admin\SectionController;
+use App\Http\Controllers\Admin\SectionOfferingController;
+use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\StudentEnrolmentController;
+use App\Http\Controllers\Admin\StudentRegistrationController;
+use App\Http\Controllers\Admin\StudentReviewController;
+use App\Http\Controllers\Admin\StudentStatusController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\WishlistController;
+use App\Http\Controllers\Parent\Auth\ParentLoginController;
+use App\Http\Controllers\Parent\ParentLeaveController;
+use App\Http\Controllers\Parent\ParentPortalController;
+use App\Http\Controllers\Parent\ParentWishlistController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\SectionController;
-use App\Http\Controllers\Admin\SectionOfferingController;
-use App\Http\Controllers\Admin\StudentStatusController;
-use App\Http\Controllers\Admin\StudentRegistrationController;
-use App\Http\Controllers\Admin\StudentController;
-use App\Http\Controllers\Admin\StudentEnrolmentController;
-use App\Http\Controllers\Admin\ScheduleController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\AttendanceController;
-use App\Http\Controllers\Admin\LeaveController;
-use App\Http\Controllers\Admin\WishlistController;
-use App\Http\Controllers\Parent\Auth\ParentLoginController;
-use App\Http\Controllers\Parent\ParentPortalController;
-use App\Http\Controllers\Parent\ParentWishlistController;
-use App\Http\Controllers\Parent\ParentLeaveController;
-use App\Http\Controllers\Admin\StudentReviewController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -28,19 +30,18 @@ use App\Http\Controllers\Admin\StudentReviewController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('welcome');
+Route::get(
+    '/',
+    function () {
+        return view('welcome');
+    }
+)->name('welcome');
 
 
 /*
 |--------------------------------------------------------------------------
 | Dashboard
 |--------------------------------------------------------------------------
-|
-| A registered user without a role can access the dashboard.
-| The dashboard will show the waiting-for-role-assignment message.
-|
 */
 
 Route::get(
@@ -50,7 +51,7 @@ Route::get(
         'index',
     ]
 )
-    ->middleware(['auth'])
+    ->middleware('auth')
     ->name('dashboard');
 
 
@@ -60,36 +61,47 @@ Route::get(
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware('auth')
+    ->group(function () {
 
-    Route::get(
-        '/profile',
-        [ProfileController::class, 'edit']
-    )->name('profile.edit');
+        Route::get(
+            '/profile',
+            [
+                ProfileController::class,
+                'edit',
+            ]
+        )
+            ->name('profile.edit');
 
-    Route::patch(
-        '/profile',
-        [ProfileController::class, 'update']
-    )->name('profile.update');
 
-    Route::delete(
-        '/profile',
-        [ProfileController::class, 'destroy']
-    )->name('profile.destroy');
-});
+        Route::patch(
+            '/profile',
+            [
+                ProfileController::class,
+                'update',
+            ]
+        )
+            ->name('profile.update');
+
+
+        Route::delete(
+            '/profile',
+            [
+                ProfileController::class,
+                'destroy',
+            ]
+        )
+            ->name('profile.destroy');
+    });
 
 
 /*
 |--------------------------------------------------------------------------
 | Admin Routes
 |--------------------------------------------------------------------------
-|
-| Every admin route requires authentication.
-| Each action also requires its related permission.
-|
 */
 
-Route::middleware(['auth'])
+Route::middleware('auth')
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -102,42 +114,65 @@ Route::middleware(['auth'])
 
         Route::get(
             '/roles',
-            [RoleController::class, 'index']
+            [
+                RoleController::class,
+                'index',
+            ]
         )
             ->middleware('permission:roles.view')
             ->name('roles.index');
 
+
         Route::get(
             '/roles/create',
-            [RoleController::class, 'create']
+            [
+                RoleController::class,
+                'create',
+            ]
         )
             ->middleware('permission:roles.create')
             ->name('roles.create');
 
+
         Route::post(
             '/roles',
-            [RoleController::class, 'store']
+            [
+                RoleController::class,
+                'store',
+            ]
         )
             ->middleware('permission:roles.create')
             ->name('roles.store');
 
+
         Route::get(
             '/roles/{role}/edit',
-            [RoleController::class, 'edit']
+            [
+                RoleController::class,
+                'edit',
+            ]
         )
             ->middleware('permission:roles.edit')
             ->name('roles.edit');
 
+
         Route::put(
             '/roles/{role}',
-            [RoleController::class, 'update']
+            [
+                RoleController::class,
+                'update',
+            ]
         )
             ->middleware('permission:roles.edit')
             ->name('roles.update');
 
+
         Route::delete(
             '/roles/{role}',
-            [RoleController::class, 'destroy']
+            [
+                RoleController::class,
+                'destroy',
+            ]
         )
             ->middleware('permission:roles.delete')
             ->name('roles.destroy');
@@ -151,14 +186,21 @@ Route::middleware(['auth'])
 
         Route::get(
             '/permissions',
-            [PermissionController::class, 'index']
+            [
+                PermissionController::class,
+                'index',
+            ]
         )
             ->middleware('permission:permissions.view')
             ->name('permissions.index');
 
+
         Route::put(
             '/permissions/{role}',
-            [PermissionController::class, 'update']
+            [
+                PermissionController::class,
+                'update',
+            ]
         )
             ->middleware('permission:permissions.edit')
             ->name('permissions.update');
@@ -172,45 +214,97 @@ Route::middleware(['auth'])
 
         Route::get(
             '/users',
-            [UserController::class, 'index']
+            [
+                UserController::class,
+                'index',
+            ]
         )
             ->middleware('permission:users.view')
             ->name('users.index');
 
+
         Route::get(
             '/users/create',
-            [UserController::class, 'create']
+            [
+                UserController::class,
+                'create',
+            ]
         )
             ->middleware('permission:users.create')
             ->name('users.create');
 
+
         Route::post(
             '/users',
-            [UserController::class, 'store']
+            [
+                UserController::class,
+                'store',
+            ]
         )
             ->middleware('permission:users.create')
             ->name('users.store');
 
+
         Route::get(
             '/users/{user}/edit',
-            [UserController::class, 'edit']
+            [
+                UserController::class,
+                'edit',
+            ]
         )
             ->middleware('permission:users.edit')
             ->name('users.edit');
 
+
         Route::put(
             '/users/{user}',
-            [UserController::class, 'update']
+            [
+                UserController::class,
+                'update',
+            ]
         )
             ->middleware('permission:users.edit')
             ->name('users.update');
 
+
         Route::delete(
             '/users/{user}',
-            [UserController::class, 'destroy']
+            [
+                UserController::class,
+                'destroy',
+            ]
         )
             ->middleware('permission:users.delete')
             ->name('users.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Audit Log Routes
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/audit-logs',
+            [
+                AuditLogController::class,
+                'index',
+            ]
+        )
+            ->middleware('permission:audit_logs.view')
+            ->name('audit-logs.index');
+
+
+        Route::get(
+            '/audit-logs/{auditLog}',
+            [
+                AuditLogController::class,
+                'show',
+            ]
+        )
+            ->middleware('permission:audit_logs.view')
+            ->name('audit-logs.show');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -220,149 +314,230 @@ Route::middleware(['auth'])
 
         Route::get(
             '/sections',
-            [SectionController::class, 'index']
+            [
+                SectionController::class,
+                'index',
+            ]
         )
             ->middleware('permission:sections.view')
             ->name('sections.index');
 
+
         Route::get(
             '/sections/create',
-            [SectionController::class, 'create']
+            [
+                SectionController::class,
+                'create',
+            ]
         )
             ->middleware('permission:sections.create')
             ->name('sections.create');
 
+
         Route::post(
             '/sections',
-            [SectionController::class, 'store']
+            [
+                SectionController::class,
+                'store',
+            ]
         )
             ->middleware('permission:sections.create')
             ->name('sections.store');
 
+
         Route::get(
             '/sections/{section}/edit',
-            [SectionController::class, 'edit']
+            [
+                SectionController::class,
+                'edit',
+            ]
         )
             ->middleware('permission:sections.edit')
             ->name('sections.edit');
 
+
         Route::put(
             '/sections/{section}',
-            [SectionController::class, 'update']
+            [
+                SectionController::class,
+                'update',
+            ]
         )
             ->middleware('permission:sections.edit')
             ->name('sections.update');
 
+
         Route::delete(
             '/sections/{section}',
-            [SectionController::class, 'destroy']
+            [
+                SectionController::class,
+                'destroy',
+            ]
         )
             ->middleware('permission:sections.delete')
             ->name('sections.destroy');
 
 
-
         /*
-|--------------------------------------------------------------------------
-| Section Offering Routes
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        | Section Offering Routes
+        |--------------------------------------------------------------------------
+        */
 
         Route::get(
             '/section-offerings',
-            [SectionOfferingController::class, 'index']
+            [
+                SectionOfferingController::class,
+                'index',
+            ]
         )
             ->middleware('permission:section_offerings.view')
             ->name('section-offerings.index');
 
+
         Route::get(
             '/section-offerings/create',
-            [SectionOfferingController::class, 'create']
+            [
+                SectionOfferingController::class,
+                'create',
+            ]
         )
             ->middleware('permission:section_offerings.create')
             ->name('section-offerings.create');
 
+
         Route::post(
             '/section-offerings',
-            [SectionOfferingController::class, 'store']
+            [
+                SectionOfferingController::class,
+                'store',
+            ]
         )
             ->middleware('permission:section_offerings.create')
             ->name('section-offerings.store');
 
+
         Route::get(
             '/section-offerings/{sectionOffering}/edit',
-            [SectionOfferingController::class, 'edit']
+            [
+                SectionOfferingController::class,
+                'edit',
+            ]
         )
             ->middleware('permission:section_offerings.edit')
             ->name('section-offerings.edit');
 
+
         Route::put(
             '/section-offerings/{sectionOffering}',
-            [SectionOfferingController::class, 'update']
+            [
+                SectionOfferingController::class,
+                'update',
+            ]
         )
             ->middleware('permission:section_offerings.edit')
             ->name('section-offerings.update');
 
+
         Route::delete(
             '/section-offerings/{sectionOffering}',
-            [SectionOfferingController::class, 'destroy']
+            [
+                SectionOfferingController::class,
+                'destroy',
+            ]
         )
             ->middleware('permission:section_offerings.delete')
             ->name('section-offerings.destroy');
 
+
+        Route::get(
+            '/section-offerings/selected/view',
+            [
+                SectionOfferingController::class,
+                'selectedOffering',
+            ]
+        )
+            ->middleware('permission:section_offerings.view')
+            ->name('section-offerings.selected');
+
+
         /*
-|--------------------------------------------------------------------------
-| Student Status Routes
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        | Student Status Routes
+        |--------------------------------------------------------------------------
+        */
 
         Route::get(
             '/student-statuses',
-            [StudentStatusController::class, 'index']
+            [
+                StudentStatusController::class,
+                'index',
+            ]
         )
             ->middleware('permission:student_statuses.view')
             ->name('student-statuses.index');
 
+
         Route::get(
             '/student-statuses/create',
-            [StudentStatusController::class, 'create']
+            [
+                StudentStatusController::class,
+                'create',
+            ]
         )
             ->middleware('permission:student_statuses.create')
             ->name('student-statuses.create');
 
+
         Route::post(
             '/student-statuses',
-            [StudentStatusController::class, 'store']
+            [
+                StudentStatusController::class,
+                'store',
+            ]
         )
             ->middleware('permission:student_statuses.create')
             ->name('student-statuses.store');
 
+
         Route::get(
             '/student-statuses/{studentStatus}/edit',
-            [StudentStatusController::class, 'edit']
+            [
+                StudentStatusController::class,
+                'edit',
+            ]
         )
             ->middleware('permission:student_statuses.edit')
             ->name('student-statuses.edit');
 
+
         Route::put(
             '/student-statuses/{studentStatus}',
-            [StudentStatusController::class, 'update']
+            [
+                StudentStatusController::class,
+                'update',
+            ]
         )
             ->middleware('permission:student_statuses.edit')
             ->name('student-statuses.update');
 
+
         Route::delete(
             '/student-statuses/{studentStatus}',
-            [StudentStatusController::class, 'destroy']
+            [
+                StudentStatusController::class,
+                'destroy',
+            ]
         )
             ->middleware('permission:student_statuses.delete')
             ->name('student-statuses.destroy');
 
+
         /*
-|--------------------------------------------------------------------------
-| Student Status Review
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        | Student Reviews
+        |--------------------------------------------------------------------------
+        */
 
         Route::get(
             '/student-reviews',
@@ -371,61 +546,8 @@ Route::middleware(['auth'])
                 'index',
             ]
         )
-            ->middleware(
-                'permission:students.view'
-            )
-            ->name(
-                'student-reviews.index'
-            );
-
-
-        Route::patch(
-            '/student-reviews/{student}/continue',
-            [
-                StudentReviewController::class,
-                'continueStudent',
-            ]
-        )
-            ->middleware(
-                'permission:students.edit'
-            )
-            ->name(
-                'student-reviews.continue'
-            );
-
-
-        Route::patch(
-            '/student-reviews/{student}/remove',
-            [
-                StudentReviewController::class,
-                'removeStudent',
-            ]
-        )
-            ->middleware(
-                'permission:students.edit'
-            )
-            ->name(
-                'student-reviews.remove'
-            );
-        /*
-|--------------------------------------------------------------------------
-| Student Reviews
-|--------------------------------------------------------------------------
-*/
-
-        Route::get(
-            '/student-reviews',
-            [
-                StudentReviewController::class,
-                'index',
-            ]
-        )
-            ->middleware(
-                'permission:students.view'
-            )
-            ->name(
-                'student-reviews.index'
-            );
+            ->middleware('permission:students.view')
+            ->name('student-reviews.index');
 
 
         /*
@@ -441,12 +563,8 @@ Route::middleware(['auth'])
                 'continueTrial',
             ]
         )
-            ->middleware(
-                'permission:students.edit'
-            )
-            ->name(
-                'student-reviews.trial.continue'
-            );
+            ->middleware('permission:students.edit')
+            ->name('student-reviews.trial.continue');
 
 
         Route::patch(
@@ -456,12 +574,8 @@ Route::middleware(['auth'])
                 'rejectTrial',
             ]
         )
-            ->middleware(
-                'permission:students.edit'
-            )
-            ->name(
-                'student-reviews.trial.reject'
-            );
+            ->middleware('permission:students.edit')
+            ->name('student-reviews.trial.reject');
 
 
         /*
@@ -477,12 +591,8 @@ Route::middleware(['auth'])
                 'keepAfterAbsence',
             ]
         )
-            ->middleware(
-                'permission:students.edit'
-            )
-            ->name(
-                'student-reviews.absence.keep'
-            );
+            ->middleware('permission:students.edit')
+            ->name('student-reviews.absence.keep');
 
 
         Route::patch(
@@ -492,12 +602,8 @@ Route::middleware(['auth'])
                 'removeAfterAbsence',
             ]
         )
-            ->middleware(
-                'permission:students.edit'
-            )
-            ->name(
-                'student-reviews.absence.remove'
-            );
+            ->middleware('permission:students.edit')
+            ->name('student-reviews.absence.remove');
 
 
         /*
@@ -513,18 +619,15 @@ Route::middleware(['auth'])
                 'deleteStudent',
             ]
         )
-            ->middleware(
-                'permission:students.edit'
-            )
-            ->name(
-                'student-reviews.delete'
-            );
+            ->middleware('permission:students.edit')
+            ->name('student-reviews.delete');
+
 
         /*
-|--------------------------------------------------------------------------
-| Student Registration Wizard
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        | Student Registration Wizard
+        |--------------------------------------------------------------------------
+        */
 
         Route::get(
             '/student-registration',
@@ -536,6 +639,7 @@ Route::middleware(['auth'])
             ->middleware('permission:students.create')
             ->name('student-registration.student');
 
+
         Route::post(
             '/student-registration/student',
             [
@@ -545,6 +649,7 @@ Route::middleware(['auth'])
         )
             ->middleware('permission:students.create')
             ->name('student-registration.student.store');
+
 
         Route::get(
             '/student-registration/guardians',
@@ -556,6 +661,7 @@ Route::middleware(['auth'])
             ->middleware('permission:students.create')
             ->name('student-registration.guardians');
 
+
         Route::post(
             '/student-registration/guardians',
             [
@@ -565,6 +671,7 @@ Route::middleware(['auth'])
         )
             ->middleware('permission:students.create')
             ->name('student-registration.guardians.store');
+
 
         Route::get(
             '/student-registration/enrolments',
@@ -579,15 +686,6 @@ Route::middleware(['auth'])
             ])
             ->name('student-registration.enrolments');
 
-        Route::post(
-            '/student-registration/cancel',
-            [
-                StudentRegistrationController::class,
-                'cancel',
-            ]
-        )
-            ->middleware('permission:students.create')
-            ->name('student-registration.cancel');
 
         Route::post(
             '/student-registration/complete',
@@ -602,44 +700,83 @@ Route::middleware(['auth'])
             ])
             ->name('student-registration.complete');
 
+
+        Route::post(
+            '/student-registration/cancel',
+            [
+                StudentRegistrationController::class,
+                'cancel',
+            ]
+        )
+            ->middleware('permission:students.create')
+            ->name('student-registration.cancel');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Student Routes
+        |--------------------------------------------------------------------------
+        */
+
         Route::get(
             '/students',
-            [StudentController::class, 'index']
+            [
+                StudentController::class,
+                'index',
+            ]
         )
-            ->middleware(
-                'permission:students.view'
-            )
+            ->middleware('permission:students.view')
             ->name('students.index');
 
 
         Route::get(
             '/students/{student}',
-            [StudentController::class, 'show']
+            [
+                StudentController::class,
+                'show',
+            ]
         )
-            ->middleware(
-                'permission:students.view'
-            )
+            ->middleware('permission:students.view')
             ->name('students.show');
 
 
         Route::get(
             '/students/{student}/edit',
-            [StudentController::class, 'edit']
+            [
+                StudentController::class,
+                'edit',
+            ]
         )
-            ->middleware(
-                'permission:students.edit'
-            )
+            ->middleware('permission:students.edit')
             ->name('students.edit');
 
 
         Route::patch(
             '/students/{student}',
-            [StudentController::class, 'update']
+            [
+                StudentController::class,
+                'update',
+            ]
         )
-            ->middleware(
-                'permission:students.edit'
-            )
+            ->middleware('permission:students.edit')
             ->name('students.update');
+
+        Route::delete(
+    '/students/{student}',
+    [
+        StudentController::class,
+        'destroy',
+    ]
+)
+    ->middleware('permission:students.delete')
+    ->name('students.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Student Enrolment Routes
+        |--------------------------------------------------------------------------
+        */
 
         Route::get(
             '/students/{student}/classes/add',
@@ -648,12 +785,8 @@ Route::middleware(['auth'])
                 'create',
             ]
         )
-            ->middleware(
-                'permission:enrolments.create'
-            )
-            ->name(
-                'student-enrolments.create'
-            );
+            ->middleware('permission:enrolments.create')
+            ->name('student-enrolments.create');
 
 
         Route::post(
@@ -663,12 +796,8 @@ Route::middleware(['auth'])
                 'store',
             ]
         )
-            ->middleware(
-                'permission:enrolments.create'
-            )
-            ->name(
-                'student-enrolments.store'
-            );
+            ->middleware('permission:enrolments.create')
+            ->name('student-enrolments.store');
 
 
         Route::get(
@@ -678,12 +807,8 @@ Route::middleware(['auth'])
                 'editList',
             ]
         )
-            ->middleware(
-                'permission:enrolments.edit'
-            )
-            ->name(
-                'student-enrolments.edit-list'
-            );
+            ->middleware('permission:enrolments.edit')
+            ->name('student-enrolments.edit-list');
 
 
         Route::get(
@@ -693,12 +818,8 @@ Route::middleware(['auth'])
                 'edit',
             ]
         )
-            ->middleware(
-                'permission:enrolments.edit'
-            )
-            ->name(
-                'student-enrolments.edit'
-            );
+            ->middleware('permission:enrolments.edit')
+            ->name('student-enrolments.edit');
 
 
         Route::patch(
@@ -708,12 +829,9 @@ Route::middleware(['auth'])
                 'update',
             ]
         )
-            ->middleware(
-                'permission:enrolments.edit'
-            )
-            ->name(
-                'student-enrolments.update'
-            );
+            ->middleware('permission:enrolments.edit')
+            ->name('student-enrolments.update');
+
 
         Route::get(
             '/students/{student}/classes/remove',
@@ -722,12 +840,9 @@ Route::middleware(['auth'])
                 'remove',
             ]
         )
-            ->middleware(
-                'permission:enrolments.delete'
-            )
-            ->name(
-                'student-enrolments.remove'
-            );
+            ->middleware('permission:enrolments.delete')
+            ->name('student-enrolments.remove');
+
 
         Route::delete(
             '/students/{student}/classes/{enrolment}',
@@ -736,26 +851,15 @@ Route::middleware(['auth'])
                 'destroy',
             ]
         )
-            ->middleware(
-                'permission:enrolments.delete'
-            )
-            ->name(
-                'student-enrolments.destroy'
-            );
+            ->middleware('permission:enrolments.delete')
+            ->name('student-enrolments.destroy');
 
-        Route::get(
-            '/section-offerings/selected/view',
-            [
-                SectionOfferingController::class,
-                'selectedOffering',
-            ]
-        )
-            ->middleware(
-                'permission:section_offerings.view'
-            )
-            ->name(
-                'section-offerings.selected'
-            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Schedule Routes
+        |--------------------------------------------------------------------------
+        */
 
         Route::get(
             '/schedule',
@@ -764,12 +868,8 @@ Route::middleware(['auth'])
                 'index',
             ]
         )
-            ->middleware(
-                'permission:section_offerings.view'
-            )
-            ->name(
-                'schedule.index'
-            );
+            ->middleware('permission:section_offerings.view')
+            ->name('schedule.index');
 
 
         Route::get(
@@ -779,12 +879,8 @@ Route::middleware(['auth'])
                 'printDay',
             ]
         )
-            ->middleware(
-                'permission:enrolments.print'
-            )
-            ->name(
-                'schedule.print-day'
-            );
+            ->middleware('permission:enrolments.print')
+            ->name('schedule.print-day');
 
 
         Route::get(
@@ -794,12 +890,8 @@ Route::middleware(['auth'])
                 'printClass',
             ]
         )
-            ->middleware(
-                'permission:enrolments.print'
-            )
-            ->name(
-                'schedule.class-students.print'
-            );
+            ->middleware('permission:enrolments.print')
+            ->name('schedule.class-students.print');
 
 
         Route::get(
@@ -809,12 +901,15 @@ Route::middleware(['auth'])
                 'classStudents',
             ]
         )
-            ->middleware(
-                'permission:students.view'
-            )
-            ->name(
-                'schedule.class-students'
-            );
+            ->middleware('permission:students.view')
+            ->name('schedule.class-students');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Attendance Routes
+        |--------------------------------------------------------------------------
+        */
 
         Route::get(
             '/attendance',
@@ -823,9 +918,7 @@ Route::middleware(['auth'])
                 'index',
             ]
         )
-            ->name(
-                'attendance.index'
-            );
+            ->name('attendance.index');
 
 
         Route::get(
@@ -835,9 +928,7 @@ Route::middleware(['auth'])
                 'takeAttendance',
             ]
         )
-            ->name(
-                'attendance.takeAttendance'
-            );
+            ->name('attendance.takeAttendance');
 
 
         Route::post(
@@ -847,19 +938,12 @@ Route::middleware(['auth'])
                 'store',
             ]
         )
-            ->name(
-                'attendance.store'
-            );
+            ->name('attendance.store');
+
 
         /*
         |--------------------------------------------------------------------------
-        | Leave Management
-        |--------------------------------------------------------------------------
-        */
-
-        /*
-        |--------------------------------------------------------------------------
-        | Leave Management
+        | Leave Management Routes
         |--------------------------------------------------------------------------
         */
 
@@ -907,12 +991,6 @@ Route::middleware(['auth'])
             ->name('leave.history');
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Parent Request Approval / Rejection
-        |--------------------------------------------------------------------------
-        */
-
         Route::patch(
             '/leave/{leave}/approve',
             [
@@ -934,29 +1012,6 @@ Route::middleware(['auth'])
             ->middleware('permission:leave.edit')
             ->name('leave.reject');
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Leave Details
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get(
-            '/leave/{leave}',
-            [
-                LeaveController::class,
-                'show',
-            ]
-        )
-            ->middleware('permission:leave.view')
-            ->name('leave.show');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Edit
-        |--------------------------------------------------------------------------
-        */
 
         Route::get(
             '/leave/{leave}/edit',
@@ -980,16 +1035,6 @@ Route::middleware(['auth'])
             ->name('leave.update');
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Delete
-        |--------------------------------------------------------------------------
-        |
-        | Using leave.edit permission for now because your existing Leave
-        | module does not currently have a separate leave.delete permission.
-        |
-        */
-
         Route::delete(
             '/leave/{leave}',
             [
@@ -1001,12 +1046,6 @@ Route::middleware(['auth'])
             ->name('leave.destroy');
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Return
-        |--------------------------------------------------------------------------
-        */
-
         Route::patch(
             '/leave/{leave}/return',
             [
@@ -1018,21 +1057,22 @@ Route::middleware(['auth'])
             ->name('leave.return');
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Return Student
-        |--------------------------------------------------------------------------
-        */
-
-        Route::patch(
-            '/leave/{leave}/return',
+        Route::get(
+            '/leave/{leave}',
             [
                 LeaveController::class,
-                'returnStudent',
+                'show',
             ]
         )
-            ->middleware('permission:leave.edit')
-            ->name('leave.return');
+            ->middleware('permission:leave.view')
+            ->name('leave.show');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Wishlist Routes
+        |--------------------------------------------------------------------------
+        */
 
         Route::get(
             '/wishlist',
@@ -1041,12 +1081,8 @@ Route::middleware(['auth'])
                 'index',
             ]
         )
-            ->middleware(
-                'permission:wishlist.view'
-            )
-            ->name(
-                'wishlist.index'
-            );
+            ->middleware('permission:wishlist.view')
+            ->name('wishlist.index');
 
 
         Route::get(
@@ -1056,12 +1092,8 @@ Route::middleware(['auth'])
                 'create',
             ]
         )
-            ->middleware(
-                'permission:wishlist.create'
-            )
-            ->name(
-                'wishlist.create'
-            );
+            ->middleware('permission:wishlist.create')
+            ->name('wishlist.create');
 
 
         Route::post(
@@ -1071,12 +1103,8 @@ Route::middleware(['auth'])
                 'store',
             ]
         )
-            ->middleware(
-                'permission:wishlist.create'
-            )
-            ->name(
-                'wishlist.store'
-            );
+            ->middleware('permission:wishlist.create')
+            ->name('wishlist.store');
 
 
         Route::patch(
@@ -1086,27 +1114,10 @@ Route::middleware(['auth'])
                 'approve',
             ]
         )
-            ->middleware(
-                'permission:wishlist.edit'
-            )
-            ->name(
-                'wishlist.approve'
-            );
+            ->middleware('permission:wishlist.edit')
+            ->name('wishlist.approve');
 
 
-        Route::patch(
-            '/wishlist/{wishlist}/cancel',
-            [
-                WishlistController::class,
-                'cancel',
-            ]
-        )
-            ->middleware(
-                'permission:wishlist.edit'
-            )
-            ->name(
-                'wishlist.cancel'
-            );
         Route::patch(
             '/wishlist/{wishlist}/reject',
             [
@@ -1117,7 +1128,18 @@ Route::middleware(['auth'])
             ->middleware('permission:wishlist.edit')
             ->name('wishlist.reject');
 
+
+        Route::patch(
+            '/wishlist/{wishlist}/cancel',
+            [
+                WishlistController::class,
+                'cancel',
+            ]
+        )
+            ->middleware('permission:wishlist.edit')
+            ->name('wishlist.cancel');
     });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -1129,58 +1151,9 @@ Route::prefix('parent')
     ->name('parent.')
     ->group(function () {
 
-        Route::get(
-            '/login',
-            [
-                ParentLoginController::class,
-                'showLogin'
-            ]
-        )->name('login');
-
-
-        Route::post(
-            '/login',
-            [
-                ParentLoginController::class,
-                'checkLogin'
-            ]
-        )->name('login.check');
-
-
-        Route::get(
-            '/verify-otp',
-            [
-                ParentLoginController::class,
-                'showOtp'
-            ]
-        )->name('otp');
-
-
-        Route::post(
-            '/verify-otp',
-            [
-                ParentLoginController::class,
-                'verifyOtp'
-            ]
-        )->name('otp.verify');
-
-        Route::post(
-            '/logout',
-            [
-                ParentLoginController::class,
-                'logout'
-            ]
-        )->name('logout');
-
-    });
-
-Route::prefix('parent')
-    ->name('parent.')
-    ->group(function () {
-
         /*
         |--------------------------------------------------------------------------
-        | Guest Parent Routes
+        | Parent Guest Routes
         |--------------------------------------------------------------------------
         */
 
@@ -1188,284 +1161,278 @@ Route::prefix('parent')
             '/login',
             [
                 ParentLoginController::class,
-                'showLogin'
+                'showLogin',
             ]
-        )->name('login');
+        )
+            ->name('login');
 
 
         Route::post(
             '/login',
             [
                 ParentLoginController::class,
-                'checkLogin'
+                'checkLogin',
             ]
-        )->name('login.check');
+        )
+            ->name('login.check');
 
 
         Route::get(
             '/verify-otp',
             [
                 ParentLoginController::class,
-                'showOtp'
+                'showOtp',
             ]
-        )->name('otp');
+        )
+            ->name('otp');
 
 
         Route::post(
             '/verify-otp',
             [
                 ParentLoginController::class,
-                'verifyOtp'
+                'verifyOtp',
             ]
-        )->name('otp.verify');
-
+        )
+            ->name('otp.verify');
 
 
         /*
         |--------------------------------------------------------------------------
-        | Logged-in Parent Routes
+        | Parent Authenticated Routes
         |--------------------------------------------------------------------------
         */
 
-        Route::middleware(
-            'auth:parent'
-        )->group(function () {
+        Route::middleware('auth:parent')
+            ->group(function () {
 
-            Route::get(
-                '/welcome',
-                [
-                    ParentPortalController::class,
-                    'welcome'
-                ]
-            )->name('welcome');
-
-
-            Route::post(
-                '/students/{student}/select',
-                [
-                    ParentPortalController::class,
-                    'selectStudent'
-                ]
-            )->name(
-                    'students.select'
-                );
+                Route::get(
+                    '/welcome',
+                    [
+                        ParentPortalController::class,
+                        'welcome',
+                    ]
+                )
+                    ->name('welcome');
 
 
-            Route::get(
-                '/dashboard',
-                [
-                    ParentPortalController::class,
-                    'dashboard'
-                ]
-            )->name(
-                    'dashboard'
-                );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Parent Wishlist
-            |--------------------------------------------------------------------------
-            */
-
-            Route::get(
-                '/wishlist',
-                [
-                    ParentWishlistController::class,
-                    'index',
-                ]
-            )->name(
-                    'wishlist.index'
-                );
+                Route::post(
+                    '/students/{student}/select',
+                    [
+                        ParentPortalController::class,
+                        'selectStudent',
+                    ]
+                )
+                    ->name('students.select');
 
 
-            Route::get(
-                '/wishlist/create',
-                [
-                    ParentWishlistController::class,
-                    'create',
-                ]
-            )->name(
-                    'wishlist.create'
-                );
+                Route::get(
+                    '/dashboard',
+                    [
+                        ParentPortalController::class,
+                        'dashboard',
+                    ]
+                )
+                    ->name('dashboard');
 
 
-            Route::post(
-                '/wishlist',
-                [
-                    ParentWishlistController::class,
-                    'store',
-                ]
-            )->name(
-                    'wishlist.store'
-                );
+                /*
+                |--------------------------------------------------------------------------
+                | Parent Wishlist
+                |--------------------------------------------------------------------------
+                */
+
+                Route::get(
+                    '/wishlist',
+                    [
+                        ParentWishlistController::class,
+                        'index',
+                    ]
+                )
+                    ->name('wishlist.index');
 
 
-            Route::get(
-                '/wishlist/{wishlist}',
-                [
-                    ParentWishlistController::class,
-                    'show',
-                ]
-            )->name(
-                    'wishlist.show'
-                );
+                Route::get(
+                    '/wishlist/create',
+                    [
+                        ParentWishlistController::class,
+                        'create',
+                    ]
+                )
+                    ->name('wishlist.create');
 
 
-            Route::get(
-                '/wishlist/{wishlist}/edit',
-                [
-                    ParentWishlistController::class,
-                    'edit',
-                ]
-            )->name(
-                    'wishlist.edit'
-                );
+                Route::post(
+                    '/wishlist',
+                    [
+                        ParentWishlistController::class,
+                        'store',
+                    ]
+                )
+                    ->name('wishlist.store');
 
 
-            Route::patch(
-                '/wishlist/{wishlist}',
-                [
-                    ParentWishlistController::class,
-                    'update',
-                ]
-            )->name(
-                    'wishlist.update'
-                );
+                Route::get(
+                    '/wishlist/{wishlist}',
+                    [
+                        ParentWishlistController::class,
+                        'show',
+                    ]
+                )
+                    ->name('wishlist.show');
 
 
-            Route::patch(
-                '/wishlist/{wishlist}/cancel',
-                [
-                    ParentWishlistController::class,
-                    'cancel',
-                ]
-            )->name(
-                    'wishlist.cancel'
-                );
+                Route::get(
+                    '/wishlist/{wishlist}/edit',
+                    [
+                        ParentWishlistController::class,
+                        'edit',
+                    ]
+                )
+                    ->name('wishlist.edit');
 
 
-            Route::delete(
-                '/wishlist/{wishlist}',
-                [
-                    ParentWishlistController::class,
-                    'destroy',
-                ]
-            )->name(
-                    'wishlist.destroy'
-                );
-
-            /*
-|--------------------------------------------------------------------------
-| Parent Leave Management
-|--------------------------------------------------------------------------
-*/
-
-            /*
-    |--------------------------------------------------------------------------
-    | Parent Leave Management
-    |--------------------------------------------------------------------------
-    */
-
-            Route::get(
-                '/leave',
-                [
-                    ParentLeaveController::class,
-                    'index',
-                ]
-            )->name(
-                    'leave.index'
-                );
+                Route::patch(
+                    '/wishlist/{wishlist}',
+                    [
+                        ParentWishlistController::class,
+                        'update',
+                    ]
+                )
+                    ->name('wishlist.update');
 
 
-            Route::get(
-                '/leave/create',
-                [
-                    ParentLeaveController::class,
-                    'create',
-                ]
-            )->name(
-                    'leave.create'
-                );
+                Route::patch(
+                    '/wishlist/{wishlist}/cancel',
+                    [
+                        ParentWishlistController::class,
+                        'cancel',
+                    ]
+                )
+                    ->name('wishlist.cancel');
 
 
-            Route::post(
-                '/leave',
-                [
-                    ParentLeaveController::class,
-                    'store',
-                ]
-            )->name(
-                    'leave.store'
-                );
+                Route::delete(
+                    '/wishlist/{wishlist}',
+                    [
+                        ParentWishlistController::class,
+                        'destroy',
+                    ]
+                )
+                    ->name('wishlist.destroy');
 
 
-            Route::get(
-                '/leave/{leave}',
-                [
-                    ParentLeaveController::class,
-                    'show',
-                ]
-            )->name(
-                    'leave.show'
-                );
+                /*
+                |--------------------------------------------------------------------------
+                | Parent Leave Management
+                |--------------------------------------------------------------------------
+                */
+
+                Route::get(
+                    '/leave',
+                    [
+                        ParentLeaveController::class,
+                        'index',
+                    ]
+                )
+                    ->name('leave.index');
 
 
-            Route::get(
-                '/leave/{leave}/edit',
-                [
-                    ParentLeaveController::class,
-                    'edit',
-                ]
-            )->name(
-                    'leave.edit'
-                );
+                Route::get(
+                    '/leave/create',
+                    [
+                        ParentLeaveController::class,
+                        'create',
+                    ]
+                )
+                    ->name('leave.create');
 
 
-            Route::patch(
-                '/leave/{leave}',
-                [
-                    ParentLeaveController::class,
-                    'update',
-                ]
-            )->name(
-                    'leave.update'
-                );
+                Route::post(
+                    '/leave',
+                    [
+                        ParentLeaveController::class,
+                        'store',
+                    ]
+                )
+                    ->name('leave.store');
 
 
-            Route::patch(
-                '/leave/{leave}/cancel',
-                [
-                    ParentLeaveController::class,
-                    'cancel',
-                ]
-            )->name(
-                    'leave.cancel'
-                );
+                Route::get(
+                    '/leave/{leave}',
+                    [
+                        ParentLeaveController::class,
+                        'show',
+                    ]
+                )
+                    ->name('leave.show');
 
 
-            Route::delete(
-                '/leave/{leave}',
-                [
-                    ParentLeaveController::class,
-                    'destroy',
-                ]
-            )->name(
-                    'leave.destroy'
-                );
+                Route::get(
+                    '/leave/{leave}/edit',
+                    [
+                        ParentLeaveController::class,
+                        'edit',
+                    ]
+                )
+                    ->name('leave.edit');
 
 
-            Route::patch(
-                '/leave/{leave}/return-early',
-                [
-                    ParentLeaveController::class,
-                    'returnEarly',
-                ]
-            )->name(
-                    'leave.return-early'
-                );
+                Route::patch(
+                    '/leave/{leave}',
+                    [
+                        ParentLeaveController::class,
+                        'update',
+                    ]
+                )
+                    ->name('leave.update');
 
-        });
 
+                Route::patch(
+                    '/leave/{leave}/cancel',
+                    [
+                        ParentLeaveController::class,
+                        'cancel',
+                    ]
+                )
+                    ->name('leave.cancel');
+
+
+                Route::delete(
+                    '/leave/{leave}',
+                    [
+                        ParentLeaveController::class,
+                        'destroy',
+                    ]
+                )
+                    ->name('leave.destroy');
+
+
+                Route::patch(
+                    '/leave/{leave}/return-early',
+                    [
+                        ParentLeaveController::class,
+                        'returnEarly',
+                    ]
+                )
+                    ->name('leave.return-early');
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Parent Logout
+                |--------------------------------------------------------------------------
+                */
+
+                Route::post(
+                    '/logout',
+                    [
+                        ParentLoginController::class,
+                        'logout',
+                    ]
+                )
+                    ->name('logout');
+            });
     });
 
 
