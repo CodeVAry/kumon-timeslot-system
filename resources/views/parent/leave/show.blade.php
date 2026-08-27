@@ -9,12 +9,18 @@
 
 @php
 
+    /*
+    |--------------------------------------------------------------------------
+    | Homework Labels
+    |--------------------------------------------------------------------------
+    */
+
     $homeworkLabels = [
         'none_required' =>
-            'None required',
+            'None Required',
 
         'same_as_normal' =>
-            'Same as normal',
+            'Same as Normal',
 
         'increase' =>
             'Increase',
@@ -23,6 +29,12 @@
             'Decrease',
     ];
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Status Labels
+    |--------------------------------------------------------------------------
+    */
 
     $statusLabels = [
         'pending' =>
@@ -39,6 +51,12 @@
     ];
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Status Colours
+    |--------------------------------------------------------------------------
+    */
+
     $statusClasses = [
         'pending' =>
             'bg-amber-100 text-amber-700',
@@ -54,9 +72,30 @@
     ];
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dates
+    |--------------------------------------------------------------------------
+    */
+
     $today =
         now()->startOfDay();
 
+
+    $duration =
+        $leave
+            ->start_date
+            ->diffInDays(
+                $leave
+                    ->expected_return_date
+            );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Actions
+    |--------------------------------------------------------------------------
+    */
 
     $canEdit =
         $leave->status
@@ -100,6 +139,172 @@
                 ->startOfDay()
         );
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Homework Colours
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $leave->homework_requirement
+        ===
+        'increase'
+    ) {
+
+        $homeworkBox =
+            'border-violet-200 bg-violet-50';
+
+        $homeworkBadge =
+            'bg-violet-100 text-violet-700';
+
+        $homeworkText =
+            'text-violet-700';
+
+    }
+    elseif (
+        $leave->homework_requirement
+        ===
+        'decrease'
+    ) {
+
+        $homeworkBox =
+            'border-orange-200 bg-orange-50';
+
+        $homeworkBadge =
+            'bg-orange-100 text-orange-700';
+
+        $homeworkText =
+            'text-orange-700';
+
+    }
+    elseif (
+        $leave->homework_requirement
+        ===
+        'none_required'
+    ) {
+
+        $homeworkBox =
+            'border-slate-200 bg-slate-50';
+
+        $homeworkBadge =
+            'bg-slate-200 text-slate-600';
+
+        $homeworkText =
+            'text-slate-600';
+
+    }
+    else {
+
+        $homeworkBox =
+            'border-blue-200 bg-blue-50';
+
+        $homeworkBadge =
+            'bg-blue-100 text-blue-700';
+
+        $homeworkText =
+            'text-blue-700';
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Leave Display Status
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $leave->status
+        ===
+        'pending'
+    ) {
+
+        $displayStatus =
+            'Pending Approval';
+
+        $displayStatusClass =
+            'bg-amber-100 text-amber-700';
+
+        $headerBorder =
+            'border-amber-200';
+
+    }
+    elseif (
+        $leave->status
+        ===
+        'rejected'
+    ) {
+
+        $displayStatus =
+            'Rejected';
+
+        $displayStatusClass =
+            'bg-red-100 text-red-700';
+
+        $headerBorder =
+            'border-red-200';
+
+    }
+    elseif (
+        $leave->status
+        ===
+        'cancelled'
+    ) {
+
+        $displayStatus =
+            'Cancelled';
+
+        $displayStatusClass =
+            'bg-slate-200 text-slate-600';
+
+        $headerBorder =
+            'border-slate-200';
+
+    }
+    elseif ($leave->actual_return_date) {
+
+        $displayStatus =
+            $leave->returned_early
+                ? 'Returned Early'
+                : 'Completed';
+
+        $displayStatusClass =
+            'bg-green-100 text-green-700';
+
+        $headerBorder =
+            'border-green-200';
+
+    }
+    elseif (
+        $leave
+            ->start_date
+            ->copy()
+            ->startOfDay()
+            ->gt($today)
+    ) {
+
+        $displayStatus =
+            'Upcoming Leave';
+
+        $displayStatusClass =
+            'bg-purple-100 text-purple-700';
+
+        $headerBorder =
+            'border-purple-200';
+
+    }
+    else {
+
+        $displayStatus =
+            'Current Leave';
+
+        $displayStatusClass =
+            'bg-blue-100 text-blue-700';
+
+        $headerBorder =
+            'border-blue-200';
+    }
+
 @endphp
 
 
@@ -123,9 +328,11 @@
         ) }}"
         class="inline-flex
                items-center
+               gap-2
                text-sm
                font-semibold
                text-violet-700
+               transition
                hover:text-violet-900"
     >
         ← Back to Leave Management
@@ -134,7 +341,7 @@
 
 
     {{-- =========================================================
-        MESSAGES
+        SUCCESS MESSAGE
     ========================================================== --}}
 
     @if (session('success'))
@@ -156,6 +363,11 @@
     @endif
 
 
+
+    {{-- =========================================================
+        ERROR MESSAGE
+    ========================================================== --}}
+
     @if (session('error'))
 
         <div
@@ -175,6 +387,11 @@
     @endif
 
 
+
+    {{-- =========================================================
+        VALIDATION ERRORS
+    ========================================================== --}}
+
     @if ($errors->any())
 
         <div
@@ -186,9 +403,15 @@
                    px-5 py-4"
         >
 
-            @foreach ($errors->all() as $error)
+            @foreach (
+                $errors->all()
+                as $error
+            )
 
-                <p class="text-sm text-red-700">
+                <p
+                    class="text-sm
+                           text-red-700"
+                >
                     {{ $error }}
                 </p>
 
@@ -208,7 +431,7 @@
         class="mt-6
                rounded-[26px]
                border
-               border-slate-200
+               {{ $headerBorder }}
                bg-white
                p-6
                shadow-sm"
@@ -219,7 +442,7 @@
                    flex-col
                    gap-5
                    sm:flex-row
-                   sm:items-start
+                   sm:items-center
                    sm:justify-between"
         >
 
@@ -232,7 +455,7 @@
                            tracking-wide
                            text-violet-600"
                 >
-                    Leave Details
+                    Student Leave
                 </p>
 
 
@@ -253,10 +476,15 @@
                            text-slate-500"
                 >
                     Student ID:
-                    {{ $student->external_id ?? '—' }}
+                    {{
+                        $student->external_id
+                        ??
+                        '—'
+                    }}
                 </p>
 
             </div>
+
 
 
             <span
@@ -266,23 +494,9 @@
                        px-4 py-2
                        text-sm
                        font-bold
-                       {{
-                           $statusClasses[
-                               $leave->status
-                           ]
-                           ??
-                           'bg-slate-100 text-slate-600'
-                       }}"
+                       {{ $displayStatusClass }}"
             >
-                {{
-                    $statusLabels[
-                        $leave->status
-                    ]
-                    ??
-                    ucfirst(
-                        $leave->status
-                    )
-                }}
+                {{ $displayStatus }}
             </span>
 
         </div>
@@ -292,426 +506,746 @@
 
 
     {{-- =========================================================
-        LEAVE DETAILS
+        MAIN GRID
     ========================================================== --}}
 
-    <section
+    <div
         class="mt-6
-               rounded-[26px]
-               border
-               border-slate-200
-               bg-white
-               p-6
-               shadow-sm"
+               grid
+               gap-6
+               xl:grid-cols-[1.15fr_0.85fr]"
     >
 
-        <div
-            class="grid
-                   gap-4
-                   md:grid-cols-2"
-        >
-
-
-            {{-- Start --}}
-            <div
-                class="rounded-xl
-                       bg-slate-50
-                       p-5"
-            >
-
-                <p
-                    class="text-xs
-                           font-semibold
-                           uppercase
-                           text-slate-400"
-                >
-                    Start Date
-                </p>
-
-
-                <p
-                    class="mt-2
-                           font-bold
-                           text-slate-900"
-                >
-                    {{
-                        $leave
-                            ->start_date
-                            ->format('d M Y')
-                    }}
-                </p>
-
-            </div>
-
-
-
-            {{-- Expected --}}
-            <div
-                class="rounded-xl
-                       bg-slate-50
-                       p-5"
-            >
-
-                <p
-                    class="text-xs
-                           font-semibold
-                           uppercase
-                           text-slate-400"
-                >
-                    Expected Return Date
-                </p>
-
-
-                <p
-                    class="mt-2
-                           font-bold
-                           text-slate-900"
-                >
-                    {{
-                        $leave
-                            ->expected_return_date
-                            ->format('d M Y')
-                    }}
-                </p>
-
-            </div>
-
-
-
-            {{-- Actual --}}
-            <div
-                class="rounded-xl
-                       bg-slate-50
-                       p-5"
-            >
-
-                <p
-                    class="text-xs
-                           font-semibold
-                           uppercase
-                           text-slate-400"
-                >
-                    Actual Return Date
-                </p>
-
-
-                <p
-                    class="mt-2
-                           font-bold
-                           text-slate-900"
-                >
-                    {{
-                        $leave->actual_return_date
-                            ? $leave
-                                ->actual_return_date
-                                ->format('d M Y')
-                            : '—'
-                    }}
-                </p>
-
-            </div>
-
-
-
-            {{-- Homework --}}
-            <div
-                class="rounded-xl
-                       bg-slate-50
-                       p-5"
-            >
-
-                <p
-                    class="text-xs
-                           font-semibold
-                           uppercase
-                           text-slate-400"
-                >
-                    Homework Required
-                </p>
-
-
-                <p
-                    class="mt-2
-                           font-bold
-                           text-slate-900"
-                >
-                    {{
-                        $homeworkLabels[
-                            $leave
-                                ->homework_requirement
-                        ]
-                        ??
-                        $leave
-                            ->homework_requirement
-                    }}
-                </p>
-
-            </div>
-
-        </div>
-
-
-
-        {{-- Reason --}}
-        <div
-            class="mt-5
-                   rounded-xl
-                   border
-                   border-slate-200
-                   p-5"
-        >
-
-            <p
-                class="text-xs
-                       font-semibold
-                       uppercase
-                       text-slate-400"
-            >
-                Reason
-            </p>
-
-
-            <p
-                class="mt-2
-                       text-sm
-                       text-slate-700"
-            >
-                {{ $leave->reason ?? '—' }}
-            </p>
-
-        </div>
-
-
-
-        {{-- Parent Note --}}
-        <div
-            class="mt-5
-                   rounded-xl
-                   border
-                   border-slate-200
-                   p-5"
-        >
-
-            <p
-                class="text-xs
-                       font-semibold
-                       uppercase
-                       text-slate-400"
-            >
-                Notes
-            </p>
-
-
-            <p
-                class="mt-2
-                       whitespace-pre-line
-                       text-sm
-                       leading-6
-                       text-slate-700"
-            >
-                {{ $leave->notes ?? '—' }}
-            </p>
-
-        </div>
-
-
 
         {{-- =====================================================
-            ADMIN REVIEW
+            LEFT COLUMN
         ====================================================== --}}
 
-        @if (
-            $leave->review_note
-            ||
-            $leave->reviewed_at
-        )
-
-            <div
-                class="mt-5
-                       rounded-xl
-                       border
-                       border-violet-100
-                       bg-violet-50
-                       p-5"
-            >
-
-                <p
-                    class="text-xs
-                           font-semibold
-                           uppercase
-                           text-violet-500"
-                >
-                    Homework Review Note
-                </p>
+        <div class="space-y-6">
 
 
-                @if ($leave->review_note)
+            {{-- =================================================
+                LEAVE OVERVIEW
+            ================================================== --}}
 
-                    <p
-                        class="mt-2
-                               whitespace-pre-line
-                               text-sm
-                               leading-6
-                               text-violet-800"
-                    >
-                        {{ $leave->review_note }}
-                    </p>
-
-                @else
-
-                    <p
-                        class="mt-2
-                               text-sm
-                               text-violet-700"
-                    >
-                        No additional review note.
-                    </p>
-
-                @endif
-
-            </div>
-
-        @endif
-
-
-
-        {{-- =====================================================
-            RECORD INFORMATION
-        ====================================================== --}}
-
-        <div
-            class="mt-5
-                   grid
-                   gap-4
-                   sm:grid-cols-2"
-        >
-
-            <div
-                class="rounded-xl
+            <section
+                class="rounded-[26px]
                        border
                        border-slate-200
-                       p-5"
+                       bg-white
+                       p-6
+                       shadow-sm"
             >
 
-                <p
-                    class="text-xs
-                           uppercase
-                           text-slate-400"
-                >
-                    Requested At
-                </p>
+                <div>
+
+                    <h2
+                        class="text-xl
+                               font-bold
+                               text-slate-900"
+                    >
+                        Leave Overview
+                    </h2>
 
 
-                <p
-                    class="mt-2
-                           text-sm
-                           font-semibold
-                           text-slate-800"
-                >
-                    {{
-                        $leave
-                            ->created_at
-                            ?->format(
-                                'd M Y, g:i A'
-                            )
-                        ?? '—'
-                    }}
-                </p>
+                    <p
+                        class="mt-1
+                               text-sm
+                               text-slate-500"
+                    >
+                        Important dates for this leave.
+                    </p>
 
-            </div>
+                </div>
 
 
-            <div
-                class="rounded-xl
-                       border
-                       border-slate-200
-                       p-5"
-            >
-
-                <p
-                    class="text-xs
-                           uppercase
-                           text-slate-400"
-                >
-                    Reviewed At
-                </p>
-
-
-                <p
-                    class="mt-2
-                           text-sm
-                           font-semibold
-                           text-slate-800"
-                >
-                    {{
-                        $leave
-                            ->reviewed_at
-                            ?->format(
-                                'd M Y, g:i A'
-                            )
-                        ?? 'Not reviewed yet'
-                    }}
-                </p>
-
-            </div>
-
-        </div>
-
-
-
-        {{-- =====================================================
-            PENDING ACTIONS
-        ====================================================== --}}
-
-        @if ($leave->status === 'pending')
-
-            <div
-                class="mt-7
-                       rounded-2xl
-                       border
-                       border-amber-200
-                       bg-amber-50
-                       p-5"
-            >
 
                 <div
-                    class="flex
-                           flex-col
+                    class="mt-5
+                           grid
                            gap-4
-                           sm:flex-row
-                           sm:items-center
-                           sm:justify-between"
+                           sm:grid-cols-2"
                 >
 
-                    <div>
+
+                    {{-- Start Date --}}
+                    <div
+                        class="rounded-xl
+                               bg-slate-50
+                               p-5"
+                    >
 
                         <p
-                            class="font-bold
-                                   text-amber-800"
+                            class="text-xs
+                                   font-bold
+                                   uppercase
+                                   tracking-wide
+                                   text-slate-400"
                         >
-                            Waiting for centre approval
+                            Start Date
                         </p>
 
 
                         <p
-                            class="mt-1
-                                   text-sm
-                                   text-amber-700"
+                            class="mt-2
+                                   text-base
+                                   font-bold
+                                   text-slate-900"
                         >
-                            You can edit or cancel this request
-                            before it is reviewed.
+                            {{
+                                $leave
+                                    ->start_date
+                                    ->format(
+                                        'd M Y'
+                                    )
+                            }}
                         </p>
 
                     </div>
 
 
+
+                    {{-- Expected Return --}}
+                    <div
+                        class="rounded-xl
+                               bg-slate-50
+                               p-5"
+                    >
+
+                        <p
+                            class="text-xs
+                                   font-bold
+                                   uppercase
+                                   tracking-wide
+                                   text-slate-400"
+                        >
+                            Expected Return
+                        </p>
+
+
+                        <p
+                            class="mt-2
+                                   text-base
+                                   font-bold
+                                   text-slate-900"
+                        >
+                            {{
+                                $leave
+                                    ->expected_return_date
+                                    ->format(
+                                        'd M Y'
+                                    )
+                            }}
+                        </p>
+
+                    </div>
+
+
+
+                    {{-- Duration --}}
+                    <div
+                        class="rounded-xl
+                               bg-slate-50
+                               p-5"
+                    >
+
+                        <p
+                            class="text-xs
+                                   font-bold
+                                   uppercase
+                                   tracking-wide
+                                   text-slate-400"
+                        >
+                            Duration
+                        </p>
+
+
+                        <p
+                            class="mt-2
+                                   text-base
+                                   font-bold
+                                   text-slate-900"
+                        >
+                            {{ $duration }}
+
+                            {{
+                                $duration === 1
+                                    ? 'day'
+                                    : 'days'
+                            }}
+                        </p>
+
+                    </div>
+
+
+
+                    {{-- Actual Return --}}
+                    <div
+                        class="rounded-xl
+                               bg-slate-50
+                               p-5"
+                    >
+
+                        <p
+                            class="text-xs
+                                   font-bold
+                                   uppercase
+                                   tracking-wide
+                                   text-slate-400"
+                        >
+                            Actual Return
+                        </p>
+
+
+                        <p
+                            class="mt-2
+                                   text-base
+                                   font-bold
+                                   text-slate-900"
+                        >
+                            {{
+                                $leave->actual_return_date
+                                    ? $leave
+                                        ->actual_return_date
+                                        ->format(
+                                            'd M Y'
+                                        )
+                                    : 'Not returned yet'
+                            }}
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            {{-- =================================================
+                LEAVE REQUEST
+            ================================================== --}}
+
+            <section
+                class="rounded-[26px]
+                       border
+                       border-slate-200
+                       bg-white
+                       p-6
+                       shadow-sm"
+            >
+
+                <h2
+                    class="text-xl
+                           font-bold
+                           text-slate-900"
+                >
+                    Leave Request
+                </h2>
+
+
+                <p
+                    class="mt-1
+                           text-sm
+                           text-slate-500"
+                >
+                    Information submitted with the request.
+                </p>
+
+
+
+                <div
+                    class="mt-5
+                           grid
+                           gap-4
+                           md:grid-cols-2"
+                >
+
+
+                    {{-- Reason --}}
+                    <div
+                        class="rounded-xl
+                               border
+                               border-slate-200
+                               bg-slate-50
+                               p-5"
+                    >
+
+                        <div
+                            class="flex
+                                   items-center
+                                   gap-3"
+                        >
+
+                            <div
+                                class="flex
+                                       h-9 w-9
+                                       shrink-0
+                                       items-center
+                                       justify-center
+                                       rounded-lg
+                                       bg-blue-100
+                                       font-bold
+                                       text-blue-700"
+                            >
+                                ?
+                            </div>
+
+
+                            <div>
+
+                                <p
+                                    class="font-bold
+                                           text-slate-800"
+                                >
+                                    Leave Reason
+                                </p>
+
+
+                                <p
+                                    class="text-xs
+                                           text-slate-500"
+                                >
+                                    Reason for the leave
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <p
+                            class="mt-4
+                                   whitespace-pre-line
+                                   text-sm
+                                   leading-6
+                                   text-slate-700"
+                        >
+                            {{
+                                $leave->reason
+                                ?: 'No reason provided.'
+                            }}
+                        </p>
+
+                    </div>
+
+
+
+                    {{-- Your Note --}}
+                    <div
+                        class="rounded-xl
+                               border
+                               border-amber-200
+                               bg-amber-50
+                               p-5"
+                    >
+
+                        <div
+                            class="flex
+                                   items-center
+                                   gap-3"
+                        >
+
+                            <div
+                                class="flex
+                                       h-9 w-9
+                                       shrink-0
+                                       items-center
+                                       justify-center
+                                       rounded-lg
+                                       bg-amber-100
+                                       text-amber-700"
+                            >
+                                ✎
+                            </div>
+
+
+                            <div>
+
+                                <p
+                                    class="font-bold
+                                           text-slate-800"
+                                >
+                                    Your Note
+                                </p>
+
+
+                                <p
+                                    class="text-xs
+                                           text-slate-500"
+                                >
+                                    Note you submitted
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <p
+                            class="mt-4
+                                   whitespace-pre-line
+                                   text-sm
+                                   leading-6
+                                   text-slate-700"
+                        >
+                            {{
+                                $leave->notes
+                                ?: 'No note was provided.'
+                            }}
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+
+
+        {{-- =====================================================
+            RIGHT COLUMN
+        ====================================================== --}}
+
+        <div class="space-y-6">
+
+
+            {{-- =================================================
+                HOMEWORK PLAN
+            ================================================== --}}
+
+            <section
+                class="rounded-[26px]
+                       border
+                       {{ $homeworkBox }}
+                       p-6
+                       shadow-sm"
+            >
+
+                <div
+                    class="flex
+                           items-start
+                           justify-between
+                           gap-4"
+                >
+
+                    <div>
+
+                        <p
+                            class="text-xs
+                                   font-bold
+                                   uppercase
+                                   tracking-wide
+                                   {{ $homeworkText }}"
+                        >
+                            Homework Plan
+                        </p>
+
+
+                        <h2
+                            class="mt-2
+                                   text-xl
+                                   font-bold
+                                   text-slate-900"
+                        >
+                            Homework During Leave
+                        </h2>
+
+                    </div>
+
+
+
+                    <span
+                        class="inline-flex
+                               shrink-0
+                               rounded-full
+                               px-4 py-2
+                               text-sm
+                               font-bold
+                               {{ $homeworkBadge }}"
+                    >
+                        {{
+                            $homeworkLabels[
+                                $leave
+                                    ->homework_requirement
+                            ]
+                            ??
+                            $leave
+                                ->homework_requirement
+                        }}
+                    </span>
+
+                </div>
+
+
+
+                {{-- Homework Request Meaning --}}
+                <div
+                    class="mt-5
+                           rounded-xl
+                           border
+                           border-white
+                           bg-white/70
+                           p-4"
+                >
+
+                    <p
+                        class="text-xs
+                               font-bold
+                               uppercase
+                               tracking-wide
+                               text-slate-400"
+                    >
+                        Requested Homework
+                    </p>
+
+
+                    <p
+                        class="mt-2
+                               text-sm
+                               leading-6
+                               {{ $homeworkText }}"
+                    >
+
+                        @if (
+                            $leave->homework_requirement
+                            ===
+                            'increase'
+                        )
+
+                            Additional homework was requested
+                            for this leave period.
+
+                        @elseif (
+                            $leave->homework_requirement
+                            ===
+                            'decrease'
+                        )
+
+                            Reduced homework was requested
+                            for this leave period.
+
+                        @elseif (
+                            $leave->homework_requirement
+                            ===
+                            'none_required'
+                        )
+
+                            No homework is required
+                            during this leave.
+
+                        @else
+
+                            Homework will continue
+                            at the normal amount.
+
+                        @endif
+
+                    </p>
+
+                </div>
+
+
+
+                {{-- Centre Homework Instructions --}}
+                <div
+                    class="mt-4
+                           rounded-xl
+                           border
+                           border-violet-100
+                           bg-white
+                           p-5"
+                >
+
                     <div
                         class="flex
+                               items-center
+                               gap-3"
+                    >
+
+                        <div
+                            class="flex
+                                   h-9 w-9
+                                   shrink-0
+                                   items-center
+                                   justify-center
+                                   rounded-lg
+                                   bg-violet-100
+                                   text-violet-700"
+                        >
+                            ✓
+                        </div>
+
+
+                        <div>
+
+                            <p
+                                class="font-bold
+                                       text-slate-800"
+                            >
+                                Centre Homework Instructions
+                            </p>
+
+
+                            <p
+                                class="text-xs
+                                       text-slate-500"
+                            >
+                                Instructions provided by the centre
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+
+                    @if ($leave->review_note)
+
+                        <p
+                            class="mt-4
+                                   whitespace-pre-line
+                                   text-sm
+                                   font-semibold
+                                   leading-6
+                                   text-slate-800"
+                        >
+                            {{ $leave->review_note }}
+                        </p>
+
+
+                    @elseif (
+                        $leave->status
+                        ===
+                        'pending'
+                    )
+
+                        <div
+                            class="mt-4
+                                   rounded-lg
+                                   bg-amber-50
+                                   px-4 py-3"
+                        >
+
+                            <p
+                                class="text-sm
+                                       leading-6
+                                       text-amber-700"
+                            >
+                                The centre has not reviewed
+                                this request yet.
+                            </p>
+
+                        </div>
+
+
+                    @else
+
+                        <div
+                            class="mt-4
+                                   rounded-lg
+                                   bg-slate-50
+                                   px-4 py-3"
+                        >
+
+                            <p
+                                class="text-sm
+                                       leading-6
+                                       text-slate-500"
+                            >
+                                No additional homework
+                                instructions were provided.
+                            </p>
+
+                        </div>
+
+                    @endif
+
+                </div>
+
+            </section>
+
+
+
+            {{-- =================================================
+                REQUEST STATUS / ACTIONS
+            ================================================== --}}
+
+            @if ($leave->status === 'pending')
+
+                <section
+                    class="rounded-[26px]
+                           border
+                           border-amber-200
+                           bg-amber-50
+                           p-6"
+                >
+
+                    <div
+                        class="flex
+                               items-center
+                               gap-3"
+                    >
+
+                        <div
+                            class="flex
+                                   h-10 w-10
+                                   shrink-0
+                                   items-center
+                                   justify-center
+                                   rounded-xl
+                                   bg-amber-100
+                                   font-bold
+                                   text-amber-700"
+                        >
+                            !
+                        </div>
+
+
+                        <div>
+
+                            <p
+                                class="font-bold
+                                       text-amber-800"
+                            >
+                                Waiting for Centre Approval
+                            </p>
+
+
+                            <p
+                                class="mt-1
+                                       text-sm
+                                       text-amber-700"
+                            >
+                                The request has not been reviewed yet.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <p
+                        class="mt-4
+                               text-sm
+                               leading-6
+                               text-amber-700"
+                    >
+                        You can edit or cancel the request
+                        until the centre reviews it.
+                    </p>
+
+
+
+                    <div
+                        class="mt-5
+                               flex
                                flex-wrap
                                gap-3"
                     >
 
-                        {{-- Edit --}}
                         @if ($canEdit)
 
                             <a
@@ -739,7 +1273,7 @@
                         @endif
 
 
-                        {{-- Cancel --}}
+
                         @if ($canCancel)
 
                             <form
@@ -768,12 +1302,12 @@
                                            rounded-xl
                                            border
                                            border-red-300
-                                           bg-red-50
+                                           bg-white
                                            px-5
                                            text-sm
                                            font-semibold
                                            text-red-700
-                                           hover:bg-red-100"
+                                           hover:bg-red-50"
                                 >
                                     Cancel Request
                                 </button>
@@ -784,57 +1318,234 @@
 
                     </div>
 
-                </div>
-
-            </div>
-
-        @endif
+                </section>
 
 
+            @elseif (
+                $leave->status === 'approved'
+                &&
+                !$leave->actual_return_date
+                &&
+                $leave
+                    ->start_date
+                    ->copy()
+                    ->startOfDay()
+                    ->gt($today)
+            )
 
-        {{-- =====================================================
-            APPROVED EARLY RETURN
-        ====================================================== --}}
-
-        @if ($canReturnEarly)
-
-            <div
-                class="mt-7
-                       rounded-2xl
-                       border
-                       border-green-200
-                       bg-green-50
-                       p-5"
-            >
-
-                <div
-                    class="flex
-                           flex-col
-                           gap-4
-                           sm:flex-row
-                           sm:items-center
-                           sm:justify-between"
+                <section
+                    class="rounded-[26px]
+                           border
+                           border-purple-200
+                           bg-purple-50
+                           p-6"
                 >
 
-                    <div>
+                    <div
+                        class="flex
+                               items-center
+                               gap-3"
+                    >
+
+                        <div
+                            class="flex
+                                   h-10 w-10
+                                   shrink-0
+                                   items-center
+                                   justify-center
+                                   rounded-xl
+                                   bg-purple-100
+                                   text-purple-700"
+                        >
+                            ✓
+                        </div>
+
+
+                        <div>
+
+                            <p
+                                class="font-bold
+                                       text-purple-800"
+                            >
+                                Leave Approved
+                            </p>
+
+
+                            <p
+                                class="mt-1
+                                       text-sm
+                                       text-purple-700"
+                            >
+                                Upcoming leave
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="mt-4
+                               rounded-xl
+                               bg-white/70
+                               p-4"
+                    >
 
                         <p
-                            class="font-bold
-                                   text-green-800"
+                            class="text-xs
+                                   font-semibold
+                                   uppercase
+                                   tracking-wide
+                                   text-purple-500"
                         >
-                            Returning earlier than expected?
+                            Leave Starts
                         </p>
 
 
                         <p
                             class="mt-1
-                                   text-sm
-                                   text-green-700"
+                                   font-bold
+                                   text-purple-800"
                         >
-                            Record the student's return as today.
+                            {{
+                                $leave
+                                    ->start_date
+                                    ->format(
+                                        'd M Y'
+                                    )
+                            }}
                         </p>
 
                     </div>
+
+
+                    <p
+                        class="mt-4
+                               text-sm
+                               leading-6
+                               text-purple-700"
+                    >
+                        Early return becomes available
+                        once the leave has started.
+                    </p>
+
+                </section>
+
+
+            @elseif (
+                $leave->status === 'approved'
+                &&
+                !$leave->actual_return_date
+            )
+
+                <section
+                    class="rounded-[26px]
+                           border
+                           border-blue-200
+                           bg-blue-50
+                           p-6"
+                >
+
+                    <div
+                        class="flex
+                               items-center
+                               gap-3"
+                    >
+
+                        <div
+                            class="flex
+                                   h-10 w-10
+                                   shrink-0
+                                   items-center
+                                   justify-center
+                                   rounded-xl
+                                   bg-blue-100
+                                   text-blue-700"
+                        >
+                            ✓
+                        </div>
+
+
+                        <div>
+
+                            <p
+                                class="font-bold
+                                       text-blue-800"
+                            >
+                                Current Leave
+                            </p>
+
+
+                            <p
+                                class="mt-1
+                                       text-sm
+                                       text-blue-700"
+                            >
+                                The approved leave is currently active.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            @endif
+
+
+
+            {{-- =================================================
+                EARLY RETURN
+            ================================================== --}}
+
+            @if ($canReturnEarly)
+
+                <section
+                    class="rounded-[26px]
+                           border
+                           border-green-200
+                           bg-green-50
+                           p-6"
+                >
+
+                    <h2
+                        class="text-lg
+                               font-bold
+                               text-green-800"
+                    >
+                        Returning Earlier?
+                    </h2>
+
+
+                    <p
+                        class="mt-2
+                               text-sm
+                               leading-6
+                               text-green-700"
+                    >
+                        Expected return:
+                        <strong>
+                            {{
+                                $leave
+                                    ->expected_return_date
+                                    ->format(
+                                        'd M Y'
+                                    )
+                            }}
+                        </strong>
+                    </p>
+
+
+                    <p
+                        class="mt-2
+                               text-sm
+                               leading-6
+                               text-green-700"
+                    >
+                        If the student has already returned,
+                        record the return now.
+                    </p>
+
 
 
                     <form
@@ -843,6 +1554,7 @@
                             'parent.leave.return-early',
                             $leave
                         ) }}"
+                        class="mt-5"
                     >
 
                         @csrf
@@ -858,6 +1570,7 @@
                             "
                             class="inline-flex
                                    h-11
+                                   w-full
                                    items-center
                                    justify-center
                                    rounded-xl
@@ -873,153 +1586,192 @@
 
                     </form>
 
-                </div>
+                </section>
 
-            </div>
-
-
-        @elseif (
-            $leave->status === 'approved'
-            &&
-            !$leave->actual_return_date
-            &&
-            $leave
-                ->start_date
-                ->copy()
-                ->startOfDay()
-                ->gt($today)
-        )
-
-            <div
-                class="mt-7
-                       rounded-xl
-                       border
-                       border-purple-200
-                       bg-purple-50
-                       p-5"
-            >
-
-                <p
-                    class="font-semibold
-                           text-purple-700"
-                >
-                    Upcoming approved leave
-                </p>
-
-
-                <p
-                    class="mt-1
-                           text-sm
-                           text-purple-600"
-                >
-                    Early return will become available
-                    after the leave start date.
-                </p>
-
-            </div>
-
-        @endif
+            @endif
 
 
 
-        {{-- =====================================================
-            COMPLETED
-        ====================================================== --}}
+            {{-- =================================================
+                COMPLETED
+            ================================================== --}}
 
-        @if (
-            $leave->status === 'approved'
-            &&
-            $leave->actual_return_date
-        )
+            @if (
+                $leave->status === 'approved'
+                &&
+                $leave->actual_return_date
+            )
 
-            <div
-                class="mt-7
-                       rounded-xl
-                       border
-                       border-green-200
-                       bg-green-50
-                       p-5"
-            >
-
-                <p
-                    class="font-bold
-                           text-green-800"
-                >
-                    @if ($leave->returned_early)
-
-                        Returned Early
-
-                    @else
-
-                        Leave Completed
-
-                    @endif
-                </p>
-
-
-                <p
-                    class="mt-1
-                           text-sm
-                           text-green-700"
-                >
-                    Actual return:
-
-                    {{
-                        $leave
-                            ->actual_return_date
-                            ->format('d M Y')
-                    }}
-                </p>
-
-            </div>
-
-        @endif
-
-
-
-        {{-- =====================================================
-            DELETE
-        ====================================================== --}}
-
-        @if ($canDelete)
-
-            <div
-                class="mt-7
-                       border-t
-                       border-slate-100
-                       pt-5"
-            >
-
-                <div
-                    class="flex
-                           flex-col
-                           gap-4
-                           sm:flex-row
-                           sm:items-center
-                           sm:justify-between"
+                <section
+                    class="rounded-[26px]
+                           border
+                           border-green-200
+                           bg-green-50
+                           p-6"
                 >
 
-                    <div>
+                    <div
+                        class="flex
+                               items-center
+                               gap-3"
+                    >
 
-                        <p
-                            class="font-semibold
-                                   text-slate-800"
+                        <div
+                            class="flex
+                                   h-10 w-10
+                                   shrink-0
+                                   items-center
+                                   justify-center
+                                   rounded-xl
+                                   bg-green-100
+                                   text-green-700"
                         >
-                            Remove this request
-                        </p>
+                            ✓
+                        </div>
 
 
-                        <p
-                            class="mt-1
-                                   text-xs
-                                   text-slate-500"
-                        >
-                            This request is already
-                            {{ $leave->status }} and can be removed
-                            from your leave list.
-                        </p>
+                        <div>
+
+                            <p
+                                class="font-bold
+                                       text-green-800"
+                            >
+                                {{
+                                    $leave->returned_early
+                                        ? 'Returned Early'
+                                        : 'Leave Completed'
+                                }}
+                            </p>
+
+
+                            <p
+                                class="mt-1
+                                       text-sm
+                                       text-green-700"
+                            >
+                                Actual return:
+                                {{
+                                    $leave
+                                        ->actual_return_date
+                                        ->format(
+                                            'd M Y'
+                                        )
+                                }}
+                            </p>
+
+                        </div>
 
                     </div>
+
+                </section>
+
+            @endif
+
+
+
+            {{-- =================================================
+                REJECTED
+            ================================================== --}}
+
+            @if (
+                $leave->status
+                ===
+                'rejected'
+            )
+
+                <section
+                    class="rounded-[26px]
+                           border
+                           border-red-200
+                           bg-red-50
+                           p-6"
+                >
+
+                    <p
+                        class="font-bold
+                               text-red-800"
+                    >
+                        Request Rejected
+                    </p>
+
+
+                    @if ($leave->review_note)
+
+                        <div
+                            class="mt-4
+                                   rounded-xl
+                                   bg-white
+                                   p-4"
+                        >
+
+                            <p
+                                class="text-xs
+                                       font-semibold
+                                       uppercase
+                                       tracking-wide
+                                       text-red-500"
+                            >
+                                Centre Note
+                            </p>
+
+
+                            <p
+                                class="mt-2
+                                       whitespace-pre-line
+                                       text-sm
+                                       leading-6
+                                       text-red-700"
+                            >
+                                {{ $leave->review_note }}
+                            </p>
+
+                        </div>
+
+                    @endif
+
+                </section>
+
+            @endif
+
+
+
+            {{-- =================================================
+                DELETE
+            ================================================== --}}
+
+            @if ($canDelete)
+
+                <section
+                    class="rounded-[26px]
+                           border
+                           border-slate-200
+                           bg-white
+                           p-6
+                           shadow-sm"
+                >
+
+                    <h2
+                        class="text-lg
+                               font-bold
+                               text-slate-900"
+                    >
+                        Remove Request
+                    </h2>
+
+
+                    <p
+                        class="mt-2
+                               text-sm
+                               leading-6
+                               text-slate-500"
+                    >
+                        This request is
+                        <strong>
+                            {{ $leave->status }}
+                        </strong>
+                        and can be removed from your list.
+                    </p>
+
 
 
                     <form
@@ -1028,6 +1780,7 @@
                             'parent.leave.destroy',
                             $leave
                         ) }}"
+                        class="mt-5"
                     >
 
                         @csrf
@@ -1043,6 +1796,7 @@
                             "
                             class="inline-flex
                                    h-11
+                                   w-full
                                    items-center
                                    justify-center
                                    rounded-xl
@@ -1055,18 +1809,18 @@
                                    text-red-700
                                    hover:bg-red-100"
                         >
-                            Delete
+                            Delete Request
                         </button>
 
                     </form>
 
-                </div>
+                </section>
 
-            </div>
+            @endif
 
-        @endif
+        </div>
 
-    </section>
+    </div>
 
 </div>
 
