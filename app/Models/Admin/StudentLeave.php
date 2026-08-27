@@ -13,6 +13,7 @@ class StudentLeave extends Model
         'requested_by_guardian_id',
         'reviewed_by_user_id',
         'reviewed_at',
+        'review_note',
         'start_date',
         'expected_return_date',
         'actual_return_date',

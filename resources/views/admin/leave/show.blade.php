@@ -647,7 +647,7 @@
                            font-semibold
                            text-slate-700"
                 >
-                    Admin Review Note
+                    Homework Review Note
                 </label>
 
 
@@ -1321,7 +1321,7 @@
                                tracking-wide
                                text-blue-500"
                     >
-                        Admin Review Note
+                        Homework Review Note
                     </p>
 
 

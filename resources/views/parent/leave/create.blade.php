@@ -7,473 +7,382 @@
 
 @section('content')
 
-<div
-    class="min-h-full
+    <div
+        class="min-h-full
            rounded-[28px]
            bg-cyan-50/70
            p-5
            sm:p-6
-           lg:p-8"
->
+           lg:p-8">
 
-    {{-- =========================================================
+        {{-- =========================================================
         BACK
     ========================================================== --}}
 
-    <div>
+        <div>
 
-        <a
-            href="{{ route(
-                'parent.leave.index'
-            ) }}"
-            class="inline-flex
+            <a href="{{ route('parent.leave.index') }}"
+                class="inline-flex
                    items-center
                    gap-2
                    text-sm
                    font-semibold
                    text-violet-700
                    transition
-                   hover:text-violet-900"
-        >
-            ← Back to Leave Management
-        </a>
+                   hover:text-violet-900">
+                ← Back to Leave Management
+            </a>
 
-    </div>
-
+        </div>
 
 
-    {{-- =========================================================
+
+        {{-- =========================================================
         HEADER
     ========================================================== --}}
 
-    <div class="mt-6">
+        <div class="mt-6">
 
-        <p
-            class="text-xs
+            <p
+                class="text-xs
                    font-bold
                    uppercase
                    tracking-[0.15em]
-                   text-violet-600"
-        >
-            Parent Portal
-        </p>
+                   text-violet-600">
+                Parent Portal
+            </p>
 
 
-        <h1
-            class="mt-2
+            <h1
+                class="mt-2
                    text-3xl
                    font-bold
                    tracking-tight
-                   text-slate-900"
-        >
-            Create Leave Request
-        </h1>
+                   text-slate-900">
+                Create Leave Request
+            </h1>
 
 
-        <p
-            class="mt-2
+            <p
+                class="mt-2
                    max-w-2xl
                    text-sm
                    leading-6
-                   text-slate-500"
-        >
-            Submit a planned leave request for
+                   text-slate-500">
+                Submit a planned leave request for
 
-            <span
-                class="font-semibold
-                       text-slate-700"
-            >
-                {{ $student->first_name }}
-                {{ $student->last_name }}
-            </span>.
+                <span class="font-semibold
+                       text-slate-700">
+                    {{ $student->first_name }}
+                    {{ $student->last_name }}
+                </span>.
 
-            The request will be sent to centre staff
-            for approval.
-        </p>
+                The request will be sent to centre staff
+                for approval.
+            </p>
 
-    </div>
+        </div>
 
 
 
-    {{-- =========================================================
+        {{-- =========================================================
         ERRORS
     ========================================================== --}}
 
-    @if ($errors->any())
+        @if ($errors->any())
 
-        <div
-            class="mt-6
+            <div
+                class="mt-6
                    rounded-xl
                    border
                    border-red-200
                    bg-red-50
-                   px-5 py-4"
-        >
+                   px-5 py-4">
 
-            <p
-                class="font-semibold
-                       text-red-700"
-            >
-                Please correct the following:
-            </p>
+                <p class="font-semibold
+                       text-red-700">
+                    Please correct the following:
+                </p>
 
 
-            <ul
-                class="mt-2
+                <ul
+                    class="mt-2
                        list-disc
                        space-y-1
                        pl-5
                        text-sm
-                       text-red-600"
-            >
+                       text-red-600">
 
-                @foreach ($errors->all() as $error)
+                    @foreach ($errors->all() as $error)
+                        <li>
+                            {{ $error }}
+                        </li>
+                    @endforeach
 
-                    <li>
-                        {{ $error }}
-                    </li>
+                </ul>
 
-                @endforeach
+            </div>
 
-            </ul>
-
-        </div>
-
-    @endif
+        @endif
 
 
 
-    {{-- =========================================================
+        {{-- =========================================================
         STUDENT INFORMATION
     ========================================================== --}}
 
-    <section
-        class="mt-7
+        <section
+            class="mt-7
                rounded-[26px]
                border
                border-slate-200
                bg-white
                p-6
-               shadow-sm"
-    >
+               shadow-sm">
 
-        <div
-            class="flex
+            <div
+                class="flex
                    flex-col
                    gap-5
                    lg:flex-row
                    lg:items-start
-                   lg:justify-between"
-        >
+                   lg:justify-between">
 
-            <div>
+                <div>
 
-                <p
-                    class="text-xs
+                    <p
+                        class="text-xs
                            font-bold
                            uppercase
                            tracking-wide
-                           text-blue-600"
-                >
-                    Student Information
-                </p>
+                           text-blue-600">
+                        Student Information
+                    </p>
 
 
-                <h2
-                    class="mt-2
+                    <h2
+                        class="mt-2
                            text-2xl
                            font-bold
-                           text-slate-900"
-                >
-                    {{ $student->first_name }}
-                    {{ $student->last_name }}
-                </h2>
+                           text-slate-900">
+                        {{ $student->first_name }}
+                        {{ $student->last_name }}
+                    </h2>
 
 
-                <p
-                    class="mt-1
+                    <p class="mt-1
                            text-sm
-                           text-slate-500"
-                >
-                    Student ID:
-                    {{ $student->external_id ?? '—' }}
-                </p>
+                           text-slate-500">
+                        Student ID:
+                        {{ $student->external_id ?? '—' }}
+                    </p>
 
-            </div>
+                </div>
 
 
-            <div
-                class="rounded-xl
+                <div
+                    class="rounded-xl
                        border
                        border-blue-100
                        bg-blue-50
-                       px-4 py-3"
-            >
+                       px-4 py-3">
 
-                <p
-                    class="text-sm
+                    <p class="text-sm
                            font-semibold
-                           text-blue-700"
-                >
-                    Approval Required
-                </p>
+                           text-blue-700">
+                        Approval Required
+                    </p>
 
 
-                <p
-                    class="mt-1
+                    <p
+                        class="mt-1
                            text-xs
                            leading-5
-                           text-blue-600"
-                >
-                    This leave will not become active
-                    until centre staff approve the request.
-                </p>
+                           text-blue-600">
+                        This leave will not become active
+                        until centre staff approve the request.
+                    </p>
+
+                </div>
 
             </div>
 
-        </div>
 
 
-
-        {{-- =====================================================
+            {{-- =====================================================
             ACTIVE CLASSES
         ====================================================== --}}
 
-        <div
-            class="mt-6
+            <div class="mt-6
                    border-t
                    border-slate-100
-                   pt-5"
-        >
+                   pt-5">
 
-            <p
-                class="text-sm
+                <p class="text-sm
                        font-bold
-                       text-slate-800"
-            >
-                Active Enrolled Classes
-            </p>
+                       text-slate-800">
+                    Active Enrolled Classes
+                </p>
 
 
-            <p
-                class="mt-1
+                <p class="mt-1
                        text-xs
-                       text-slate-500"
-            >
-                If approved, this leave will apply
-                to all active enrolled classes.
-            </p>
+                       text-slate-500">
+                    If approved, this leave will apply
+                    to all active enrolled classes.
+                </p>
 
 
-            <div
-                class="mt-4
+                <div
+                    class="mt-4
                        grid
                        gap-3
                        md:grid-cols-2
-                       xl:grid-cols-3"
-            >
+                       xl:grid-cols-3">
 
-                @forelse ($enrolments as $enrolment)
+                    @forelse ($enrolments as $enrolment)
+                        @php
 
-                    @php
+                            $offering = $enrolment->sectionOffering;
 
-                        $offering =
-                            $enrolment
-                                ->sectionOffering;
-
-                    @endphp
+                        @endphp
 
 
-                    <div
-                        class="rounded-2xl
+                        <div
+                            class="rounded-2xl
                                border
                                border-slate-200
                                bg-slate-50
-                               p-4"
-                    >
+                               p-4">
 
-                        <p
-                            class="font-bold
-                                   text-slate-900"
-                        >
-                            {{
-                                $offering
-                                    ?->section
-                                    ?->section_name
-                                ?? 'Class'
-                            }}
-                        </p>
-
-
-                        @if ($offering)
-
-                            <p
-                                class="mt-2
-                                       text-sm
-                                       text-slate-500"
-                            >
-                                {{
-                                    $offering
-                                        ->day
-                                        ?->day_name
-                                    ?? '—'
-                                }}
-
-                                <span
-                                    class="mx-1
-                                           text-slate-300"
-                                >
-                                    •
-                                </span>
-
-                                {{
-                                    \Carbon\Carbon::parse(
-                                        $offering
-                                            ->start_time
-                                    )->format(
-                                        'g:i A'
-                                    )
-                                }}
-
-                                –
-
-                                {{
-                                    \Carbon\Carbon::parse(
-                                        $offering
-                                            ->end_time
-                                    )->format(
-                                        'g:i A'
-                                    )
-                                }}
+                            <p class="font-bold
+                                   text-slate-900">
+                                {{ $offering?->section?->section_name ?? 'Class' }}
                             </p>
 
-                        @endif
 
-                    </div>
+                            @if ($offering)
+                                <p
+                                    class="mt-2
+                                       text-sm
+                                       text-slate-500">
+                                    {{ $offering->day?->day_name ?? '—' }}
+
+                                    <span class="mx-1
+                                           text-slate-300">
+                                        •
+                                    </span>
+
+                                    {{ \Carbon\Carbon::parse($offering->start_time)->format('g:i A') }}
+
+                                    –
+
+                                    {{ \Carbon\Carbon::parse($offering->end_time)->format('g:i A') }}
+                                </p>
+                            @endif
+
+                        </div>
 
 
-                @empty
+                    @empty
 
-                    <div
-                        class="rounded-xl
+                        <div
+                            class="rounded-xl
                                border
                                border-dashed
                                border-slate-300
                                p-5
                                text-sm
-                               text-slate-500"
-                    >
-                        No active enrolled classes.
-                    </div>
+                               text-slate-500">
+                            No active enrolled classes.
+                        </div>
+                    @endforelse
 
-                @endforelse
+                </div>
 
             </div>
 
-        </div>
-
-    </section>
+        </section>
 
 
 
-    {{-- =========================================================
+        {{-- =========================================================
         REQUEST FORM
     ========================================================== --}}
 
-    <section
-        class="mt-6
+        <section
+            class="mt-6
                rounded-[26px]
                border
                border-slate-200
                bg-white
                p-6
-               shadow-sm"
-    >
+               shadow-sm">
 
-        <div>
+            <div>
 
-            <p
-                class="text-xs
+                <p
+                    class="text-xs
                        font-bold
                        uppercase
                        tracking-wide
-                       text-violet-600"
-            >
-                Leave Request
-            </p>
+                       text-violet-600">
+                    Leave Request
+                </p>
 
 
-            <h2
-                class="mt-2
+                <h2
+                    class="mt-2
                        text-xl
                        font-bold
-                       text-slate-900"
-            >
-                Leave Information
-            </h2>
+                       text-slate-900">
+                    Leave Information
+                </h2>
 
 
-            <p
-                class="mt-1
+                <p class="mt-1
                        text-sm
-                       text-slate-500"
-            >
-                Enter the leave dates and homework requirement.
-            </p>
+                       text-slate-500">
+                    Enter the leave dates and homework requirement.
+                </p>
 
-        </div>
-
+            </div>
 
 
-        <form
-            method="POST"
-            action="{{ route(
-                'parent.leave.store'
-            ) }}"
-            class="mt-6"
-        >
 
-            @csrf
+            <form method="POST" action="{{ route('parent.leave.store') }}" class="mt-6">
+
+                @csrf
 
 
-            <div
-                class="grid
+                <div class="grid
                        gap-5
-                       md:grid-cols-2"
-            >
+                       md:grid-cols-2">
 
 
-                {{-- =================================================
+                    {{-- =================================================
                     START DATE
                 ================================================== --}}
 
-                <div>
+                    <div>
 
-                    <label
-                        for="start_date"
-                        class="mb-2
+                        <label for="start_date"
+                            class="mb-2
                                block
                                text-sm
                                font-semibold
-                               text-slate-700"
-                    >
-                        Start Date
+                               text-slate-700">
+                            Start Date
 
-                        <span class="text-red-500">
-                            *
-                        </span>
-                    </label>
+                            <span class="text-red-500">
+                                *
+                            </span>
+                        </label>
 
 
-                    <input
-                        type="date"
-                        name="start_date"
-                        id="start_date"
-                        value="{{ old(
-                            'start_date'
-                        ) }}"
-                        required
-                        class="h-12
+                        <input type="date" name="start_date" id="start_date"
+                            value="{{ old('start_date') }}" required
+                            class="h-12
                                w-full
                                rounded-xl
                                border
@@ -486,57 +395,46 @@
                                transition
                                focus:border-violet-500
                                focus:ring-4
-                               focus:ring-violet-100"
-                    >
+                               focus:ring-violet-100">
 
 
-                    @error('start_date')
-
-                        <p
-                            class="mt-2
+                        @error('start_date')
+                            <p
+                                class="mt-2
                                    text-xs
-                                   text-red-600"
-                        >
-                            {{ $message }}
-                        </p>
+                                   text-red-600">
+                                {{ $message }}
+                            </p>
+                        @enderror
 
-                    @enderror
-
-                </div>
+                    </div>
 
 
 
-                {{-- =================================================
+                    {{-- =================================================
                     EXPECTED RETURN
                 ================================================== --}}
 
-                <div>
+                    <div>
 
-                    <label
-                        for="expected_return_date"
-                        class="mb-2
+                        <label for="expected_return_date"
+                            class="mb-2
                                block
                                text-sm
                                font-semibold
-                               text-slate-700"
-                    >
-                        Expected Return Date
+                               text-slate-700">
+                            Expected Return Date
 
-                        <span class="text-red-500">
-                            *
-                        </span>
-                    </label>
+                            <span class="text-red-500">
+                                *
+                            </span>
+                        </label>
 
 
-                    <input
-                        type="date"
-                        name="expected_return_date"
-                        id="expected_return_date"
-                        value="{{ old(
-                            'expected_return_date'
-                        ) }}"
-                        required
-                        class="h-12
+                        <input type="date" name="expected_return_date" id="expected_return_date"
+                            value="{{ old('expected_return_date') }}"
+                            required
+                            class="h-12
                                w-full
                                rounded-xl
                                border
@@ -549,53 +447,44 @@
                                transition
                                focus:border-violet-500
                                focus:ring-4
-                               focus:ring-violet-100"
-                    >
+                               focus:ring-violet-100">
 
 
-                    @error('expected_return_date')
-
-                        <p
-                            class="mt-2
+                        @error('expected_return_date')
+                            <p
+                                class="mt-2
                                    text-xs
-                                   text-red-600"
-                        >
-                            {{ $message }}
-                        </p>
+                                   text-red-600">
+                                {{ $message }}
+                            </p>
+                        @enderror
 
-                    @enderror
-
-                </div>
+                    </div>
 
 
 
-                {{-- =================================================
+                    {{-- =================================================
                     HOMEWORK
                 ================================================== --}}
 
-                <div>
+                    <div>
 
-                    <label
-                        for="homework_requirement"
-                        class="mb-2
+                        <label for="homework_requirement"
+                            class="mb-2
                                block
                                text-sm
                                font-semibold
-                               text-slate-700"
-                    >
-                        Homework Required
+                               text-slate-700">
+                            Homework Required
 
-                        <span class="text-red-500">
-                            *
-                        </span>
-                    </label>
+                            <span class="text-red-500">
+                                *
+                            </span>
+                        </label>
 
 
-                    <select
-                        name="homework_requirement"
-                        id="homework_requirement"
-                        required
-                        class="h-12
+                        <select name="homework_requirement" id="homework_requirement" required
+                            class="h-12
                                w-full
                                rounded-xl
                                border
@@ -608,107 +497,72 @@
                                transition
                                focus:border-violet-500
                                focus:ring-4
-                               focus:ring-violet-100"
-                    >
+                               focus:ring-violet-100">
 
-                        <option
-                            value="same_as_normal"
-                            @selected(
-                                old(
-                                    'homework_requirement',
-                                    'same_as_normal'
-                                )
-                                ===
-                                'same_as_normal'
-                            )
-                        >
-                            Same as normal
-                        </option>
+                            <option value="">
+                                Select homework requirement
+                            </option>
 
+                            <option value="none_required" @selected(old('homework_requirement') === 'none_required')>
+                                None required
+                            </option>
 
-                        <option
-                            value="increase"
-                            @selected(
-                                old(
-                                    'homework_requirement'
-                                )
-                                ===
-                                'increase'
-                            )
-                        >
-                            Increase
-                        </option>
+                            <option value="same_as_normal" @selected(old('homework_requirement') === 'same_as_normal')>
+                                Same as normal
+                            </option>
 
+                            <option value="increase" @selected(old('homework_requirement') === 'increase')>
+                                Increase
+                            </option>
 
-                        <option
-                            value="decrease"
-                            @selected(
-                                old(
-                                    'homework_requirement'
-                                )
-                                ===
-                                'decrease'
-                            )
-                        >
-                            Decrease
-                        </option>
+                            <option value="decrease" @selected(old('homework_requirement') === 'decrease')>
+                                Decrease
+                            </option>
 
-                    </select>
+                        </select>
 
-
-                    <p
-                        class="mt-2
-                               text-xs
-                               text-slate-500"
-                    >
-                        “Same as normal” is selected by default.
-                    </p>
-
-
-                    @error('homework_requirement')
 
                         <p
                             class="mt-2
-                                   text-xs
-                                   text-red-600"
-                        >
-                            {{ $message }}
+                               text-xs
+                               text-slate-500">
+                            “Same as normal” is selected by default.
                         </p>
 
-                    @enderror
 
-                </div>
+                        @error('homework_requirement')
+                            <p
+                                class="mt-2
+                                   text-xs
+                                   text-red-600">
+                                {{ $message }}
+                            </p>
+                        @enderror
+
+                    </div>
 
 
 
-                {{-- =================================================
+                    {{-- =================================================
                     REASON
                 ================================================== --}}
 
-                <div>
+                    <div>
 
-                    <label
-                        for="reason"
-                        class="mb-2
+                        <label for="reason"
+                            class="mb-2
                                block
                                text-sm
                                font-semibold
-                               text-slate-700"
-                    >
-                        Reason
-                    </label>
+                               text-slate-700">
+                            Reason
+                        </label>
 
 
-                    <input
-                        type="text"
-                        name="reason"
-                        id="reason"
-                        value="{{ old(
-                            'reason'
-                        ) }}"
-                        maxlength="255"
-                        placeholder="Optional"
-                        class="h-12
+                        <input type="text" name="reason" id="reason"
+                            value="{{ old('reason') }}"
+                            maxlength="255" placeholder="Optional"
+                            class="h-12
                                w-full
                                rounded-xl
                                border
@@ -722,53 +576,43 @@
                                placeholder:text-slate-400
                                focus:border-violet-500
                                focus:ring-4
-                               focus:ring-violet-100"
-                    >
+                               focus:ring-violet-100">
 
 
-                    @error('reason')
-
-                        <p
-                            class="mt-2
+                        @error('reason')
+                            <p
+                                class="mt-2
                                    text-xs
-                                   text-red-600"
-                        >
-                            {{ $message }}
-                        </p>
+                                   text-red-600">
+                                {{ $message }}
+                            </p>
+                        @enderror
 
-                    @enderror
+                    </div>
 
                 </div>
 
-            </div>
 
 
-
-            {{-- =================================================
+                {{-- =================================================
                 NOTES
             ================================================== --}}
 
-            <div class="mt-5">
+                <div class="mt-5">
 
-                <label
-                    for="notes"
-                    class="mb-2
+                    <label for="notes"
+                        class="mb-2
                            block
                            text-sm
                            font-semibold
-                           text-slate-700"
-                >
-                    Notes
-                </label>
+                           text-slate-700">
+                        Notes
+                    </label>
 
 
-                <textarea
-                    name="notes"
-                    id="notes"
-                    rows="5"
-                    maxlength="2000"
-                    placeholder="Add any extra information for centre staff..."
-                    class="w-full
+                    <textarea name="notes" id="notes" rows="5" maxlength="2000"
+                        placeholder="Add any extra information for centre staff..."
+                        class="w-full
                            rounded-xl
                            border
                            border-slate-300
@@ -781,81 +625,68 @@
                            placeholder:text-slate-400
                            focus:border-violet-500
                            focus:ring-4
-                           focus:ring-violet-100"
-                >{{ old('notes') }}</textarea>
+                           focus:ring-violet-100">{{ old('notes') }}</textarea>
 
 
-                @error('notes')
-
-                    <p
-                        class="mt-2
+                    @error('notes')
+                        <p class="mt-2
                                text-xs
-                               text-red-600"
-                    >
-                        {{ $message }}
-                    </p>
+                               text-red-600">
+                            {{ $message }}
+                        </p>
+                    @enderror
 
-                @enderror
-
-            </div>
+                </div>
 
 
 
-            {{-- =================================================
+                {{-- =================================================
                 INFORMATION
             ================================================== --}}
 
-            <div
-                class="mt-6
+                <div
+                    class="mt-6
                        rounded-2xl
                        border
                        border-amber-200
                        bg-amber-50
-                       p-4"
-            >
+                       p-4">
 
-                <p
-                    class="text-sm
+                    <p class="text-sm
                            font-semibold
-                           text-amber-800"
-                >
-                    Leave request approval
-                </p>
+                           text-amber-800">
+                        Leave request approval
+                    </p>
 
 
-                <p
-                    class="mt-1
+                    <p
+                        class="mt-1
                            text-xs
                            leading-5
-                           text-amber-700"
-                >
-                    After submitting, the request status will be
-                    Pending Approval. Centre staff can approve or
-                    reject the request. You can check the status
-                    from Leave Management.
-                </p>
+                           text-amber-700">
+                        After submitting, the request status will be
+                        Pending Approval. Centre staff can approve or
+                        reject the request. You can check the status
+                        from Leave Management.
+                    </p>
 
-            </div>
-
+                </div>
 
 
-            {{-- =================================================
+
+                {{-- =================================================
                 ACTIONS
             ================================================== --}}
 
-            <div
-                class="mt-7
+                <div
+                    class="mt-7
                        flex
                        flex-wrap
                        justify-end
-                       gap-3"
-            >
+                       gap-3">
 
-                <a
-                    href="{{ route(
-                        'parent.leave.index'
-                    ) }}"
-                    class="inline-flex
+                    <a href="{{ route('parent.leave.index') }}"
+                        class="inline-flex
                            h-12
                            items-center
                            justify-center
@@ -868,15 +699,13 @@
                            font-semibold
                            text-slate-600
                            transition
-                           hover:bg-slate-50"
-                >
-                    Cancel
-                </a>
+                           hover:bg-slate-50">
+                        Cancel
+                    </a>
 
 
-                <button
-                    type="submit"
-                    class="inline-flex
+                    <button type="submit"
+                        class="inline-flex
                            h-12
                            items-center
                            justify-center
@@ -891,17 +720,16 @@
                            hover:bg-violet-700
                            focus:outline-none
                            focus:ring-4
-                           focus:ring-violet-200"
-                >
-                    Submit Leave Request
-                </button>
+                           focus:ring-violet-200">
+                        Submit Leave Request
+                    </button>
 
-            </div>
+                </div>
 
-        </form>
+            </form>
 
-    </section>
+        </section>
 
-</div>
+    </div>
 
 @endsection

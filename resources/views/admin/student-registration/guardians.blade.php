@@ -334,6 +334,9 @@ document.addEventListener(
                                        text-gray-700"
                             >
                                 Email
+                                <span class="text-red-500">
+                                    *
+                                </span>
                             </label>
 
                             <input
@@ -343,7 +346,7 @@ document.addEventListener(
                                     guardian.email
                                 )}"
                                 maxlength="150"
-                                placeholder="Email (optional)"
+                                placeholder="Email"
                                 class="w-full rounded-lg
                                        border-gray-300
                                        focus:border-blue-500

@@ -541,7 +541,7 @@
                            uppercase
                            text-violet-500"
                 >
-                    Centre Review
+                    Homework Review Note
                 </p>
 
 
