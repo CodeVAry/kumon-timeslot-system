@@ -33,14 +33,14 @@ class AdminPermissionSeeder extends Seeder
 
         /*
         |--------------------------------------------------------------------------
-        | Admin Permissions
+        | Admin Permission Keys
         |--------------------------------------------------------------------------
         |
-        | These permissions match the current Admin permission matrix.
+        | These exactly match PermissionSeeder.
         |--------------------------------------------------------------------------
         */
 
-        $permissionNames = [
+        $permissionKeys = [
 
             /*
             |--------------------------------------------------------------------------
@@ -83,11 +83,11 @@ class AdminPermissionSeeder extends Seeder
             |--------------------------------------------------------------------------
             */
 
-            'leave_management.view',
-            'leave_management.create',
-            'leave_management.edit',
-            'leave_management.delete',
-            'leave_management.print',
+            'leave.view',
+            'leave.create',
+            'leave.edit',
+            'leave.delete',
+            'leave.print',
 
 
             /*
@@ -140,14 +140,14 @@ class AdminPermissionSeeder extends Seeder
 
         /*
         |--------------------------------------------------------------------------
-        | Find Permission IDs
+        | Get Permission IDs
         |--------------------------------------------------------------------------
         */
 
         $permissionIds =
             Permission::whereIn(
-                'permission_name',
-                $permissionNames
+                'permission_key',
+                $permissionKeys
             )
                 ->where(
                     'is_active',
@@ -162,12 +162,6 @@ class AdminPermissionSeeder extends Seeder
         /*
         |--------------------------------------------------------------------------
         | Sync Admin Permissions
-        |--------------------------------------------------------------------------
-        |
-        | sync() is important here.
-        |
-        | It will remove old Admin permissions that are NOT in the list above
-        | and keep the Admin role exactly aligned with the matrix.
         |--------------------------------------------------------------------------
         */
 
