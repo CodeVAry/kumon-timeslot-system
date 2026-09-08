@@ -14,6 +14,7 @@ class Enrolment extends Model
     protected $fillable = [
         'student_id',
         'section_offering_id',
+        'sub_section_id',
         'wishlist_for_enrolment_id',
         'enrolment_date',
         'is_wishlist',
@@ -311,5 +312,14 @@ class Enrolment extends Model
                 'wishlist_status',
                 'cancelled'
             );
+    }
+
+    public function subSection()
+    {
+        return $this->belongsTo(
+            SubSection::class,
+            'sub_section_id',
+            'id'
+        );
     }
 }

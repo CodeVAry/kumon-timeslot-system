@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Admin\AuditLog;
+use App\Models\Admin\Student;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,7 +14,16 @@ class AuditLogService
         'remember_token',
         'otp',
         'otp_hash',
+        'normalized_email',
+        'normalized_phone',
     ];
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Create Audit Log
+    |--------------------------------------------------------------------------
+    */
 
     public function log(
         string $action,
@@ -22,26 +32,39 @@ class AuditLogService
         array $newValues = [],
         ?string $description = null
     ): ?AuditLog {
+
         /*
-         * Staff/admin web guard only.
-         * Parent changes are not logged.
+         * Admin/staff only.
+         * Parent portal actions are intentionally excluded.
          */
-        if (!Auth::guard('web')->check()) {
+        if (
+            !Auth::guard('web')
+                ->check()
+        ) {
             return null;
         }
 
-        $user = Auth::guard('web')->user();
+
+        $user =
+            Auth::guard('web')
+                ->user();
+
 
         $oldValues =
             $this->removeSensitiveFields(
                 $oldValues
             );
 
+
         $newValues =
             $this->removeSensitiveFields(
                 $newValues
             );
 
+
+        /*
+         * Do not create empty update records.
+         */
         if (
             $action === 'updated'
             &&
@@ -52,54 +75,67 @@ class AuditLogService
             return null;
         }
 
-        $auditLog = AuditLog::create([
-            'user_id' =>
-                $user->id,
 
-            'user_name' =>
-                $user->name,
+        $auditLog =
+            AuditLog::create([
 
-            'user_email' =>
-                $user->email,
+                'user_id' =>
+                    $user->id,
 
-            'action' =>
-                $action,
+                'user_name' =>
+                    $user->name,
 
-            'entity_type' =>
-                get_class($model),
+                'user_email' =>
+                    $user->email,
 
-            'entity_id' =>
-                $model->getKey(),
-
-            'description' =>
-                $description
-                ?? $this->makeDescription(
+                'action' =>
                     $action,
-                    $model
-                ),
 
-            'old_values' =>
-                !empty($oldValues)
-                    ? $oldValues
-                    : null,
+                'entity_type' =>
+                    get_class($model),
 
-            'new_values' =>
-                !empty($newValues)
-                    ? $newValues
-                    : null,
+                'entity_id' =>
+                    $model->getKey(),
 
-            'ip_address' =>
-                request()->ip(),
+                /*
+                 * Readable permanent reference.
+                 */
+                'entity_reference' =>
+                    $this->getEntityReference(
+                        $model
+                    ),
 
-            'user_agent' =>
-                request()->userAgent(),
+                'description' =>
+                    $description
+                    ??
+                    $this->makeDescription(
+                        $action,
+                        $model
+                    ),
 
-            'created_at' =>
-                now(),
-        ]);
+                'old_values' =>
+                    !empty($oldValues)
+                        ? $oldValues
+                        : null,
+
+                'new_values' =>
+                    !empty($newValues)
+                        ? $newValues
+                        : null,
+
+                'ip_address' =>
+                    request()->ip(),
+
+                'user_agent' =>
+                    request()->userAgent(),
+
+                'created_at' =>
+                    now(),
+            ]);
+
 
         /*
-         * Session only keeps notification count.
+         * Notification badge remains session-based.
          */
         session([
             'audit_notification_count' =>
@@ -109,45 +145,156 @@ class AuditLogService
                 ) + 1,
         ]);
 
+
         return $auditLog;
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sensitive Fields
+    |--------------------------------------------------------------------------
+    */
 
     private function removeSensitiveFields(
         array $values
     ): array {
+
         foreach (
             $this->hiddenFields
             as $field
         ) {
+
             unset(
                 $values[$field]
             );
         }
 
+
         return $values;
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Readable Entity Reference
+    |--------------------------------------------------------------------------
+    */
+
+    private function getEntityReference(
+        Model $model
+    ): ?string {
+
+        /*
+         * Student:
+         * use manually entered Student ID.
+         */
+        if ($model instanceof Student) {
+
+            return $model->external_id;
+        }
+
+
+        /*
+         * Section.
+         */
+        if (
+            isset($model->section_name)
+            &&
+            $model->section_name
+        ) {
+
+            return $model->section_name;
+        }
+
+
+        /*
+         * Student Status.
+         */
+        if (
+            isset($model->status_name)
+            &&
+            $model->status_name
+        ) {
+
+            return $model->status_name;
+        }
+
+
+        /*
+         * User.
+         */
+        if (
+            isset($model->name)
+            &&
+            $model->name
+        ) {
+
+            return $model->name;
+        }
+
+
+        /*
+         * Guardian.
+         */
+        if (
+            isset($model->first_name)
+            &&
+            isset($model->last_name)
+        ) {
+
+            return trim(
+                $model->first_name
+                .
+                ' '
+                .
+                $model->last_name
+            );
+        }
+
+
+        return null;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Description
+    |--------------------------------------------------------------------------
+    */
 
     private function makeDescription(
         string $action,
         Model $model
     ): string {
+
         $modelName =
             class_basename(
                 $model
             );
 
+
         return match ($action) {
+
             'created' =>
-                $modelName . ' created',
+                $modelName
+                .
+                ' created',
 
             'updated' =>
-                $modelName . ' updated',
+                $modelName
+                .
+                ' updated',
 
             'deleted' =>
-                $modelName . ' deleted',
+                $modelName
+                .
+                ' deleted',
 
             default =>
-                $modelName . ' changed',
+                $modelName
+                .
+                ' changed',
         };
     }
 }

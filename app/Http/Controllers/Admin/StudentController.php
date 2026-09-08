@@ -7,6 +7,7 @@ use App\Models\Admin\Day;
 use App\Models\Admin\Section;
 use App\Models\Admin\SectionOffering;
 use App\Models\Admin\Student;
+use App\Models\Admin\StudentLeave;
 use App\Models\Admin\StudentStatus;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -25,6 +26,7 @@ class StudentController extends Controller
             Student::with([
                 'studentStatus',
                 'guardians',
+                'enrolments.subSection',
                 'enrolments.sectionOffering.section',
                 'enrolments.sectionOffering.day',
             ]);
@@ -76,7 +78,7 @@ class StudentController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Status Filter
+        | Student Status Filter
         |--------------------------------------------------------------------------
         */
 
@@ -267,6 +269,48 @@ class StudentController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Vacation Students
+        |--------------------------------------------------------------------------
+        |
+        | Vacation overrides the displayed Student Status only.
+        |
+        | It does NOT update student_status_id.
+        |--------------------------------------------------------------------------
+        */
+
+        $studentIds =
+            $students
+                ->getCollection()
+                ->pluck('id');
+
+
+        $vacationStudentIds =
+            collect();
+
+
+        if ($studentIds->isNotEmpty()) {
+
+            $vacationStudentIds =
+                StudentLeave::activeOnDate(
+                    now()->toDateString()
+                )
+                    ->whereIn(
+                        'student_id',
+                        $studentIds
+                    )
+                    ->pluck(
+                        'student_id'
+                    )
+                    ->map(
+                        fn ($id) => (int) $id
+                    )
+                    ->unique()
+                    ->values();
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
         | Filter Values
         |--------------------------------------------------------------------------
         */
@@ -328,7 +372,8 @@ class StudentController extends Controller
                 'studentStatuses',
                 'days',
                 'sections',
-                'timeslots'
+                'timeslots',
+                'vacationStudentIds'
             )
         );
     }
@@ -346,20 +391,11 @@ class StudentController extends Controller
         $student->load([
             'studentStatus',
             'guardians',
+            'enrolments.subSection',
             'enrolments.sectionOffering.section',
             'enrolments.sectionOffering.day',
         ]);
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Primary Guardian
-        |--------------------------------------------------------------------------
-        |
-        | Keep this because your current profile
-        | displays primary guardian first.
-        |
-        */
 
         $primaryGuardian =
             $student
@@ -367,7 +403,7 @@ class StudentController extends Controller
                 ->first(
                     function ($guardian) {
 
-                        return (bool) 
+                        return (bool)
                             $guardian
                                 ->pivot
                                 ->is_primary;
@@ -383,12 +419,6 @@ class StudentController extends Controller
                     ->first();
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Confirmed Enrolments
-        |--------------------------------------------------------------------------
-        */
 
         $confirmedEnrolments =
             $student
@@ -406,12 +436,6 @@ class StudentController extends Controller
                 )
                 ->values();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Active Wishlist
-        |--------------------------------------------------------------------------
-        */
 
         $wishlistEnrolments =
             $student
@@ -444,7 +468,7 @@ class StudentController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Edit Student / Guardians / Status / Notes
+    | Edit Student
     |--------------------------------------------------------------------------
     */
 
@@ -458,12 +482,6 @@ class StudentController extends Controller
         ]);
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Student Statuses
-        |--------------------------------------------------------------------------
-        */
-
         $studentStatuses =
             StudentStatus::where(
                 'is_active',
@@ -474,18 +492,6 @@ class StudentController extends Controller
                 )
                 ->get();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | ALL Guardians
-        |--------------------------------------------------------------------------
-        |
-        | This is the main fix.
-        |
-        | Instead of using only $primaryGuardian,
-        | now load every guardian linked to student.
-        |
-        */
 
         $guardians =
             $student
@@ -501,12 +507,6 @@ class StudentController extends Controller
                 )
                 ->get();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Section
-        |--------------------------------------------------------------------------
-        */
 
         $section =
             $request->input(
@@ -526,7 +526,8 @@ class StudentController extends Controller
         if (
             !in_array(
                 $section,
-                $allowedSections
+                $allowedSections,
+                true
             )
         ) {
 
@@ -549,7 +550,7 @@ class StudentController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Update Selected Student Profile Section
+    | Update Student
     |--------------------------------------------------------------------------
     */
 
@@ -586,8 +587,8 @@ class StudentController extends Controller
                             'students',
                             'external_id'
                         )->ignore(
-                                $student->id
-                            ),
+                            $student->id
+                        ),
                     ],
 
                     'first_name' => [
@@ -704,10 +705,6 @@ class StudentController extends Controller
         |--------------------------------------------------------------------------
         | Guardian Information
         |--------------------------------------------------------------------------
-        |
-        | Update ALL guardians submitted
-        | from the edit page.
-        |
         */
 
         if (
@@ -779,16 +776,11 @@ class StudentController extends Controller
                 ]);
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Validate Primary Guardian
-            |--------------------------------------------------------------------------
-            */
-
             $primaryGuardianId =
                 $validated[
                     'primary_guardian_id'
-                ] ?? null;
+                ]
+                ?? null;
 
 
             if ($primaryGuardianId) {
@@ -803,20 +795,12 @@ class StudentController extends Controller
                         ->exists();
 
 
-                if (
-                    !$primaryGuardianExists
-                ) {
+                if (!$primaryGuardianExists) {
 
                     abort(403);
                 }
             }
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Update Each Guardian
-            |--------------------------------------------------------------------------
-            */
 
             foreach (
                 $validated[
@@ -825,17 +809,14 @@ class StudentController extends Controller
                 as $guardianData
             ) {
 
-                /*
-                 * Security:
-                 * Guardian must belong
-                 * to this student.
-                 */
                 $guardian =
                     $student
                         ->guardians()
                         ->where(
                             'guardians.id',
-                            $guardianData['id']
+                            $guardianData[
+                                'id'
+                            ]
                         )
                         ->first();
 
@@ -845,17 +826,6 @@ class StudentController extends Controller
                     abort(403);
                 }
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | Update Guardian Table
-                |--------------------------------------------------------------------------
-                |
-                | normalized_email and normalized_phone
-                | will automatically update through
-                | your Guardian model mutators.
-                |
-                */
 
                 $guardian->update([
                     'first_name' =>
@@ -874,16 +844,16 @@ class StudentController extends Controller
 
                     'email' =>
                         !empty(
-                        $guardianData[
-                            'email'
-                        ]
-                    )
-                        ? trim(
                             $guardianData[
                                 'email'
                             ]
                         )
-                        : null,
+                            ? trim(
+                                $guardianData[
+                                    'email'
+                                ]
+                            )
+                            : null,
 
                     'phone' =>
                         trim(
@@ -894,24 +864,18 @@ class StudentController extends Controller
 
                     'address' =>
                         !empty(
-                        $guardianData[
-                            'address'
-                        ]
-                    )
-                        ? trim(
                             $guardianData[
                                 'address'
                             ]
                         )
-                        : null,
+                            ? trim(
+                                $guardianData[
+                                    'address'
+                                ]
+                            )
+                            : null,
                 ]);
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | Update Pivot
-                |--------------------------------------------------------------------------
-                */
 
                 $student
                     ->guardians()
@@ -920,28 +884,28 @@ class StudentController extends Controller
                         [
                             'relationship' =>
                                 !empty(
-                                $guardianData[
-                                    'relationship'
-                                ]
-                            )
-                                ? trim(
                                     $guardianData[
                                         'relationship'
                                     ]
                                 )
-                                : null,
+                                    ? trim(
+                                        $guardianData[
+                                            'relationship'
+                                        ]
+                                    )
+                                    : null,
 
                             'is_primary' =>
                                 $primaryGuardianId
                                 &&
-                                (int) 
+                                (int)
                                 $primaryGuardianId
                                 ===
-                                (int) 
+                                (int)
                                 $guardian->id,
 
                             'is_emergency_contact' =>
-                                (bool) 
+                                (bool)
                                 $guardianData[
                                     'is_emergency_contact'
                                 ],
@@ -984,14 +948,14 @@ class StudentController extends Controller
                             'student_statuses',
                             'id'
                         )->where(
-                                function ($query) {
+                            function ($query) {
 
-                                    $query->where(
-                                        'is_active',
-                                        true
-                                    );
-                                }
-                            ),
+                                $query->where(
+                                    'is_active',
+                                    true
+                                );
+                            }
+                        ),
                     ],
 
                     'is_active' => [
@@ -1002,15 +966,12 @@ class StudentController extends Controller
 
 
             $isActive =
-                (bool) 
+                (bool)
                 $validated[
                     'is_active'
                 ];
 
 
-            /*
-             * Inactive Date
-             */
             $inactiveSince =
                 null;
 
@@ -1054,7 +1015,7 @@ class StudentController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Student Notes
+        | Notes
         |--------------------------------------------------------------------------
         */
 
@@ -1077,16 +1038,16 @@ class StudentController extends Controller
             $student->update([
                 'notes' =>
                     !empty(
-                    $validated[
-                        'notes'
-                    ]
-                )
-                    ? trim(
                         $validated[
                             'notes'
                         ]
                     )
-                    : null,
+                        ? trim(
+                            $validated[
+                                'notes'
+                            ]
+                        )
+                        : null,
             ]);
 
 
@@ -1102,12 +1063,6 @@ class StudentController extends Controller
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Invalid Section
-        |--------------------------------------------------------------------------
-        */
-
         return redirect()
             ->route(
                 'admin.students.show',
@@ -1116,29 +1071,45 @@ class StudentController extends Controller
     }
 
 
-    public function destroy(Student $student)
-    {
+    /*
+    |--------------------------------------------------------------------------
+    | Delete
+    |--------------------------------------------------------------------------
+    */
+
+    public function destroy(
+        Student $student
+    ) {
         try {
 
             $studentName =
                 $student->first_name
-                . ' '
-                . $student->last_name;
+                .
+                ' '
+                .
+                $student->last_name;
+
 
             $student->delete();
 
+
             return redirect()
-                ->route('admin.students.index')
+                ->route(
+                    'admin.students.index'
+                )
                 ->with(
                     'success',
                     $studentName
-                    . ' has been deleted successfully.'
+                    .
+                    ' has been deleted successfully.'
                 );
 
         } catch (\Throwable $e) {
 
             return redirect()
-                ->route('admin.students.index')
+                ->route(
+                    'admin.students.index'
+                )
                 ->with(
                     'error',
                     'This student cannot be deleted because related records still exist.'

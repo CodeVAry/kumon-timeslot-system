@@ -10,6 +10,7 @@
     $breadcrumbs = [
         [
             'label' => 'Schedule',
+
             'url' => route(
                 'admin.schedule.index',
                 [
@@ -18,6 +19,7 @@
                 ]
             ),
         ],
+
         [
             'label' => 'Print / Export',
             'url' => null,
@@ -32,9 +34,9 @@
 <div class="space-y-6">
 
 
-    {{-- =========================================================
+    {{-- =====================================================
         BACK
-    ========================================================== --}}
+    ====================================================== --}}
 
     <div>
 
@@ -51,8 +53,7 @@
                    gap-2
                    text-sm
                    font-semibold
-                   text-blue-600
-                   hover:text-blue-800"
+                   text-blue-600"
         >
             ← Back to Class Schedule
         </a>
@@ -61,14 +62,13 @@
 
 
 
-    {{-- =========================================================
+    {{-- =====================================================
         HEADER
-    ========================================================== --}}
+    ====================================================== --}}
 
     <section
         class="rounded-2xl
-               border
-               border-blue-100
+               border border-blue-100
                bg-blue-50
                p-6"
     >
@@ -90,7 +90,7 @@
                    font-bold
                    text-slate-900"
         >
-            Class List Export
+            Centre Schedule Export
         </h1>
 
 
@@ -100,25 +100,23 @@
                    text-sm
                    text-slate-600"
         >
-            Select any combination of day, class,
-            time and attendance status, then generate
-            a PDF or Excel-compatible file.
+            Generate the centre schedule using
+            the client printing format.
         </p>
 
     </section>
 
 
 
-    {{-- =========================================================
-        VALIDATION ERRORS
-    ========================================================== --}}
+    {{-- =====================================================
+        ERRORS
+    ====================================================== --}}
 
     @if ($errors->any())
 
         <div
             class="rounded-xl
-                   border
-                   border-red-200
+                   border border-red-200
                    bg-red-50
                    px-5 py-4"
         >
@@ -159,9 +157,9 @@
 
 
 
-    {{-- =========================================================
+    {{-- =====================================================
         EXPORT FORM
-    ========================================================== --}}
+    ====================================================== --}}
 
     <form
         method="POST"
@@ -169,8 +167,7 @@
             'admin.schedule.export'
         ) }}"
         class="rounded-2xl
-               border
-               border-slate-200
+               border border-slate-200
                bg-white
                p-6
                shadow-sm"
@@ -178,10 +175,6 @@
 
         @csrf
 
-
-        {{-- =====================================================
-            FILTER TITLE
-        ====================================================== --}}
 
         <div
             class="mb-6
@@ -198,23 +191,9 @@
                 Export Filters
             </h2>
 
-
-            <p
-                class="mt-1
-                       text-sm
-                       text-slate-500"
-            >
-                Leave a filter as “All” if you want
-                to include every matching record.
-            </p>
-
         </div>
 
 
-
-        {{-- =====================================================
-            FILTER GRID
-        ====================================================== --}}
 
         <div
             class="grid
@@ -245,16 +224,16 @@
                 <select
                     id="day_id"
                     name="day_id"
-                    onchange="changeDay(this.value)"
+                    onchange="
+                        changeDay(
+                            this.value
+                        )
+                    "
+                    required
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300
-                           text-sm
-                           shadow-sm
-                           focus:border-blue-500
-                           focus:ring-blue-500"
-                    required
+                           border-slate-300"
                 >
 
                     @foreach (
@@ -263,7 +242,9 @@
                     )
 
                         <option
-                            value="{{ $day->id }}"
+                            value="{{
+                                $day->id
+                            }}"
                             @selected(
                                 old(
                                     'day_id',
@@ -273,7 +254,12 @@
                                 $day->id
                             )
                         >
-                            {{ $day->day_name }}
+
+                            {{
+                                $day
+                                    ->day_name
+                            }}
+
                         </option>
 
                     @endforeach
@@ -285,51 +271,7 @@
 
 
             {{-- =================================================
-                DATE
-            ================================================== --}}
-
-            <div>
-
-                <label
-                    for="date"
-                    class="mb-2
-                           block
-                           text-sm
-                           font-semibold
-                           text-slate-700"
-                >
-                    Date
-                </label>
-
-
-                <input
-                    id="date"
-                    type="date"
-                    name="date"
-                    value="{{
-                        old(
-                            'date',
-                            $selectedDate
-                                ?->toDateString()
-                        )
-                    }}"
-                    class="h-12
-                           w-full
-                           rounded-xl
-                           border-slate-300
-                           text-sm
-                           shadow-sm
-                           focus:border-blue-500
-                           focus:ring-blue-500"
-                    required
-                >
-
-            </div>
-
-
-
-            {{-- =================================================
-                SUBJECT / CLASS
+                CLASS
             ================================================== --}}
 
             <div>
@@ -342,7 +284,7 @@
                            font-semibold
                            text-slate-700"
                 >
-                    Subject / Class
+                    Class
                 </label>
 
 
@@ -352,15 +294,11 @@
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300
-                           text-sm
-                           shadow-sm
-                           focus:border-blue-500
-                           focus:ring-blue-500"
+                           border-slate-300"
                 >
 
                     <option value="">
-                        All Subjects / Classes
+                        All Classes
                     </option>
 
 
@@ -370,14 +308,23 @@
                     )
 
                         <option
-                            value="{{ $section->id }}"
+                            value="{{
+                                $section->id
+                            }}"
                             @selected(
-                                old('section_id')
+                                old(
+                                    'section_id'
+                                )
                                 ==
                                 $section->id
                             )
                         >
-                            {{ $section->section_name }}
+
+                            {{
+                                $section
+                                    ->section_name
+                            }}
+
                         </option>
 
                     @endforeach
@@ -389,7 +336,80 @@
 
 
             {{-- =================================================
-                TIME
+                MATH SUB-SECTION
+            ================================================== --}}
+
+            <div>
+
+                <label
+                    for="sub_section_id"
+                    class="mb-2
+                           block
+                           text-sm
+                           font-semibold
+                           text-slate-700"
+                >
+                    Math Sub-section
+                </label>
+
+
+                <select
+                    id="sub_section_id"
+                    name="sub_section_id"
+                    class="h-12
+                           w-full
+                           rounded-xl
+                           border-slate-300"
+                >
+
+                    <option value="">
+                        All Sub-sections
+                    </option>
+
+
+                    @foreach (
+                        $subSections
+                        as $subSection
+                    )
+
+                        <option
+                            value="{{
+                                $subSection->id
+                            }}"
+                            @selected(
+                                old(
+                                    'sub_section_id'
+                                )
+                                ==
+                                $subSection->id
+                            )
+                        >
+
+                            {{
+                                $subSection
+                                    ->section
+                                    ?->section_name
+                            }}
+
+                            —
+
+                            {{
+                                $subSection
+                                    ->sub_section_name
+                            }}
+
+                        </option>
+
+                    @endforeach
+
+                </select>
+
+            </div>
+
+
+
+            {{-- =================================================
+                CLASS TIME
             ================================================== --}}
 
             <div>
@@ -412,11 +432,7 @@
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300
-                           text-sm
-                           shadow-sm
-                           focus:border-blue-500
-                           focus:ring-blue-500"
+                           border-slate-300"
                 >
 
                     <option value="">
@@ -432,7 +448,9 @@
                         <option
                             value="{{ $time }}"
                             @selected(
-                                old('time')
+                                old(
+                                    'time'
+                                )
                                 ==
                                 $time
                             )
@@ -480,11 +498,7 @@
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300
-                           text-sm
-                           shadow-sm
-                           focus:border-blue-500
-                           focus:ring-blue-500"
+                           border-slate-300"
                 >
 
                     <option value="">
@@ -498,7 +512,9 @@
                     )
 
                         <option
-                            value="{{ $offering->id }}"
+                            value="{{
+                                $offering->id
+                            }}"
                             @selected(
                                 old(
                                     'offering_id',
@@ -517,23 +533,37 @@
                                 'Class'
                             }}
 
+
+                            @if (
+                                $offering
+                                    ->subSections
+                                    ->isNotEmpty()
+                            )
+
+                                (
+
+                                {{
+                                    $offering
+                                        ->subSections
+                                        ->pluck(
+                                            'sub_section_name'
+                                        )
+                                        ->implode(
+                                            ', '
+                                        )
+                                }}
+
+                                )
+
+                            @endif
+
+
                             —
 
                             {{
                                 \Carbon\Carbon::parse(
                                     $offering
                                         ->start_time
-                                )->format(
-                                    'g:i A'
-                                )
-                            }}
-
-                            to
-
-                            {{
-                                \Carbon\Carbon::parse(
-                                    $offering
-                                        ->end_time
                                 )->format(
                                     'g:i A'
                                 )
@@ -550,7 +580,7 @@
 
 
             {{-- =================================================
-                ATTENDANCE STATUS
+                STUDENT FILTER
             ================================================== --}}
 
             <div>
@@ -563,22 +593,18 @@
                            font-semibold
                            text-slate-700"
                 >
-                    Attendance
+                    Student Filter
                 </label>
 
 
                 <select
                     id="attendance_status"
                     name="attendance_status"
+                    required
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300
-                           text-sm
-                           shadow-sm
-                           focus:border-blue-500
-                           focus:ring-blue-500"
-                    required
+                           border-slate-300"
                 >
 
                     <option
@@ -660,45 +686,6 @@
 
 
         {{-- =====================================================
-            EXAMPLES
-        ====================================================== --}}
-
-        <div
-            class="mt-7
-                   rounded-xl
-                   border
-                   border-blue-100
-                   bg-blue-50/60
-                   px-5 py-4"
-        >
-
-            <p
-                class="text-sm
-                       font-semibold
-                       text-blue-900"
-            >
-                Filter examples
-            </p>
-
-
-            <p
-                class="mt-1
-                       text-xs
-                       leading-5
-                       text-blue-700"
-            >
-                Whole day: leave Subject, Time and Specific Class as All.
-                Subject list: choose only Subject.
-                Time list: choose only Time.
-                One class: choose Specific Class.
-                Present/Absent/Vacation lists: choose the Attendance filter.
-            </p>
-
-        </div>
-
-
-
-        {{-- =====================================================
             EXPORT FORMAT
         ====================================================== --}}
 
@@ -718,16 +705,6 @@
             </h2>
 
 
-            <p
-                class="mt-1
-                       text-sm
-                       text-slate-500"
-            >
-                Choose how the class list should be generated.
-            </p>
-
-
-
             <div
                 class="mt-4
                        grid
@@ -736,19 +713,16 @@
             >
 
 
-                {{-- =================================================
-                    PDF
-                ================================================== --}}
+                {{-- PDF --}}
 
-                <label
-                    class="cursor-pointer"
-                >
+                <label class="cursor-pointer">
 
                     <input
                         type="radio"
                         name="format"
                         value="pdf"
                         class="peer sr-only"
+
                         @checked(
                             old(
                                 'format',
@@ -764,58 +738,23 @@
                         class="rounded-2xl
                                border
                                border-slate-200
-                               bg-white
                                p-5
-                               transition
-                               hover:border-red-300
                                peer-checked:border-red-500
-                               peer-checked:bg-red-50
-                               peer-checked:ring-2
-                               peer-checked:ring-red-100"
+                               peer-checked:bg-red-50"
                     >
 
-                        <div
-                            class="flex
-                                   items-center
-                                   gap-3"
+                        <strong>
+                            PDF
+                        </strong>
+
+
+                        <p
+                            class="mt-1
+                                   text-xs
+                                   text-slate-500"
                         >
-
-                            <div
-                                class="flex
-                                       h-11 w-11
-                                       items-center
-                                       justify-center
-                                       rounded-xl
-                                       bg-red-100
-                                       font-bold
-                                       text-red-700"
-                            >
-                                PDF
-                            </div>
-
-
-                            <div>
-
-                                <p
-                                    class="font-bold
-                                           text-slate-900"
-                                >
-                                    PDF
-                                </p>
-
-
-                                <p
-                                    class="mt-1
-                                           text-xs
-                                           text-slate-500"
-                                >
-                                    Recommended for printing
-                                    or sharing.
-                                </p>
-
-                            </div>
-
-                        </div>
+                            Client-style printable schedule.
+                        </p>
 
                     </div>
 
@@ -823,21 +762,20 @@
 
 
 
-                {{-- =================================================
-                    EXCEL / CSV
-                ================================================== --}}
+                {{-- Excel --}}
 
-                <label
-                    class="cursor-pointer"
-                >
+                <label class="cursor-pointer">
 
                     <input
                         type="radio"
                         name="format"
                         value="excel"
                         class="peer sr-only"
+
                         @checked(
-                            old('format')
+                            old(
+                                'format'
+                            )
                             ===
                             'excel'
                         )
@@ -848,59 +786,24 @@
                         class="rounded-2xl
                                border
                                border-slate-200
-                               bg-white
                                p-5
-                               transition
-                               hover:border-green-300
                                peer-checked:border-green-500
-                               peer-checked:bg-green-50
-                               peer-checked:ring-2
-                               peer-checked:ring-green-100"
+                               peer-checked:bg-green-50"
                     >
 
-                        <div
-                            class="flex
-                                   items-center
-                                   gap-3"
+                        <strong>
+                            Excel (.xlsx)
+                        </strong>
+
+
+                        <p
+                            class="mt-1
+                                   text-xs
+                                   text-slate-500"
                         >
-
-                            <div
-                                class="flex
-                                       h-11 w-11
-                                       items-center
-                                       justify-center
-                                       rounded-xl
-                                       bg-green-100
-                                       text-xs
-                                       font-bold
-                                       text-green-700"
-                            >
-                                XLS
-                            </div>
-
-
-                            <div>
-
-                                <p
-                                    class="font-bold
-                                           text-slate-900"
-                                >
-                                    Excel
-                                </p>
-
-
-                                <p
-                                    class="mt-1
-                                           text-xs
-                                           text-slate-500"
-                                >
-                                    Downloads a CSV file that
-                                    opens directly in Excel.
-                                </p>
-
-                            </div>
-
-                        </div>
+                            Formatted Excel file with vertical
+                            time and status-coloured student names.
+                        </p>
 
                     </div>
 
@@ -919,7 +822,6 @@
         <div
             class="mt-8
                    flex
-                   flex-wrap
                    justify-end
                    gap-3
                    border-t
@@ -938,16 +840,13 @@
                 class="inline-flex
                        h-12
                        items-center
-                       justify-center
                        rounded-xl
                        border
                        border-slate-300
-                       bg-white
                        px-6
                        text-sm
                        font-semibold
-                       text-slate-700
-                       hover:bg-slate-50"
+                       text-slate-700"
             >
                 Cancel
             </a>
@@ -958,37 +857,14 @@
                 class="inline-flex
                        h-12
                        items-center
-                       justify-center
-                       gap-2
                        rounded-xl
                        bg-blue-600
                        px-8
                        text-sm
                        font-semibold
-                       text-white
-                       shadow-sm
-                       hover:bg-blue-700"
+                       text-white"
             >
-
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    class="h-5 w-5"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M12 3v12m0 0
-                           4-4m-4 4-4-4
-                           M5 21h14"
-                    />
-                </svg>
-
                 Generate Export
-
             </button>
 
         </div>
@@ -1005,17 +881,8 @@
 
 <script>
 
-/*
-|--------------------------------------------------------------------------
-| Reload Export Page When Day Changes
-|--------------------------------------------------------------------------
-|
-| This refreshes the available times and specific classes for the chosen day.
-|--------------------------------------------------------------------------
-*/
-
-function changeDay(dayId) {
-
+function changeDay(dayId)
+{
     const url =
         new URL(
             window.location.href
@@ -1028,10 +895,6 @@ function changeDay(dayId) {
     );
 
 
-    /*
-     * Remove old specific class because
-     * it may belong to another day.
-     */
     url.searchParams.delete(
         'offering_id'
     );

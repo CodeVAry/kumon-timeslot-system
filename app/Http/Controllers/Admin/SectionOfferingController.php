@@ -3,383 +3,428 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Admin\Day;
 use App\Models\Admin\Section;
 use App\Models\Admin\SectionOffering;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SectionOfferingController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Index
+    |--------------------------------------------------------------------------
+    */
+
     public function index(Request $request)
     {
         /*
-         * Active days for the day tabs.
+         * Only show days which currently contain
+         * at least one ACTIVE class offering.
+         *
+         * Example:
+         * Wednesday has no class -> Wednesday is hidden.
+         *
+         * If a class is created on Wednesday later,
+         * Wednesday automatically appears.
          */
         $days = Day::where('is_active', true)
+            ->whereIn(
+                'id',
+                SectionOffering::query()
+                    ->where('is_active', true)
+                    ->select('day_id')
+                    ->distinct()
+            )
             ->orderBy('sort_order')
             ->get();
 
-        /*
-         * Use the first available day when no day is selected.
-         */
-        $selectedDayId = $request->input(
-            'day_id',
-            $days->first()?->id
-        );
 
         /*
-         * regular = English and Math
-         * interactive = Interactive classes
+         * Selected day.
          */
-        $viewType = $request->input(
-            'view',
-            'regular'
+        $requestedDayId = (int) $request->input(
+            'day_id',
+            0
+        );
+
+        if (
+            $requestedDayId > 0 &&
+            $days->contains('id', $requestedDayId)
+        ) {
+            $selectedDayId = $requestedDayId;
+        } else {
+            $selectedDayId = $days->first()?->id;
+        }
+
+
+        /*
+         * Selected subject.
+         */
+        $selectedSubject = strtolower(
+            (string) $request->input(
+                'subject',
+                'english'
+            )
         );
 
         if (
             !in_array(
-                $viewType,
-                ['regular', 'interactive']
+                $selectedSubject,
+                [
+                    'english',
+                    'math',
+                    'interactive',
+                ],
+                true
             )
         ) {
-            $viewType = 'regular';
+            $selectedSubject = 'english';
         }
 
+
         /*
-         * Load active sections.
+         * Keep compatibility with existing view.
          */
-        $sections = Section::where(
-            'is_active',
-            true
-        )
+        $viewType =
+            $selectedSubject === 'interactive'
+                ? 'interactive'
+                : 'regular';
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Sections
+        |--------------------------------------------------------------------------
+        */
+
+        $sections = Section::where('is_active', true)
+            ->with([
+                'subSections' => function ($query) {
+                    $query
+                        ->where('is_active', true)
+                        ->orderBy('sub_section_name');
+                },
+            ])
             ->orderBy('section_name')
             ->get();
 
+
         $englishSection = $sections->first(
             function ($section) {
-                return str_contains(
-                    strtolower($section->section_name),
-                    'english'
-                );
+                return strtolower(
+                    trim($section->section_name)
+                ) === 'english';
             }
         );
+
+
+        $mathSection = $sections->first(
+            function ($section) {
+                return strtolower(
+                    trim($section->section_name)
+                ) === 'math';
+            }
+        );
+
 
         $interactiveSection = $sections->first(
             function ($section) {
-                return str_contains(
-                    strtolower($section->section_name),
-                    'interactive'
-                );
+                return strtolower(
+                    trim($section->section_name)
+                ) === 'interactive';
             }
         );
 
-        $mathSections = $sections
-            ->filter(function ($section) {
-                return str_contains(
-                    strtolower($section->section_name),
-                    'math'
-                );
-            })
-            ->values();
 
         /*
-         * Load offerings for the selected day.
+         * Math sub-sections:
          *
-         * Only active confirmed enrolments occupy seats.
-         * Wishlist enrolments do not occupy seats.
+         * 3A
+         * B-D
+         * E+
          */
-        $offerings = SectionOffering::with([
-            'day',
-            'section',
-        ])
-            ->withCount([
-                'enrolments as allocated_seats' =>
-                    function ($query) {
-                        $query
-                            ->where('is_active', true)
-                            ->where('is_wishlist', false);
-                    },
+        $mathSubSections =
+            $mathSection?->subSections
+            ?? collect();
 
-                'enrolments as wishlist_count' =>
-                    function ($query) {
-                        $query
-                            ->where('is_active', true)
-                            ->where('is_wishlist', true);
-                    },
-            ])
-            ->where('day_id', $selectedDayId)
-            ->where('is_active', true)
-            ->orderBy('start_time')
-            ->get();
 
         /*
-         * English capacity comes from the English offering.
-         */
-        $englishCapacity = 0;
+        |--------------------------------------------------------------------------
+        | Load Offerings
+        |--------------------------------------------------------------------------
+        */
 
-        if ($englishSection) {
-            $englishCapacity = (int) (
-                $offerings
-                    ->where(
-                        'section_id',
-                        $englishSection->id
-                    )
-                    ->max('max_seats')
-                ?? 0
-            );
+        $offerings = collect();
+
+        if ($selectedDayId) {
+            $offerings = SectionOffering::with([
+                'day',
+                'section',
+                'subSections',
+
+                /*
+                 * Only confirmed active enrolments
+                 * occupy seats.
+                 */
+                'enrolments' => function ($query) {
+                    $query
+                        ->where('is_active', true)
+                        ->where('is_wishlist', false);
+                },
+            ])
+                ->withCount([
+                    'enrolments as wishlist_count' =>
+                        function ($query) {
+                            $query
+                                ->where('is_active', true)
+                                ->where('is_wishlist', true);
+                        },
+                ])
+                ->where(
+                    'day_id',
+                    $selectedDayId
+                )
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->orderBy('start_time')
+                ->get();
         }
 
+
         /*
-         * Shared Math capacity.
-         *
-         * This uses the maximum configured max_seats value
-         * from the Math offerings as the shared Math limit.
-         */
-        $mathCapacity = (int) (
-            $offerings
-                ->whereIn(
+        |--------------------------------------------------------------------------
+        | English Rows
+        |--------------------------------------------------------------------------
+        */
+
+        $englishRows = collect();
+
+        if ($englishSection) {
+            $englishRows = $offerings
+                ->where(
                     'section_id',
-                    $mathSections->pluck('id')
+                    $englishSection->id
                 )
-                ->max('max_seats')
-            ?? 0
-        );
+                ->map(function ($offering) {
+                    $allocated =
+                        $offering
+                            ->enrolments
+                            ->count();
+
+                    return [
+                        'id' =>
+                            $offering->id,
+
+                        'time' =>
+                            Carbon::parse(
+                                $offering->start_time
+                            )->format('g:i A'),
+
+                        'end_time' =>
+                            Carbon::parse(
+                                $offering->end_time
+                            )->format('g:i A'),
+
+                        'allocated' =>
+                            $allocated,
+
+                        'maximum' =>
+                            (int)
+                            $offering->max_seats,
+
+                        'wishlist_count' =>
+                            (int)
+                            $offering->wishlist_count,
+                    ];
+                })
+                ->values();
+        }
+
 
         /*
-         * Group English and Math offerings by starting time.
-         */
-        $regularOfferings = $offerings->filter(
-            function ($offering) use ($interactiveSection) {
-                if (!$interactiveSection) {
-                    return true;
-                }
+        |--------------------------------------------------------------------------
+        | Math Rows
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        |
+        | One Math offering has one shared capacity.
+        |
+        | Example:
+        |
+        | Math Monday 4:30 PM
+        | Maximum seats = 41
+        |
+        | 3A + B-D + E+ combined <= 41
+        |--------------------------------------------------------------------------
+        */
 
-                return $offering->section_id !==
-                    $interactiveSection->id;
-            }
-        );
+        $mathRows = collect();
 
-        $regularRows = $regularOfferings
-            ->groupBy(function ($offering) {
-                return Carbon::parse(
-                    $offering->start_time
-                )->format('H:i:s');
-            })
-            ->map(function ($timeOfferings, $time) use ($englishSection, $mathSections, $englishCapacity, $mathCapacity) {
-                $offeringsBySection =
-                    $timeOfferings->keyBy(
-                        'section_id'
-                    );
+        if ($mathSection) {
+            $mathRows = $offerings
+                ->where(
+                    'section_id',
+                    $mathSection->id
+                )
+                ->map(
+                    function ($offering) use (
+                        $mathSubSections
+                    ) {
+                        $allocations = [];
 
-                $englishOffering = null;
+                        foreach (
+                            $mathSubSections
+                            as $subSection
+                        ) {
+                            $allocations[
+                                $subSection->id
+                            ] = $offering
+                                ->enrolments
+                                ->where(
+                                    'sub_section_id',
+                                    $subSection->id
+                                )
+                                ->count();
+                        }
 
-                if ($englishSection) {
-                    $englishOffering =
-                        $offeringsBySection->get(
-                            $englishSection->id
-                        );
-                }
 
-                $englishAllocated = (int) (
-                    $englishOffering
-                            ?->allocated_seats
-                    ?? 0
-                );
+                        /*
+                         * Shared Math total.
+                         *
+                         * Do NOT filter by sub_section_id
+                         * here.
+                         */
+                        $mathTotal =
+                            $offering
+                                ->enrolments
+                                ->count();
 
-                $englishMaximum = (int) (
-                    $englishOffering
-                            ?->max_seats
-                    ?? $englishCapacity
-                );
 
-                $mathAllocations = [];
+                        return [
+                            'id' =>
+                                $offering->id,
 
-                foreach ($mathSections as $mathSection) {
-                    $mathOffering =
-                        $offeringsBySection->get(
-                            $mathSection->id
-                        );
+                            'time' =>
+                                Carbon::parse(
+                                    $offering->start_time
+                                )->format('g:i A'),
 
-                    $mathAllocations[
-                        $mathSection->id
-                    ] = (int) (
-                            $mathOffering
-                                    ?->allocated_seats
-                            ?? 0
-                        );
-                }
+                            'end_time' =>
+                                Carbon::parse(
+                                    $offering->end_time
+                                )->format('g:i A'),
 
-                $mathTotal = array_sum(
-                    $mathAllocations
-                );
+                            'math_allocations' =>
+                                $allocations,
 
-                $englishFull =
-                    $englishMaximum > 0 &&
-                    $englishAllocated >=
-                    $englishMaximum;
+                            'math_total' =>
+                                $mathTotal,
 
-                $mathFull =
-                    $mathCapacity > 0 &&
-                    $mathTotal >=
-                    $mathCapacity;
+                            'math_maximum' =>
+                                (int)
+                                $offering->max_seats,
 
-                $englishNearlyFull =
-                    $englishMaximum > 0 &&
-                    $englishAllocated >=
-                    ($englishMaximum * 0.8);
+                            'wishlist_count' =>
+                                (int)
+                                $offering->wishlist_count,
 
-                $mathNearlyFull =
-                    $mathCapacity > 0 &&
-                    $mathTotal >=
-                    ($mathCapacity * 0.8);
+                            'available_sub_sections' =>
+                                $offering
+                                    ->subSections
+                                    ->pluck('id')
+                                    ->map(
+                                        fn ($id) =>
+                                            (int) $id
+                                    )
+                                    ->toArray(),
+                        ];
+                    }
+                )
+                ->values();
+        }
 
-                if ($englishFull || $mathFull) {
-                    $status = 'Full';
-
-                    $statusClass =
-                        'bg-red-100 text-red-600';
-                } elseif (
-                    $englishNearlyFull ||
-                    $mathNearlyFull
-                ) {
-                    $status = 'Nearly full';
-
-                    $statusClass =
-                        'bg-amber-100 text-amber-600';
-                } else {
-                    $status = 'Available';
-
-                    $statusClass =
-                        'bg-green-100 text-green-700';
-                }
-
-                return [
-                    'time' => Carbon::parse(
-                        $time
-                    )->format('g:i A'),
-
-                    'sort_time' => $time,
-
-                    'english_allocated' =>
-                        $englishAllocated,
-
-                    'english_maximum' =>
-                        $englishMaximum,
-
-                    'math_allocations' =>
-                        $mathAllocations,
-
-                    'math_total' =>
-                        $mathTotal,
-
-                    'math_maximum' =>
-                        $mathCapacity,
-
-                    'status' =>
-                        $status,
-
-                    'status_class' =>
-                        $statusClass,
-
-                    'first_offering_id' =>
-                        $timeOfferings->first()?->id,
-                ];
-            })
-            ->sortBy('sort_time')
-            ->values();
 
         /*
-         * Group Interactive offerings by starting time.
-         */
-        $interactiveOfferings = collect();
+        |--------------------------------------------------------------------------
+        | Interactive Rows
+        |--------------------------------------------------------------------------
+        */
+
+        $interactiveRows = collect();
 
         if ($interactiveSection) {
-            $interactiveOfferings = $offerings
+            $interactiveRows = $offerings
                 ->where(
                     'section_id',
                     $interactiveSection->id
-                );
+                )
+                ->map(function ($offering) {
+                    $allocated =
+                        $offering
+                            ->enrolments
+                            ->count();
+
+                    return [
+                        'id' =>
+                            $offering->id,
+
+                        'time' =>
+                            Carbon::parse(
+                                $offering->start_time
+                            )->format('g:i A'),
+
+                        'end_time' =>
+                            Carbon::parse(
+                                $offering->end_time
+                            )->format('g:i A'),
+
+                        'allocated' =>
+                            $allocated,
+
+                        'maximum' =>
+                            (int)
+                            $offering->max_seats,
+
+                        'wishlist_count' =>
+                            (int)
+                            $offering->wishlist_count,
+                    ];
+                })
+                ->values();
         }
 
-        $interactiveRows = $interactiveOfferings
-            ->map(function ($offering) {
-                $allocated = (int)
-                    $offering->allocated_seats;
 
-                $maximum = (int)
-                    $offering->max_seats;
+        /*
+        |--------------------------------------------------------------------------
+        | Capacity Information
+        |--------------------------------------------------------------------------
+        */
 
-                $available = max(
-                    0,
-                    $maximum - $allocated
-                );
+        $englishCapacity = (int) (
+            $englishRows->max(
+                'maximum'
+            ) ?? 0
+        );
 
-                if (
-                    $maximum > 0 &&
-                    $allocated >= $maximum
-                ) {
-                    $status = 'Full';
 
-                    $statusClass =
-                        'bg-red-100 text-red-600';
-                } elseif (
-                    $maximum > 0 &&
-                    $allocated >=
-                    ($maximum * 0.8)
-                ) {
-                    $status = 'Nearly full';
+        $mathCapacity = (int) (
+            $mathRows->max(
+                'math_maximum'
+            ) ?? 0
+        );
 
-                    $statusClass =
-                        'bg-amber-100 text-amber-600';
-                } else {
-                    $status = 'Available';
-
-                    $statusClass =
-                        'bg-green-100 text-green-700';
-                }
-
-                return [
-                    'id' =>
-                        $offering->id,
-
-                    'time' =>
-                        Carbon::parse(
-                            $offering->start_time
-                        )->format('g:i A'),
-
-                    'end_time' =>
-                        Carbon::parse(
-                            $offering->end_time
-                        )->format('g:i A'),
-
-                    'allocated' =>
-                        $allocated,
-
-                    'maximum' =>
-                        $maximum,
-
-                    'available' =>
-                        $available,
-
-                    'wishlist_count' =>
-                        (int)
-                        $offering->wishlist_count,
-
-                    'status' =>
-                        $status,
-
-                    'status_class' =>
-                        $statusClass,
-                ];
-            })
-            ->values();
 
         $selectedDay = $days->firstWhere(
             'id',
             (int) $selectedDayId
         );
+
 
         return view(
             'admin.section-offerings.index',
@@ -387,33 +432,97 @@ class SectionOfferingController extends Controller
                 'days',
                 'selectedDayId',
                 'selectedDay',
+                'selectedSubject',
                 'viewType',
+
                 'englishSection',
+                'mathSection',
                 'interactiveSection',
-                'mathSections',
+                'mathSubSections',
+
                 'englishCapacity',
                 'mathCapacity',
-                'regularRows',
+
+                'englishRows',
+                'mathRows',
                 'interactiveRows'
             )
         );
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Create
+    |--------------------------------------------------------------------------
+    */
+
     public function create()
     {
-        $days = Day::where('is_active', true)
-            ->orderBy('sort_order', 'asc')
+        /*
+         * Create page must show ALL active days.
+         *
+         * This means Admin can create the first
+         * Wednesday class even if Wednesday is
+         * currently hidden on the index.
+         */
+        $days = Day::where(
+            'is_active',
+            true
+        )
+            ->orderBy('sort_order')
             ->get();
 
-        $sections = Section::where('is_active', true)
-            ->orderBy('section_name', 'asc')
+
+        $sections = Section::where(
+            'is_active',
+            true
+        )
+            ->with([
+                'subSections' =>
+                    function ($query) {
+                        $query
+                            ->where(
+                                'is_active',
+                                true
+                            )
+                            ->orderBy(
+                                'sub_section_name'
+                            );
+                    },
+            ])
+            ->orderBy('section_name')
             ->get();
+
+
+        /*
+         * Prepare simple array for JavaScript.
+         *
+         * This avoids the Blade @json parsing
+         * error you received.
+         */
+        $sectionsForJs = $this
+            ->prepareSectionsForJs(
+                $sections
+            );
+
 
         return view(
             'admin.section-offerings.create',
-            compact('days', 'sections')
+            compact(
+                'days',
+                'sections',
+                'sectionsForJs'
+            )
         );
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Store
+    |--------------------------------------------------------------------------
+    */
 
     public function store(Request $request)
     {
@@ -437,6 +546,17 @@ class SectionOfferingController extends Controller
                 'exists:sections,id',
             ],
 
+            'sub_section_ids' => [
+                'nullable',
+                'array',
+            ],
+
+            'sub_section_ids.*' => [
+                'integer',
+                'distinct',
+                'exists:sub_sections,id',
+            ],
+
             'start_time' => [
                 'required',
                 'date_format:H:i',
@@ -462,12 +582,28 @@ class SectionOfferingController extends Controller
             ],
         ]);
 
-        $section = Section::where(
-            'id',
-            $validated['section_id']
-        )
-            ->where('is_active', true)
+
+        $section = Section::with([
+            'subSections' =>
+                function ($query) {
+                    $query->where(
+                        'is_active',
+                        true
+                    );
+                },
+        ])
+            ->where(
+                'id',
+                $validated[
+                    'section_id'
+                ]
+            )
+            ->where(
+                'is_active',
+                true
+            )
             ->first();
+
 
         if (!$section) {
             return back()
@@ -478,16 +614,116 @@ class SectionOfferingController extends Controller
                 ]);
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Sub-sections
+        |--------------------------------------------------------------------------
+        */
+
+        $selectedSubSectionIds =
+            collect(
+                $validated[
+                    'sub_section_ids'
+                ] ?? []
+            )
+                ->map(
+                    fn ($id) =>
+                        (int) $id
+                )
+                ->unique()
+                ->values();
+
+
+        $availableSubSectionIds =
+            $section
+                ->subSections
+                ->pluck('id')
+                ->map(
+                    fn ($id) =>
+                        (int) $id
+                )
+                ->values();
+
+
+        /*
+         * If section has sub-sections,
+         * at least one must be selected.
+         */
+        if (
+            $availableSubSectionIds
+                ->isNotEmpty() &&
+            $selectedSubSectionIds
+                ->isEmpty()
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'sub_section_ids' =>
+                        'Please select at least one sub-section.',
+                ]);
+        }
+
+
+        /*
+         * Selected sub-sections must belong
+         * to selected section.
+         */
+        if (
+            $selectedSubSectionIds
+                ->diff(
+                    $availableSubSectionIds
+                )
+                ->isNotEmpty()
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'sub_section_ids' =>
+                        'One or more selected sub-sections do not belong to the selected section.',
+                ]);
+        }
+
+
+        /*
+         * English / Interactive etc.
+         */
+        if (
+            $availableSubSectionIds
+                ->isEmpty()
+        ) {
+            $selectedSubSectionIds =
+                collect();
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Days
+        |--------------------------------------------------------------------------
+        */
+
         $selectedDays = Day::whereIn(
             'id',
-            $validated['day_ids']
+            $validated[
+                'day_ids'
+            ]
         )
-            ->where('is_active', true)
+            ->where(
+                'is_active',
+                true
+            )
             ->get();
 
+
         if (
-            $selectedDays->count() !==
-            count($validated['day_ids'])
+            $selectedDays->count()
+            !==
+            count(
+                $validated[
+                    'day_ids'
+                ]
+            )
         ) {
             return back()
                 ->withInput()
@@ -497,20 +733,40 @@ class SectionOfferingController extends Controller
                 ]);
         }
 
-        $startTime = Carbon::createFromFormat(
-            'H:i',
-            $validated['start_time']
-        );
 
-        $endTime = $startTime
-            ->copy()
-            ->addMinutes(
-                $validated['duration_minutes']
+        /*
+        |--------------------------------------------------------------------------
+        | Time
+        |--------------------------------------------------------------------------
+        */
+
+        $startTime =
+            Carbon::createFromFormat(
+                'H:i',
+                $validated[
+                    'start_time'
+                ]
             );
 
+
+        $endTime =
+            $startTime
+                ->copy()
+                ->addMinutes(
+                    $validated[
+                        'duration_minutes'
+                    ]
+                );
+
+
         if (
-            $startTime->format('Y-m-d') !==
-            $endTime->format('Y-m-d')
+            $startTime->format(
+                'Y-m-d'
+            )
+            !==
+            $endTime->format(
+                'Y-m-d'
+            )
         ) {
             return back()
                 ->withInput()
@@ -520,33 +776,48 @@ class SectionOfferingController extends Controller
                 ]);
         }
 
-        $startTimeValue = $startTime->format('H:i:s');
-        $endTimeValue = $endTime->format('H:i:s');
+
+        $startTimeValue =
+            $startTime->format(
+                'H:i:s'
+            );
+
+        $endTimeValue =
+            $endTime->format(
+                'H:i:s'
+            );
+
 
         /*
-         * Prevent overlapping offerings for the same
-         * section on the same day.
-         */
-        foreach ($selectedDays as $day) {
-            $overlapExists = SectionOffering::where(
-                'day_id',
-                $day->id
-            )
-                ->where(
-                    'section_id',
-                    $validated['section_id']
+        |--------------------------------------------------------------------------
+        | Prevent Overlapping Offering
+        |--------------------------------------------------------------------------
+        */
+
+        foreach (
+            $selectedDays as $day
+        ) {
+            $overlapExists =
+                SectionOffering::where(
+                    'day_id',
+                    $day->id
                 )
-                ->where(
-                    'start_time',
-                    '<',
-                    $endTimeValue
-                )
-                ->where(
-                    'end_time',
-                    '>',
-                    $startTimeValue
-                )
-                ->exists();
+                    ->where(
+                        'section_id',
+                        $section->id
+                    )
+                    ->where(
+                        'start_time',
+                        '<',
+                        $endTimeValue
+                    )
+                    ->where(
+                        'end_time',
+                        '>',
+                        $startTimeValue
+                    )
+                    ->exists();
+
 
             if ($overlapExists) {
                 return back()
@@ -561,69 +832,170 @@ class SectionOfferingController extends Controller
             }
         }
 
-        DB::transaction(function () use ($selectedDays, $validated, $startTimeValue, $endTimeValue) {
-            foreach ($selectedDays as $day) {
-                SectionOffering::create([
-                    'day_id' => $day->id,
 
-                    'section_id' =>
-                        $validated['section_id'],
+        /*
+        |--------------------------------------------------------------------------
+        | Create
+        |--------------------------------------------------------------------------
+        */
 
-                    'start_time' =>
-                        $startTimeValue,
+        DB::transaction(
+            function () use (
+                $selectedDays,
+                $section,
+                $validated,
+                $selectedSubSectionIds,
+                $startTimeValue,
+                $endTimeValue
+            ) {
+                foreach (
+                    $selectedDays as $day
+                ) {
+                    $offering =
+                        SectionOffering::create([
+                            'day_id' =>
+                                $day->id,
 
-                    'duration_minutes' =>
-                        $validated['duration_minutes'],
+                            'section_id' =>
+                                $section->id,
 
-                    'end_time' =>
-                        $endTimeValue,
+                            'start_time' =>
+                                $startTimeValue,
 
-                    'max_seats' =>
-                        $validated['max_seats'],
+                            'duration_minutes' =>
+                                $validated[
+                                    'duration_minutes'
+                                ],
 
-                    'is_active' =>
-                        $validated['is_active'],
-                ]);
+                            'end_time' =>
+                                $endTimeValue,
+
+                            'max_seats' =>
+                                $validated[
+                                    'max_seats'
+                                ],
+
+                            'is_active' =>
+                                $validated[
+                                    'is_active'
+                                ],
+                        ]);
+
+
+                    $offering
+                        ->subSections()
+                        ->sync(
+                            $selectedSubSectionIds
+                                ->toArray()
+                        );
+                }
             }
-        });
+        );
+
 
         return redirect()
-            ->route('admin.section-offerings.index')
+            ->route(
+                'admin.section-offerings.index'
+            )
             ->with(
                 'success',
                 $selectedDays->count() .
-                ' section offering(s) created successfully.'
+                ' class offering(s) created successfully.'
             );
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Edit
+    |--------------------------------------------------------------------------
+    */
 
     public function edit(
         SectionOffering $sectionOffering
     ) {
-        $days = Day::where('is_active', true)
+        $sectionOffering->load([
+            'subSections',
+        ]);
+
+
+        $days = Day::where(
+            'is_active',
+            true
+        )
             ->orWhere(
                 'id',
                 $sectionOffering->day_id
             )
-            ->orderBy('sort_order', 'asc')
+            ->orderBy('sort_order')
             ->get();
 
-        $sections = Section::where('is_active', true)
+
+        $sections = Section::where(
+            'is_active',
+            true
+        )
             ->orWhere(
                 'id',
-                $sectionOffering->section_id
+                $sectionOffering
+                    ->section_id
             )
-            ->orderBy('section_name', 'asc')
+            ->with([
+                'subSections' =>
+                    function ($query) {
+                        $query
+                            ->where(
+                                'is_active',
+                                true
+                            )
+                            ->orderBy(
+                                'sub_section_name'
+                            );
+                    },
+            ])
+            ->orderBy('section_name')
             ->get();
+
+
+        /*
+         * Safe JavaScript data.
+         */
+        $sectionsForJs =
+            $this->prepareSectionsForJs(
+                $sections
+            );
+
+
+        $selectedSubSectionIds =
+            $sectionOffering
+                ->subSections
+                ->pluck('id')
+                ->map(
+                    fn ($id) =>
+                        (int) $id
+                )
+                ->values()
+                ->toArray();
+
 
         return view(
             'admin.section-offerings.edit',
             compact(
                 'sectionOffering',
                 'days',
-                'sections'
+                'sections',
+                'sectionsForJs',
+                'selectedSubSectionIds'
             )
         );
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Update
+    |--------------------------------------------------------------------------
+    */
 
     public function update(
         Request $request,
@@ -642,6 +1014,17 @@ class SectionOfferingController extends Controller
                 'exists:sections,id',
             ],
 
+            'sub_section_ids' => [
+                'nullable',
+                'array',
+            ],
+
+            'sub_section_ids.*' => [
+                'integer',
+                'distinct',
+                'exists:sub_sections,id',
+            ],
+
             'start_time' => [
                 'required',
                 'date_format:H:i',
@@ -667,35 +1050,223 @@ class SectionOfferingController extends Controller
             ],
         ]);
 
-        $day = Day::find($validated['day_id']);
 
-        $section = Section::find(
-            $validated['section_id']
-        );
+        $day = Day::where(
+            'id',
+            $validated['day_id']
+        )
+            ->where(
+                'is_active',
+                true
+            )
+            ->first();
 
-        if (!$day || !$section) {
+
+        $section = Section::with([
+            'subSections' =>
+                function ($query) {
+                    $query->where(
+                        'is_active',
+                        true
+                    );
+                },
+        ])
+            ->find(
+                $validated[
+                    'section_id'
+                ]
+            );
+
+
+        if (
+            !$day ||
+            !$section
+        ) {
             return back()
                 ->withInput()
                 ->withErrors([
-                    'day_id' =>
+                    'section_id' =>
                         'The selected day or section is unavailable.',
                 ]);
         }
 
-        $startTime = Carbon::createFromFormat(
-            'H:i',
-            $validated['start_time']
-        );
 
-        $endTime = $startTime
-            ->copy()
-            ->addMinutes(
-                $validated['duration_minutes']
-            );
+        /*
+         * Don't change main section when
+         * student records already use offering.
+         */
+        $hasEnrolments =
+            $sectionOffering
+                ->enrolments()
+                ->exists();
+
 
         if (
-            $startTime->format('Y-m-d') !==
-            $endTime->format('Y-m-d')
+            $hasEnrolments &&
+            (int)
+            $sectionOffering
+                ->section_id
+            !==
+            (int)
+            $section->id
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'section_id' =>
+                        'The section cannot be changed because student enrolment records are already attached to this offering.',
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Sub-sections
+        |--------------------------------------------------------------------------
+        */
+
+        $selectedSubSectionIds =
+            collect(
+                $validated[
+                    'sub_section_ids'
+                ] ?? []
+            )
+                ->map(
+                    fn ($id) =>
+                        (int) $id
+                )
+                ->unique()
+                ->values();
+
+
+        $availableSubSectionIds =
+            $section
+                ->subSections
+                ->pluck('id')
+                ->map(
+                    fn ($id) =>
+                        (int) $id
+                )
+                ->values();
+
+
+        if (
+            $availableSubSectionIds
+                ->isNotEmpty() &&
+            $selectedSubSectionIds
+                ->isEmpty()
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'sub_section_ids' =>
+                        'Please select at least one sub-section.',
+                ]);
+        }
+
+
+        if (
+            $selectedSubSectionIds
+                ->diff(
+                    $availableSubSectionIds
+                )
+                ->isNotEmpty()
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'sub_section_ids' =>
+                        'One or more selected sub-sections do not belong to the selected section.',
+                ]);
+        }
+
+
+        if (
+            $availableSubSectionIds
+                ->isEmpty()
+        ) {
+            $selectedSubSectionIds =
+                collect();
+        }
+
+
+        /*
+         * Don't remove a sub-section if students
+         * are currently enrolled in it.
+         */
+        $usedSubSectionIds =
+            $sectionOffering
+                ->enrolments()
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->where(
+                    'is_wishlist',
+                    false
+                )
+                ->whereNotNull(
+                    'sub_section_id'
+                )
+                ->pluck(
+                    'sub_section_id'
+                )
+                ->map(
+                    fn ($id) =>
+                        (int) $id
+                )
+                ->unique();
+
+
+        if (
+            $usedSubSectionIds
+                ->diff(
+                    $selectedSubSectionIds
+                )
+                ->isNotEmpty()
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'sub_section_ids' =>
+                        'A sub-section cannot be removed while students are enrolled in it.',
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Time
+        |--------------------------------------------------------------------------
+        */
+
+        $startTime =
+            Carbon::createFromFormat(
+                'H:i',
+                $validated[
+                    'start_time'
+                ]
+            );
+
+
+        $endTime =
+            $startTime
+                ->copy()
+                ->addMinutes(
+                    $validated[
+                        'duration_minutes'
+                    ]
+                );
+
+
+        if (
+            $startTime->format(
+                'Y-m-d'
+            )
+            !==
+            $endTime->format(
+                'Y-m-d'
+            )
         ) {
             return back()
                 ->withInput()
@@ -705,33 +1276,54 @@ class SectionOfferingController extends Controller
                 ]);
         }
 
-        $startTimeValue = $startTime->format('H:i:s');
-        $endTimeValue = $endTime->format('H:i:s');
 
-        $overlapExists = SectionOffering::where(
-            'day_id',
-            $validated['day_id']
-        )
-            ->where(
-                'section_id',
-                $validated['section_id']
+        $startTimeValue =
+            $startTime->format(
+                'H:i:s'
+            );
+
+        $endTimeValue =
+            $endTime->format(
+                'H:i:s'
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Prevent Overlap
+        |--------------------------------------------------------------------------
+        */
+
+        $overlapExists =
+            SectionOffering::where(
+                'day_id',
+                $validated[
+                    'day_id'
+                ]
             )
-            ->where(
-                'id',
-                '!=',
-                $sectionOffering->id
-            )
-            ->where(
-                'start_time',
-                '<',
-                $endTimeValue
-            )
-            ->where(
-                'end_time',
-                '>',
-                $startTimeValue
-            )
-            ->exists();
+                ->where(
+                    'section_id',
+                    $validated[
+                        'section_id'
+                    ]
+                )
+                ->where(
+                    'id',
+                    '!=',
+                    $sectionOffering->id
+                )
+                ->where(
+                    'start_time',
+                    '<',
+                    $endTimeValue
+                )
+                ->where(
+                    'end_time',
+                    '>',
+                    $startTimeValue
+                )
+                ->exists();
+
 
         if ($overlapExists) {
             return back()
@@ -745,48 +1337,195 @@ class SectionOfferingController extends Controller
                 ]);
         }
 
-        $sectionOffering->update([
-            'day_id' =>
-                $validated['day_id'],
 
-            'section_id' =>
-                $validated['section_id'],
+        /*
+        |--------------------------------------------------------------------------
+        | Shared Capacity Protection
+        |--------------------------------------------------------------------------
+        */
 
-            'start_time' =>
+        $currentStudents =
+            $sectionOffering
+                ->enrolments()
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->where(
+                    'is_wishlist',
+                    false
+                )
+                ->count();
+
+
+        if (
+            $validated[
+                'max_seats'
+            ]
+            <
+            $currentStudents
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'max_seats' =>
+                        'Maximum seats cannot be lower than the current enrolled student count of ' .
+                        $currentStudents .
+                        '.',
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update
+        |--------------------------------------------------------------------------
+        */
+
+        DB::transaction(
+            function () use (
+                $sectionOffering,
+                $validated,
+                $selectedSubSectionIds,
                 $startTimeValue,
+                $endTimeValue
+            ) {
+                $sectionOffering->update([
+                    'day_id' =>
+                        $validated[
+                            'day_id'
+                        ],
 
-            'duration_minutes' =>
-                $validated['duration_minutes'],
+                    'section_id' =>
+                        $validated[
+                            'section_id'
+                        ],
 
-            'end_time' =>
-                $endTimeValue,
+                    'start_time' =>
+                        $startTimeValue,
 
-            'max_seats' =>
-                $validated['max_seats'],
+                    'duration_minutes' =>
+                        $validated[
+                            'duration_minutes'
+                        ],
 
-            'is_active' =>
-                $validated['is_active'],
-        ]);
+                    'end_time' =>
+                        $endTimeValue,
+
+                    'max_seats' =>
+                        $validated[
+                            'max_seats'
+                        ],
+
+                    'is_active' =>
+                        $validated[
+                            'is_active'
+                        ],
+                ]);
+
+
+                $sectionOffering
+                    ->subSections()
+                    ->sync(
+                        $selectedSubSectionIds
+                            ->toArray()
+                    );
+            }
+        );
+
 
         return redirect()
-            ->route('admin.section-offerings.index')
+            ->route(
+                'admin.section-offerings.index'
+            )
             ->with(
                 'success',
-                'Section offering updated successfully.'
+                'Class offering updated successfully.'
             );
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete
+    |--------------------------------------------------------------------------
+    */
 
     public function destroy(
         SectionOffering $sectionOffering
     ) {
+        /*
+         * Do not delete offerings that have
+         * enrolment/wishlist records attached.
+         */
+        if (
+            $sectionOffering
+                ->enrolments()
+                ->exists()
+        ) {
+            return back()->with(
+                'error',
+                'This class offering cannot be deleted because student enrolment records are attached to it.'
+            );
+        }
+
+
         $sectionOffering->delete();
 
+
         return redirect()
-            ->route('admin.section-offerings.index')
+            ->route(
+                'admin.section-offerings.index'
+            )
             ->with(
                 'success',
-                'Section offering deleted successfully.'
+                'Class offering deleted successfully.'
             );
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Prepare Sections For JavaScript
+    |--------------------------------------------------------------------------
+    */
+
+    private function prepareSectionsForJs(
+        $sections
+    ): array {
+        return $sections
+            ->map(function ($section) {
+                return [
+                    'id' =>
+                        (int) $section->id,
+
+                    'name' =>
+                        $section
+                            ->section_name,
+
+                    'sub_sections' =>
+                        $section
+                            ->subSections
+                            ->map(
+                                function (
+                                    $subSection
+                                ) {
+                                    return [
+                                        'id' =>
+                                            (int)
+                                            $subSection->id,
+
+                                        'name' =>
+                                            $subSection
+                                                ->sub_section_name,
+                                    ];
+                                }
+                            )
+                            ->values()
+                            ->toArray(),
+                ];
+            })
+            ->values()
+            ->toArray();
+    }
 }

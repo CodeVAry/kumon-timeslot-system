@@ -53,7 +53,7 @@ class StudentRegistrationController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Step 1: Store Student Details In Session
+    | Step 1: Store Student Details
     |--------------------------------------------------------------------------
     */
 
@@ -95,12 +95,6 @@ class StudentRegistrationController extends Controller
             ]);
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Check Status Is Active
-        |--------------------------------------------------------------------------
-        */
-
         $statusAvailable =
             StudentStatus::where(
                 'id',
@@ -116,7 +110,6 @@ class StudentRegistrationController extends Controller
 
 
         if (!$statusAvailable) {
-
             return back()
                 ->withInput()
                 ->withErrors([
@@ -126,15 +119,7 @@ class StudentRegistrationController extends Controller
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Clean Student Data
-        |--------------------------------------------------------------------------
-        */
-
-        $validated[
-            'external_id'
-        ] =
+        $validated['external_id'] =
             trim(
                 $validated[
                     'external_id'
@@ -142,9 +127,7 @@ class StudentRegistrationController extends Controller
             );
 
 
-        $validated[
-            'first_name'
-        ] =
+        $validated['first_name'] =
             trim(
                 $validated[
                     'first_name'
@@ -152,21 +135,13 @@ class StudentRegistrationController extends Controller
             );
 
 
-        $validated[
-            'last_name'
-        ] =
+        $validated['last_name'] =
             trim(
                 $validated[
                     'last_name'
                 ]
             );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Store In Session
-        |--------------------------------------------------------------------------
-        */
 
         session([
             'student_registration.student' =>
@@ -194,7 +169,6 @@ class StudentRegistrationController extends Controller
                 'student_registration.student'
             )
         ) {
-
             return redirect()
                 ->route(
                     'admin.student-registration.student'
@@ -211,8 +185,6 @@ class StudentRegistrationController extends Controller
                 'student_registration.guardians',
                 [
                     'new' => [],
-                    'primary_guardian' =>
-                        'new:0',
                 ]
             );
 
@@ -228,7 +200,7 @@ class StudentRegistrationController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Step 2: Store Guardian Details In Session
+    | Step 2: Store Guardian Details
     |--------------------------------------------------------------------------
     */
 
@@ -240,7 +212,6 @@ class StudentRegistrationController extends Controller
                 'student_registration.student'
             )
         ) {
-
             return redirect()
                 ->route(
                     'admin.student-registration.student'
@@ -269,7 +240,7 @@ class StudentRegistrationController extends Controller
                 ],
 
                 'new_guardians.*.email' => [
-                    'nullable',
+                    'required',
                     'email',
                     'max:150',
                 ],
@@ -279,84 +250,19 @@ class StudentRegistrationController extends Controller
                     'string',
                     'max:30',
                 ],
-
-                'new_guardians.*.relationship' => [
-                    'nullable',
-                    'string',
-                    'max:50',
-                ],
-
-                'new_guardians.*.address' => [
-                    'nullable',
-                    'string',
-                    'max:1000',
-                ],
-
-                'new_guardians.*.is_emergency_contact' => [
-                    'nullable',
-                    'boolean',
-                ],
-
-                'primary_guardian' => [
-                    'required',
-                    'string',
-                    'regex:/^new:[0-9]+$/',
-                ],
             ]);
 
-
-        $newGuardians =
-            $validated[
-                'new_guardians'
-            ];
-
-
-        $primaryGuardian =
-            $validated[
-                'primary_guardian'
-            ];
-
-
-        $primaryIndex =
-            (int) str_replace(
-                'new:',
-                '',
-                $primaryGuardian
-            );
-
-
-        if (
-            !array_key_exists(
-                $primaryIndex,
-                $newGuardians
-            )
-        ) {
-
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'primary_guardian' =>
-                        'Please select a valid primary guardian.',
-                ]);
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Clean Guardian Data
-        |--------------------------------------------------------------------------
-        */
 
         $guardianData = [];
 
 
         foreach (
-            $newGuardians
-            as $index => $guardian
+            $validated[
+                'new_guardians'
+            ]
+            as $guardian
         ) {
-
             $guardianData[] = [
-
                 'first_name' =>
                     trim(
                         $guardian[
@@ -372,17 +278,11 @@ class StudentRegistrationController extends Controller
                     ),
 
                 'email' =>
-                    !empty(
+                    trim(
                         $guardian[
                             'email'
                         ]
-                    )
-                        ? trim(
-                            $guardian[
-                                'email'
-                            ]
-                        )
-                        : null,
+                    ),
 
                 'phone' =>
                     trim(
@@ -390,62 +290,14 @@ class StudentRegistrationController extends Controller
                             'phone'
                         ]
                     ),
-
-                'relationship' =>
-                    !empty(
-                        $guardian[
-                            'relationship'
-                        ]
-                    )
-                        ? trim(
-                            $guardian[
-                                'relationship'
-                            ]
-                        )
-                        : null,
-
-                'address' =>
-                    !empty(
-                        $guardian[
-                            'address'
-                        ]
-                    )
-                        ? trim(
-                            $guardian[
-                                'address'
-                            ]
-                        )
-                        : null,
-
-                'is_primary' =>
-                    $primaryGuardian
-                    ===
-                    'new:' . $index,
-
-                'is_emergency_contact' =>
-                    !empty(
-                        $guardian[
-                            'is_emergency_contact'
-                        ]
-                    ),
             ];
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Store Guardian Data
-        |--------------------------------------------------------------------------
-        */
-
         session([
             'student_registration.guardians' => [
-
                 'new' =>
                     $guardianData,
-
-                'primary_guardian' =>
-                    $primaryGuardian,
             ],
         ]);
 
@@ -470,7 +322,6 @@ class StudentRegistrationController extends Controller
                 'student_registration.student'
             )
         ) {
-
             return redirect()
                 ->route(
                     'admin.student-registration.student'
@@ -487,7 +338,6 @@ class StudentRegistrationController extends Controller
                 'student_registration.guardians'
             )
         ) {
-
             return redirect()
                 ->route(
                     'admin.student-registration.guardians'
@@ -513,7 +363,17 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Load Active Class Offerings
+        | Active Section Offerings
+        |--------------------------------------------------------------------------
+        |
+        | Math:
+        |
+        | One offering contains:
+        |   3A
+        |   B-D
+        |   E+
+        |
+        | Capacity remains shared at offering level.
         |--------------------------------------------------------------------------
         */
 
@@ -537,11 +397,22 @@ class StudentRegistrationController extends Controller
                 ->with([
                     'day',
                     'section',
+
+                    'subSections' =>
+                        function ($query) {
+                            $query
+                                ->where(
+                                    'is_active',
+                                    true
+                                )
+                                ->orderBy(
+                                    'sub_section_name'
+                                );
+                        },
                 ])
                 ->withCount([
                     'enrolments as allocated_seats' =>
                         function ($query) {
-
                             $query
                                 ->where(
                                     'is_active',
@@ -555,7 +426,6 @@ class StudentRegistrationController extends Controller
 
                     'enrolments as wishlist_count' =>
                         function ($query) {
-
                             $query
                                 ->where(
                                     'is_active',
@@ -580,23 +450,24 @@ class StudentRegistrationController extends Controller
                     true
                 )
                 ->orderBy(
-                    'days.sort_order',
-                    'asc'
+                    'sections.section_name'
                 )
                 ->orderBy(
-                    'sections.section_name',
-                    'asc'
+                    'days.sort_order'
                 )
                 ->orderBy(
-                    'section_offerings.start_time',
-                    'asc'
+                    'section_offerings.start_time'
                 )
                 ->get();
 
 
         /*
         |--------------------------------------------------------------------------
-        | Calculate Available Seats
+        | Shared Available Seats
+        |--------------------------------------------------------------------------
+        |
+        | Math 3A + B-D + E+ all count against
+        | this one offering capacity.
         |--------------------------------------------------------------------------
         */
 
@@ -604,18 +475,38 @@ class StudentRegistrationController extends Controller
             $sectionOfferings
             as $offering
         ) {
-
-            $offering
-                ->available_seats =
+            $offering->available_seats =
                 max(
                     0,
-                    $offering
-                        ->max_seats
+                    (int)
+                    $offering->max_seats
                     -
-                    $offering
-                        ->allocated_seats
+                    (int)
+                    $offering->allocated_seats
                 );
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Available Sub-sections For Filter
+        |--------------------------------------------------------------------------
+        */
+
+        $availableSubSections =
+            $sectionOfferings
+                ->flatMap(
+                    function ($offering) {
+                        return
+                            $offering
+                                ->subSections;
+                    }
+                )
+                ->unique('id')
+                ->sortBy(
+                    'sub_section_name'
+                )
+                ->values();
 
 
         return view(
@@ -623,7 +514,8 @@ class StudentRegistrationController extends Controller
             compact(
                 'studentData',
                 'guardianData',
-                'sectionOfferings'
+                'sectionOfferings',
+                'availableSubSections'
             )
         );
     }
@@ -649,7 +541,6 @@ class StudentRegistrationController extends Controller
                 'student_registration.student'
             )
         ) {
-
             return redirect()
                 ->route(
                     'admin.student-registration.student'
@@ -662,7 +553,6 @@ class StudentRegistrationController extends Controller
                 'student_registration.guardians'
             )
         ) {
-
             return redirect()
                 ->route(
                     'admin.student-registration.guardians'
@@ -672,13 +562,17 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Validate Selections
+        | Validate Class Selection
+        |--------------------------------------------------------------------------
+        |
+        | sub_section_ids is keyed by offering ID:
+        |
+        | sub_section_ids[12] = 3
         |--------------------------------------------------------------------------
         */
 
         $validated =
             $request->validate([
-
                 'confirmed_ids' => [
                     'nullable',
                     'array',
@@ -700,6 +594,17 @@ class StudentRegistrationController extends Controller
                     'distinct',
                     'exists:section_offerings,id',
                 ],
+
+                'sub_section_ids' => [
+                    'nullable',
+                    'array',
+                ],
+
+                'sub_section_ids.*' => [
+                    'nullable',
+                    'integer',
+                    'exists:sub_sections,id',
+                ],
             ]);
 
 
@@ -708,7 +613,8 @@ class StudentRegistrationController extends Controller
                 'intval',
                 $validated[
                     'confirmed_ids'
-                ] ?? []
+                ]
+                ?? []
             );
 
 
@@ -717,26 +623,56 @@ class StudentRegistrationController extends Controller
                 'intval',
                 $validated[
                     'wishlist_ids'
-                ] ?? []
+                ]
+                ?? []
             );
 
 
         /*
+         * Keep key = offering ID.
+         */
+        $subSectionIds = [];
+
+
+        foreach (
+            $validated[
+                'sub_section_ids'
+            ]
+            ?? []
+            as $offeringId =>
+                $subSectionId
+        ) {
+            if (
+                $subSectionId ===
+                null
+                ||
+                $subSectionId ===
+                ''
+            ) {
+                continue;
+            }
+
+
+            $subSectionIds[
+                (int)
+                $offeringId
+            ] =
+                (int)
+                $subSectionId;
+        }
+
+
+        /*
         |--------------------------------------------------------------------------
-        | Require At Least One Selection
+        | At Least One Class
         |--------------------------------------------------------------------------
         */
 
         if (
-            empty(
-                $confirmedIds
-            )
+            empty($confirmedIds)
             &&
-            empty(
-                $wishlistIds
-            )
+            empty($wishlistIds)
         ) {
-
             return back()
                 ->withInput()
                 ->withErrors([
@@ -748,7 +684,7 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Same Offering Cannot Be Confirmed And Wishlist
+        | Same Offering Cannot Be Both
         |--------------------------------------------------------------------------
         */
 
@@ -764,7 +700,6 @@ class StudentRegistrationController extends Controller
                 $duplicateIds
             )
         ) {
-
             return back()
                 ->withInput()
                 ->withErrors([
@@ -776,7 +711,7 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Combined Selected Offering IDs
+        | All Selected Offerings
         |--------------------------------------------------------------------------
         */
 
@@ -795,22 +730,21 @@ class StudentRegistrationController extends Controller
         |--------------------------------------------------------------------------
         | Load Selected Offerings
         |--------------------------------------------------------------------------
-        |
-        | This is also used to enforce:
-        |
-        | ONE OFFERING PER CLASS / SECTION.
-        |
-        | Example:
-        | English Monday 6 PM + English Tuesday 6 PM = NOT allowed.
-        |
-        | English + 3A Math = allowed.
-        |--------------------------------------------------------------------------
         */
 
         $selectedOfferings =
             SectionOffering::with([
                 'section',
                 'day',
+
+                'subSections' =>
+                    function ($query) {
+                        $query
+                            ->where(
+                                'is_active',
+                                true
+                            );
+                    },
             ])
                 ->whereIn(
                     'id',
@@ -823,20 +757,11 @@ class StudentRegistrationController extends Controller
                 ->get();
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Make Sure Every Selected Offering Is Active
-        |--------------------------------------------------------------------------
-        */
-
         if (
             $selectedOfferings->count()
             !==
-            count(
-                $selectedIds
-            )
+            count($selectedIds)
         ) {
-
             return back()
                 ->withInput()
                 ->withErrors([
@@ -848,7 +773,12 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Only One Time / Offering Per Class
+        | One Offering Per Main Class
+        |--------------------------------------------------------------------------
+        |
+        | English: one
+        | Math: one
+        | Interactive: one
         |--------------------------------------------------------------------------
         */
 
@@ -859,7 +789,6 @@ class StudentRegistrationController extends Controller
                 )
                 ->filter(
                     function ($offerings) {
-
                         return
                             $offerings->count()
                             >
@@ -872,12 +801,10 @@ class StudentRegistrationController extends Controller
             $duplicateSections
                 ->isNotEmpty()
         ) {
-
             $duplicateClassNames =
                 $duplicateSections
                     ->map(
                         function ($offerings) {
-
                             return
                                 $offerings
                                     ->first()
@@ -906,7 +833,93 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Load Session Data
+        | Validate Required Sub-section
+        |--------------------------------------------------------------------------
+        |
+        | If an offering has sub-sections,
+        | selecting one is compulsory.
+        |--------------------------------------------------------------------------
+        */
+
+        foreach (
+            $selectedOfferings
+            as $offering
+        ) {
+            if (
+                $offering
+                    ->subSections
+                    ->isEmpty()
+            ) {
+                continue;
+            }
+
+
+            $selectedSubSectionId =
+                $subSectionIds[
+                    $offering->id
+                ]
+                ??
+                null;
+
+
+            if (
+                !$selectedSubSectionId
+            ) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'classes' =>
+                            'Please select a sub-section for '
+                            .
+                            (
+                                $offering
+                                    ->section
+                                    ?->section_name
+                                ??
+                                'the selected class'
+                            )
+                            .
+                            ' at '
+                            .
+                            \Carbon\Carbon::parse(
+                                $offering
+                                    ->start_time
+                            )->format(
+                                'g:i A'
+                            )
+                            .
+                            '.',
+                    ]);
+            }
+
+
+            /*
+             * Selected sub-section must actually
+             * be attached to this offering.
+             */
+            $subSectionBelongs =
+                $offering
+                    ->subSections
+                    ->contains(
+                        'id',
+                        $selectedSubSectionId
+                    );
+
+
+            if (!$subSectionBelongs) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'classes' =>
+                            'The selected sub-section is not available for this class offering.',
+                    ]);
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Session Data
         |--------------------------------------------------------------------------
         */
 
@@ -938,10 +951,7 @@ class StudentRegistrationController extends Controller
                 ->exists();
 
 
-        if (
-            $studentIdExists
-        ) {
-
+        if ($studentIdExists) {
             return redirect()
                 ->route(
                     'admin.student-registration.student'
@@ -955,7 +965,7 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Recheck Status
+        | Recheck Student Status
         |--------------------------------------------------------------------------
         */
 
@@ -974,7 +984,6 @@ class StudentRegistrationController extends Controller
 
 
         if (!$statusAvailable) {
-
             return redirect()
                 ->route(
                     'admin.student-registration.student'
@@ -988,7 +997,7 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Save Everything
+        | Save Registration
         |--------------------------------------------------------------------------
         */
 
@@ -997,9 +1006,9 @@ class StudentRegistrationController extends Controller
                 $studentData,
                 $guardianData,
                 $wishlistIds,
-                $selectedIds
+                $selectedIds,
+                $subSectionIds
             ) {
-
                 /*
                 |--------------------------------------------------------------------------
                 | Create Student
@@ -1008,7 +1017,6 @@ class StudentRegistrationController extends Controller
 
                 $student =
                     Student::create([
-
                         'external_id' =>
                             $studentData[
                                 'external_id'
@@ -1070,13 +1078,12 @@ class StudentRegistrationController extends Controller
                 foreach (
                     $guardianData[
                         'new'
-                    ] ?? []
+                    ]
+                    ?? []
                     as $newGuardian
                 ) {
-
                     $guardian =
                         Guardian::create([
-
                             'user_id' =>
                                 null,
 
@@ -1093,7 +1100,7 @@ class StudentRegistrationController extends Controller
                             'email' =>
                                 $newGuardian[
                                     'email'
-                                ] ?? null,
+                                ],
 
                             'phone' =>
                                 $newGuardian[
@@ -1101,9 +1108,7 @@ class StudentRegistrationController extends Controller
                                 ],
 
                             'address' =>
-                                $newGuardian[
-                                    'address'
-                                ] ?? null,
+                                null,
 
                             'is_active' =>
                                 true,
@@ -1115,21 +1120,14 @@ class StudentRegistrationController extends Controller
                         ->attach(
                             $guardian->id,
                             [
-
                                 'relationship' =>
-                                    $newGuardian[
-                                        'relationship'
-                                    ] ?? null,
+                                    null,
 
                                 'is_primary' =>
-                                    $newGuardian[
-                                        'is_primary'
-                                    ] ?? false,
+                                    false,
 
                                 'is_emergency_contact' =>
-                                    $newGuardian[
-                                        'is_emergency_contact'
-                                    ] ?? false,
+                                    false,
                             ]
                         );
                 }
@@ -1145,7 +1143,6 @@ class StudentRegistrationController extends Controller
                     $selectedIds
                     as $offeringId
                 ) {
-
                     $isWishlist =
                         in_array(
                             $offeringId,
@@ -1155,14 +1152,17 @@ class StudentRegistrationController extends Controller
 
 
                     /*
-                     * Lock offering during
-                     * capacity check.
+                     * Lock offering while checking
+                     * current shared capacity.
                      */
                     $offering =
-                        SectionOffering::where(
-                            'id',
-                            $offeringId
-                        )
+                        SectionOffering::with([
+                            'subSections',
+                        ])
+                            ->where(
+                                'id',
+                                $offeringId
+                            )
                             ->where(
                                 'is_active',
                                 true
@@ -1172,22 +1172,80 @@ class StudentRegistrationController extends Controller
 
 
                     if (!$offering) {
-
-                        throw ValidationException::withMessages([
-                            'classes' =>
-                                'A selected class is no longer available.',
-                        ]);
+                        throw
+                            ValidationException::withMessages([
+                                'classes' =>
+                                    'A selected class is no longer available.',
+                            ]);
                     }
 
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Capacity Check
+                    | Recheck Sub-section
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $selectedSubSectionId =
+                        $subSectionIds[
+                            $offeringId
+                        ]
+                        ??
+                        null;
+
+
+                    if (
+                        $offering
+                            ->subSections
+                            ->isNotEmpty()
+                    ) {
+                        if (
+                            !$selectedSubSectionId
+                        ) {
+                            throw
+                                ValidationException::withMessages([
+                                    'classes' =>
+                                        'A sub-section must be selected for Math.',
+                                ]);
+                        }
+
+
+                        if (
+                            !$offering
+                                ->subSections
+                                ->contains(
+                                    'id',
+                                    $selectedSubSectionId
+                                )
+                        ) {
+                            throw
+                                ValidationException::withMessages([
+                                    'classes' =>
+                                        'The selected Math sub-section is no longer available.',
+                                ]);
+                        }
+                    } else {
+                        $selectedSubSectionId =
+                            null;
+                    }
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Shared Capacity Check
+                    |--------------------------------------------------------------------------
+                    |
+                    | IMPORTANT FOR MATH:
+                    |
+                    | We count the whole section_offering_id.
+                    |
+                    | We DO NOT filter by sub_section_id.
+                    |
+                    | 3A + B-D + E+ together <= 41.
                     |--------------------------------------------------------------------------
                     */
 
                     if (!$isWishlist) {
-
                         $allocatedSeats =
                             Enrolment::where(
                                 'section_offering_id',
@@ -1210,28 +1268,30 @@ class StudentRegistrationController extends Controller
                             $offering
                                 ->max_seats
                         ) {
-
-                            throw ValidationException::withMessages([
-                                'classes' =>
-                                    'One selected class is now full. Select it as wishlist instead.',
-                            ]);
+                            throw
+                                ValidationException::withMessages([
+                                    'classes' =>
+                                        'One selected class is now full. Select it as wishlist instead.',
+                                ]);
                         }
                     }
 
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Create Enrolment
+                    | Save Enrolment
                     |--------------------------------------------------------------------------
                     */
 
                     Enrolment::create([
-
                         'student_id' =>
                             $student->id,
 
                         'section_offering_id' =>
                             $offering->id,
+
+                        'sub_section_id' =>
+                            $selectedSubSectionId,
 
                         'wishlist_for_enrolment_id' =>
                             null,

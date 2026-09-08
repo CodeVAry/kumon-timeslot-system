@@ -4,6 +4,7 @@ namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Section extends Model
 {
@@ -19,10 +20,19 @@ class Section extends Model
         'is_active' => 'boolean',
     ];
 
-        public function sectionOfferings()
+    public function sectionOfferings()
     {
         return $this->hasMany(
             SectionOffering::class,
+            'section_id',
+            'id'
+        );
+    }
+
+    public function subSections()
+    {
+        return $this->hasMany(
+            SubSection::class,
             'section_id',
             'id'
         );

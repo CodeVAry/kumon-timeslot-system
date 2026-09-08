@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Admin\Role;
+use Illuminate\Database\Seeder;
 
 class RoleSeeder extends Seeder
 {
@@ -13,6 +12,12 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Super Admin
+        |--------------------------------------------------------------------------
+        */
+
         Role::updateOrCreate(
             [
                 'role_name' => 'Super Admin',
@@ -24,6 +29,27 @@ class RoleSeeder extends Seeder
                 'is_active' => true,
 
                 'superAdmin' => true,
+            ]
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Admin
+        |--------------------------------------------------------------------------
+        */
+
+        Role::updateOrCreate(
+            [
+                'role_name' => 'Admin',
+            ],
+            [
+                'description' =>
+                    'Centre administrator with administrative access.',
+
+                'is_active' => true,
+
+                'superAdmin' => false,
             ]
         );
     }

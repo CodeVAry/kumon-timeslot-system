@@ -7,249 +7,155 @@
     <meta charset="UTF-8">
 
     <title>
-        Kumon Class List
+        Kumon Centre Schedule
     </title>
 
 
     <style>
 
         @page {
-            margin: 20px;
+            size: A4 landscape;
+            margin: 14px;
+        }
+
+
+        * {
+            box-sizing: border-box;
         }
 
 
         body {
             margin: 0;
-
-            font-family:
-                DejaVu Sans,
-                sans-serif;
-
-            font-size: 10px;
-
-            color: #1e293b;
-        }
-
-
-        .document-header {
-            margin-bottom: 18px;
-
-            padding-bottom: 12px;
-
-            border-bottom:
-                2px solid #2563eb;
-        }
-
-
-        .system-name {
-            margin: 0;
-
-            color: #2563eb;
-
-            font-size: 10px;
-
-            font-weight: bold;
-
-            text-transform: uppercase;
+            font-family: DejaVu Sans, sans-serif;
+            color: #111827;
+            font-size: 11px;
         }
 
 
         .title {
-            margin:
-                5px 0 0 0;
-
-            font-size: 22px;
-
-            color: #0f172a;
-        }
-
-
-        .meta {
-            margin-top: 7px;
-
-            color: #64748b;
-
-            font-size: 9px;
-        }
-
-
-        .summary {
-            margin-bottom: 15px;
-
-            padding: 8px 10px;
-
-            background: #f8fafc;
-
-            border:
-                1px solid #e2e8f0;
-        }
-
-
-        .summary strong {
-            color: #0f172a;
-        }
-
-
-        .class-block {
-            margin-bottom: 22px;
-        }
-
-
-        /*
-         * Separate every class when several classes
-         * are exported.
-         */
-        .page-break {
-            page-break-before: always;
-        }
-
-
-        .class-header {
-            padding: 10px 12px;
-
-            background: #eff6ff;
-
-            border:
-                1px solid #bfdbfe;
-
-            border-bottom: none;
-        }
-
-
-        .class-name {
             margin: 0;
-
-            color: #0f172a;
-
-            font-size: 15px;
-
+            padding: 8px;
+            background: #d9ead3;
+            border: 1px solid #000;
+            font-size: 18px;
             font-weight: bold;
+            text-align: center;
         }
 
 
-        .class-meta {
-            margin-top: 4px;
-
-            color: #64748b;
-
-            font-size: 9px;
+        .day-title {
+            margin-top: 8px;
+            padding: 7px;
+            background: #e2f0d9;
+            border: 1px solid #000;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
         }
 
 
         table {
             width: 100%;
-
-            border-collapse:
-                collapse;
+            border-collapse: collapse;
+            table-layout: fixed;
         }
 
 
-        thead {
-            display:
-                table-header-group;
-        }
-
-
-        tr {
-            page-break-inside:
-                avoid;
+        th,
+        td {
+            border: 1px solid #000;
         }
 
 
         th {
-            padding: 8px;
+            padding: 7px;
+            background: #f3f4f6;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+        }
 
-            background: #f8fafc;
 
-            border:
-                1px solid #cbd5e1;
+        .time-column {
+            width: 10%;
+        }
 
-            color: #475569;
+
+        .detail-column {
+            width: 90%;
+        }
+
+
+        .time-cell {
+            position: relative;
+            padding: 0;
+            text-align: center;
+            vertical-align: middle;
+            overflow: hidden;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Vertical Time
+        |--------------------------------------------------------------------------
+        */
+
+        .time-text {
+            display: inline-block;
+            white-space: nowrap;
+            font-size: 12px;
+            font-weight: bold;
+
+            transform: rotate(-90deg);
+            transform-origin: center center;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Subject
+        |--------------------------------------------------------------------------
+        */
+
+        .subject-row {
+            padding: 7px 8px;
+            background: #eaf2f8;
+
+            font-size: 14px;
+            font-weight: bold;
+
+            text-align: center;
+            vertical-align: middle;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Student
+        |--------------------------------------------------------------------------
+        */
+
+        .student-row {
+            padding: 7px 12px;
+
+            font-size: 12px;
 
             text-align: left;
-
-            font-size: 8px;
-
-            font-weight: bold;
-
-            text-transform: uppercase;
+            vertical-align: middle;
         }
 
 
-        td {
-            padding: 8px;
-
-            border:
-                1px solid #e2e8f0;
-
-            vertical-align: top;
-        }
-
-
-        .student-name {
-            font-weight: bold;
-
-            color: #0f172a;
-        }
-
-
-        .attendance-present {
-            color: #15803d;
-
-            font-weight: bold;
-        }
-
-
-        .attendance-absent {
-            color: #dc2626;
-
-            font-weight: bold;
-        }
-
-
-        .attendance-vacation {
-            color: #d97706;
-
-            font-weight: bold;
-        }
-
-
-        .attendance-not-marked {
-            color: #64748b;
-
+        .student-highlight {
             font-weight: bold;
         }
 
 
         .empty {
-            margin-top: 20px;
-
             padding: 40px;
-
-            border:
-                1px solid #e2e8f0;
-
-            background: #f8fafc;
-
-            color: #64748b;
-
+            border: 1px solid #000;
             text-align: center;
-        }
-
-
-        .footer {
-            margin-top: 18px;
-
-            padding-top: 8px;
-
-            border-top:
-                1px solid #e2e8f0;
-
-            color: #94a3b8;
-
-            font-size: 8px;
-
-            text-align: right;
+            color: #64748b;
         }
 
     </style>
@@ -260,366 +166,301 @@
 <body>
 
 
-    {{-- =========================================================
-        DOCUMENT HEADER
-    ========================================================== --}}
-
-    <div class="document-header">
-
-        <p class="system-name">
-            Kumon Timeslot System
-        </p>
+    <h1 class="title">
+        Kumon North Hobart Centre Schedule
+    </h1>
 
 
-        <h1 class="title">
-            Class List
-        </h1>
-
-
-        <div class="meta">
-
-            Date:
-
-            <strong>
-                {{
-                    $date->format(
-                        'l, d F Y'
-                    )
-                }}
-            </strong>
-
-            &nbsp; | &nbsp;
-
-            Generated:
-
-            {{
-                now()->format(
-                    'd M Y, g:i A'
-                )
-            }}
-
-        </div>
-
-    </div>
-
-
-
-    {{-- =========================================================
-        SUMMARY
-    ========================================================== --}}
-
-    <div class="summary">
-
-        <strong>
-            Total exported student records:
-        </strong>
-
-        {{ $rows->count() }}
-
-        &nbsp; | &nbsp;
-
-        <strong>
-            Classes:
-        </strong>
-
-        {{ $groupedRows->count() }}
-
-        &nbsp; | &nbsp;
-
-        <strong>
-            Attendance filter:
-        </strong>
+    <div class="day-title">
 
         {{
-            match (
-                $filters[
-                    'attendance_status'
-                ]
-            ) {
-
-                'present' =>
-                    'Present Only',
-
-                'absent' =>
-                    'Absent Only',
-
-                'vacation' =>
-                    'Vacation Only',
-
-                'not_marked' =>
-                    'Attendance Not Marked',
-
-                default =>
-                    'All Students',
-            }
+            $date->format(
+                'l, d F Y'
+            )
         }}
 
     </div>
 
 
 
-    {{-- =========================================================
-        EMPTY
-    ========================================================== --}}
-
     @if ($rows->isEmpty())
 
         <div class="empty">
 
-            No students matched
-            the selected export filters.
+            No students matched the selected filters.
 
         </div>
-
 
     @else
 
 
-        {{-- =====================================================
-            CLASSES
-        ====================================================== --}}
+        <table>
 
-        @foreach (
-            $groupedRows
-            as $offeringRows
-        )
+            <thead>
 
-            @php
+                <tr>
 
-                $firstRow =
-                    $offeringRows
-                        ->first();
+                    <th class="time-column">
+                        Time
+                    </th>
 
-            @endphp
+                    <th class="detail-column">
+                        Subject / Student
+                    </th>
 
+                </tr>
 
-            <div
-                class="class-block
-                {{ !$loop->first ? 'page-break' : '' }}"
-            >
+            </thead>
 
 
-                {{-- =============================================
-                    CLASS HEADER
-                ============================================== --}}
-
-                <div class="class-header">
-
-                    <h2 class="class-name">
-
-                        {{
-                            $firstRow[
-                                'section'
-                            ]
-                        }}
-
-                    </h2>
+            <tbody>
 
 
-                    <div class="class-meta">
+                @foreach (
+                    $timeGroups
+                    as $time =>
+                        $timeRows
+                )
 
-                        {{
-                            $firstRow[
-                                'day'
-                            ]
-                        }}
+                    @php
 
-                        &nbsp; • &nbsp;
+                        $subjectGroups =
+                            $timeRows
+                                ->groupBy(
+                                    'class_display'
+                                );
 
-                        {{
-                            $firstRow[
-                                'start_time'
-                            ]
-                        }}
 
-                        –
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Calculate Complete Time Block Rows
+                        |--------------------------------------------------------------------------
+                        |
+                        | Each subject has:
+                        |
+                        | 1 subject heading
+                        | + student count
+                        |--------------------------------------------------------------------------
+                        */
 
-                        {{
-                            $firstRow[
-                                'end_time'
-                            ]
-                        }}
+                        $timeRowspan =
+                            $subjectGroups
+                                ->sum(
+                                    function (
+                                        $subjectRows
+                                    ) {
 
-                        &nbsp; • &nbsp;
+                                        return
+                                            1
+                                            +
+                                            $subjectRows
+                                                ->count();
+                                    }
+                                );
 
-                        {{
-                            $offeringRows
-                                ->count()
-                        }}
 
-                        {{
-                            $offeringRows
-                                ->count()
-                            ===
-                            1
-                                ? 'student'
-                                : 'students'
-                        }}
+                        $firstOutputRow =
+                            true;
 
-                    </div>
-
-                </div>
+                    @endphp
 
 
 
-                {{-- =============================================
-                    STUDENT TABLE
-                ============================================== --}}
+                    @foreach (
+                        $subjectGroups
+                        as $subjectName =>
+                            $subjectRows
+                    )
 
-                <table>
 
-                    <thead>
+                        {{-- Subject --}}
 
                         <tr>
 
-                            <th style="width: 4%;">
-                                #
-                            </th>
+
+                            @if ($firstOutputRow)
+
+                                <td
+                                    class="time-cell"
+                                    rowspan="{{
+                                        $timeRowspan
+                                    }}"
+                                >
+
+                                    <div class="time-text">
+                                        {{ $time }}
+                                    </div>
+
+                                </td>
 
 
-                            <th style="width: 13%;">
-                                Student ID
-                            </th>
+                                @php
+                                    $firstOutputRow = false;
+                                @endphp
+
+                            @endif
 
 
-                            <th style="width: 22%;">
-                                Student
-                            </th>
+                            <td class="subject-row">
 
+                                {{ $subjectName }}
 
-                            <th style="width: 22%;">
-                                Guardian
-                            </th>
-
-
-                            <th style="width: 18%;">
-                                Student Status
-                            </th>
-
-
-                            <th style="width: 21%;">
-                                Attendance
-                            </th>
+                            </td>
 
                         </tr>
 
-                    </thead>
 
 
-                    <tbody>
+                        {{-- Students --}}
 
                         @foreach (
-                            $offeringRows
+                            $subjectRows
                             as $row
                         )
 
                             @php
 
-                                $attendanceClass =
-                                    match (
-                                        $row[
-                                            'attendance_status'
-                                        ]
+                                $fill =
+                                    $row[
+                                        'status_fill'
+                                    ];
+
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Choose readable text colour
+                                |--------------------------------------------------------------------------
+                                */
+
+                                $textColour =
+                                    '#111827';
+
+
+                                if ($fill) {
+
+                                    $hex =
+                                        ltrim(
+                                            $fill,
+                                            '#'
+                                        );
+
+
+                                    if (
+                                        strlen(
+                                            $hex
+                                        )
+                                        ===
+                                        6
                                     ) {
 
-                                        'Present' =>
-                                            'attendance-present',
+                                        $r =
+                                            hexdec(
+                                                substr(
+                                                    $hex,
+                                                    0,
+                                                    2
+                                                )
+                                            );
 
-                                        'Absent' =>
-                                            'attendance-absent',
 
-                                        'Vacation' =>
-                                            'attendance-vacation',
+                                        $g =
+                                            hexdec(
+                                                substr(
+                                                    $hex,
+                                                    2,
+                                                    2
+                                                )
+                                            );
 
-                                        default =>
-                                            'attendance-not-marked',
-                                    };
+
+                                        $b =
+                                            hexdec(
+                                                substr(
+                                                    $hex,
+                                                    4,
+                                                    2
+                                                )
+                                            );
+
+
+                                        $brightness =
+                                            (
+                                                $r * 299
+                                                +
+                                                $g * 587
+                                                +
+                                                $b * 114
+                                            )
+                                            /
+                                            1000;
+
+
+                                        if (
+                                            $brightness
+                                            <
+                                            150
+                                        ) {
+
+                                            $textColour =
+                                                '#ffffff';
+                                        }
+                                    }
+                                }
 
                             @endphp
 
 
                             <tr>
 
-                                <td>
-                                    {{ $loop->iteration }}
-                                </td>
-
-
-                                <td>
-                                    {{
-                                        $row[
-                                            'student_id'
-                                        ]
-                                    }}
-                                </td>
-
-
                                 <td
-                                    class="student-name"
+                                    class="
+                                        student-row
+
+                                        {{
+                                            $fill
+                                                ? 'student-highlight'
+                                                : ''
+                                        }}
+                                    "
+
+                                    @if ($fill)
+
+                                        style="
+                                            background-color:
+                                            {{ $fill }};
+
+                                            color:
+                                            {{ $textColour }};
+                                        "
+
+                                    @endif
                                 >
+
                                     {{
                                         $row[
                                             'student_name'
                                         ]
                                     }}
-                                </td>
 
-
-                                <td>
-                                    {{
-                                        $row[
-                                            'guardian'
-                                        ]
-                                    }}
-                                </td>
-
-
-                                <td>
-                                    {{
-                                        $row[
-                                            'student_status'
-                                        ]
-                                    }}
-                                </td>
-
-
-                                <td
-                                    class="{{
-                                        $attendanceClass
-                                    }}"
-                                >
-                                    {{
-                                        $row[
-                                            'attendance_status'
-                                        ]
-                                    }}
                                 </td>
 
                             </tr>
 
                         @endforeach
 
-                    </tbody>
 
-                </table>
+                    @endforeach
 
-            </div>
 
-        @endforeach
+                @endforeach
+
+
+            </tbody>
+
+        </table>
+
 
     @endif
-
-
-
-    {{-- =========================================================
-        FOOTER
-    ========================================================== --}}
-
-    <div class="footer">
-
-        Generated by Kumon Timeslot System
-
-    </div>
 
 
 </body>

@@ -8,6 +8,7 @@ use App\Models\Admin\Day;
 use App\Models\Admin\Enrolment;
 use App\Models\Admin\SectionOffering;
 use App\Models\Admin\Student;
+use App\Models\Admin\StudentLeave;
 use App\Models\Admin\StudentStatus;
 use App\Services\StudentStatusReviewService;
 use Carbon\Carbon;
@@ -21,11 +22,6 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         | Current Date / Time
         |--------------------------------------------------------------------------
-        |
-        | config/app.php should use:
-        |
-        | 'timezone' => 'Australia/Hobart'
-        |
         */
 
         $dashboardDate =
@@ -118,9 +114,6 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         | Today's Actual Absences
         |--------------------------------------------------------------------------
-        |
-        | This now uses real attendance records.
-        |
         */
 
         $todayAbsentAttendance =
@@ -139,12 +132,6 @@ class DashboardController extends Controller
                 ->get();
 
 
-        /*
-         * Get unique absent students.
-         *
-         * One student could theoretically have
-         * attendance records for multiple classes.
-         */
         $absentStudents =
             $todayAbsentAttendance
                 ->map(
@@ -190,13 +177,6 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         | Today's Classes
         |--------------------------------------------------------------------------
-        |
-        | We deliberately do NOT return early
-        | if there are no classes today.
-        |
-        | Student review notifications should
-        | still appear on the Dashboard.
-        |
         */
 
         if ($todayDay) {
@@ -290,9 +270,6 @@ class DashboardController extends Controller
                 as $startTime => $classOfferings
             ) {
 
-                /*
-                 * Start Date / Time
-                 */
                 $startDateTime =
                     Carbon::parse(
                         $dashboardDate
@@ -306,12 +283,6 @@ class DashboardController extends Controller
                     );
 
 
-                /*
-                 * Classes beginning at the same
-                 * time may have different end times.
-                 *
-                 * Use the latest end time.
-                 */
                 $latestEndTime =
                     $classOfferings
                         ->max(
@@ -370,14 +341,6 @@ class DashboardController extends Controller
                             );
 
 
-                    /*
-                     * TEMPORARY section grouping.
-                     *
-                     * Keep existing behaviour for now.
-                     *
-                     * Later this can use
-                     * database-driven section groups.
-                     */
                     $sectionName =
                         strtolower(
                             trim(
@@ -493,6 +456,7 @@ class DashboardController extends Controller
                 */
 
                 $todayClasses->push([
+
                     'raw_time' =>
                         $startTime,
 
@@ -552,13 +516,6 @@ class DashboardController extends Controller
                     ];
 
 
-                /*
-                 * This currently means students
-                 * scheduled in the current class.
-                 *
-                 * We can later change this to
-                 * actual Present attendance.
-                 */
                 $currentlyAttending =
                     $currentClassStudents;
             }
@@ -648,6 +605,7 @@ class DashboardController extends Controller
         ) {
 
             $adminReminders->push([
+
                 'type' =>
                     'trial',
 
@@ -732,6 +690,7 @@ class DashboardController extends Controller
         ) {
 
             $adminReminders->push([
+
                 'type' =>
                     'absence',
 
@@ -831,14 +790,12 @@ class DashboardController extends Controller
         }
 
 
-        /*
-         * Approaching six months.
-         */
         if (
             $inactiveWarningCount > 0
         ) {
 
             $adminReminders->push([
+
                 'type' =>
                     'inactive-warning',
 
@@ -858,14 +815,12 @@ class DashboardController extends Controller
         }
 
 
-        /*
-         * Already reached six months.
-         */
         if (
             $deletionReviewCount > 0
         ) {
 
             $adminReminders->push([
+
                 'type' =>
                     'deletion',
 
@@ -880,6 +835,170 @@ class DashboardController extends Controller
                 'url' =>
                     route(
                         'admin.student-reviews.index'
+                    ),
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Admin Reminder 4
+        | Parent Early Return
+        |--------------------------------------------------------------------------
+        |
+        | A parent can record an early return from
+        | an approved leave.
+        |
+        | The dashboard will show early returns
+        | recorded within the last 7 days.
+        |
+        */
+
+        $recentEarlyReturns =
+            StudentLeave::with([
+                'student',
+            ])
+                ->where(
+                    'status',
+                    'approved'
+                )
+                ->where(
+                    'returned_early',
+                    true
+                )
+                ->whereNotNull(
+                    'actual_return_date'
+                )
+                ->whereDate(
+                    'actual_return_date',
+                    '>=',
+                    now()
+                        ->subDays(7)
+                        ->toDateString()
+                )
+                ->orderByDesc(
+                    'actual_return_date'
+                )
+                ->get();
+
+
+        foreach (
+            $recentEarlyReturns
+            as $earlyReturn
+        ) {
+
+            $student =
+                $earlyReturn
+                    ->student;
+
+
+            if (!$student) {
+
+                continue;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Student Name
+            |--------------------------------------------------------------------------
+            */
+
+            $studentName =
+                trim(
+                    $student
+                        ->first_name
+                    .
+                    ' '
+                    .
+                    $student
+                        ->last_name
+                );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Manual Student ID
+            |--------------------------------------------------------------------------
+            |
+            | Do NOT use the database student ID.
+            |
+            */
+
+            $manualStudentId =
+                $student
+                    ->external_id
+                ??
+                'No Student ID';
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Expected Return
+            |--------------------------------------------------------------------------
+            */
+
+            $expectedReturn =
+                $earlyReturn
+                    ->expected_return_date
+                    ?->format(
+                        'd M Y'
+                    )
+                ??
+                '—';
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Actual Return
+            |--------------------------------------------------------------------------
+            */
+
+            $actualReturn =
+                $earlyReturn
+                    ->actual_return_date
+                    ?->format(
+                        'd M Y'
+                    )
+                ??
+                '—';
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Push Dashboard Reminder
+            |--------------------------------------------------------------------------
+            */
+
+            $adminReminders->push([
+
+                'type' =>
+                    'early-return',
+
+                'title' =>
+                    'Student returned early',
+
+                'message' =>
+                    $studentName
+                    .
+                    ' ('
+                    .
+                    $manualStudentId
+                    .
+                    ') returned early on '
+                    .
+                    $actualReturn
+                    .
+                    '. Expected return was '
+                    .
+                    $expectedReturn
+                    .
+                    '.',
+
+                'url' =>
+                    route(
+                        'admin.student-leaves.show',
+                        $earlyReturn
                     ),
             ]);
         }

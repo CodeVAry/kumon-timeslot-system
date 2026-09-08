@@ -1,8 +1,8 @@
 @extends('layouts.parent')
 
-@section('title', 'Edit Leave Request')
+@section('title', 'Edit Leave')
 
-@section('page-title', 'Edit Leave Request')
+@section('page-title', 'Edit Leave')
 
 
 @section('content')
@@ -16,21 +16,17 @@
            lg:p-8"
 >
 
-
     <a
         href="{{ route(
             'parent.leave.show',
             $leave
         ) }}"
-        class="inline-flex
-               text-sm
+        class="text-sm
                font-semibold
-               text-violet-700
-               hover:text-violet-900"
+               text-violet-700"
     >
         ← Back to Leave Details
     </a>
-
 
 
     <div class="mt-6">
@@ -39,12 +35,10 @@
             class="text-xs
                    font-bold
                    uppercase
-                   tracking-wide
                    text-violet-600"
         >
             Parent Portal
         </p>
-
 
         <h1
             class="mt-2
@@ -52,25 +46,19 @@
                    font-bold
                    text-slate-900"
         >
-            Edit Leave Request
+            Edit Leave
         </h1>
 
+        <p class="mt-2 text-sm text-slate-500">
+            Update the upcoming leave information for
 
-        <p
-            class="mt-2
-                   text-sm
-                   text-slate-500"
-        >
-            Update the pending leave request for
-
-            <span class="font-semibold text-slate-700">
+            <strong>
                 {{ $student->first_name }}
                 {{ $student->last_name }}
-            </span>.
+            </strong>.
         </p>
 
     </div>
-
 
 
     @if ($errors->any())
@@ -78,10 +66,9 @@
         <div
             class="mt-6
                    rounded-xl
-                   border
-                   border-red-200
+                   border border-red-200
                    bg-red-50
-                   px-5 py-4"
+                   p-4"
         >
 
             @foreach ($errors->all() as $error)
@@ -97,12 +84,10 @@
     @endif
 
 
-
     <section
         class="mt-7
                rounded-[26px]
-               border
-               border-slate-200
+               border border-slate-200
                bg-white
                p-6
                shadow-sm"
@@ -126,101 +111,82 @@
                        md:grid-cols-2"
             >
 
-
-                {{-- Start Date --}}
                 <div>
 
                     <label
                         for="start_date"
                         class="mb-2
                                block
-                               text-sm
-                               font-semibold
-                               text-slate-700"
+                               font-semibold"
                     >
                         Start Date *
                     </label>
-
 
                     <input
                         type="date"
                         id="start_date"
                         name="start_date"
-                        value="{{ old(
-                            'start_date',
-                            $leave
-                                ->start_date
-                                ->format('Y-m-d')
-                        ) }}"
+                        value="{{
+                            old(
+                                'start_date',
+                                $leave
+                                    ->start_date
+                                    ->format('Y-m-d')
+                            )
+                        }}"
                         required
                         class="h-12
                                w-full
                                rounded-xl
-                               border
-                               border-slate-300
-                               px-4
-                               focus:border-violet-500
-                               focus:ring-violet-200"
+                               border-slate-300"
                     >
 
                 </div>
 
 
-
-                {{-- Expected Return --}}
                 <div>
 
                     <label
                         for="expected_return_date"
                         class="mb-2
                                block
-                               text-sm
-                               font-semibold
-                               text-slate-700"
+                               font-semibold"
                     >
                         Expected Return Date *
                     </label>
-
 
                     <input
                         type="date"
                         id="expected_return_date"
                         name="expected_return_date"
-                        value="{{ old(
-                            'expected_return_date',
-                            $leave
-                                ->expected_return_date
-                                ->format('Y-m-d')
-                        ) }}"
+                        value="{{
+                            old(
+                                'expected_return_date',
+                                $leave
+                                    ->expected_return_date
+                                    ->format('Y-m-d')
+                            )
+                        }}"
                         required
                         class="h-12
                                w-full
                                rounded-xl
-                               border
-                               border-slate-300
-                               px-4
-                               focus:border-violet-500
-                               focus:ring-violet-200"
+                               border-slate-300"
                     >
 
                 </div>
 
 
-
-                {{-- Homework --}}
                 <div>
 
                     <label
                         for="homework_requirement"
                         class="mb-2
                                block
-                               text-sm
-                               font-semibold
-                               text-slate-700"
+                               font-semibold"
                     >
-                        Homework Required *
+                        Homework *
                     </label>
-
 
                     <select
                         id="homework_requirement"
@@ -229,95 +195,71 @@
                         class="h-12
                                w-full
                                rounded-xl
-                               border
-                               border-slate-300
-                               bg-white
-                               px-4"
+                               border-slate-300"
                     >
 
-                        <option
-                            value="same_as_normal"
-                            @selected(
-                                old(
-                                    'homework_requirement',
-                                    $leave
-                                        ->homework_requirement
+                        @foreach ([
+                            'none_required'
+                                => 'None Required',
+
+                            'same_as_normal'
+                                => 'Same as Normal',
+
+                            'increase'
+                                => 'Increase',
+
+                            'decrease'
+                                => 'Decrease',
+                        ] as $value => $label)
+
+                            <option
+                                value="{{ $value }}"
+                                @selected(
+                                    old(
+                                        'homework_requirement',
+                                        $leave
+                                            ->homework_requirement
+                                    )
+                                    ===
+                                    $value
                                 )
-                                ===
-                                'same_as_normal'
-                            )
-                        >
-                            Same as normal
-                        </option>
+                            >
+                                {{ $label }}
+                            </option>
 
-
-                        <option
-                            value="increase"
-                            @selected(
-                                old(
-                                    'homework_requirement',
-                                    $leave
-                                        ->homework_requirement
-                                )
-                                ===
-                                'increase'
-                            )
-                        >
-                            Increase
-                        </option>
-
-
-                        <option
-                            value="decrease"
-                            @selected(
-                                old(
-                                    'homework_requirement',
-                                    $leave
-                                        ->homework_requirement
-                                )
-                                ===
-                                'decrease'
-                            )
-                        >
-                            Decrease
-                        </option>
+                        @endforeach
 
                     </select>
 
                 </div>
 
 
-
-                {{-- Reason --}}
                 <div>
 
                     <label
                         for="reason"
                         class="mb-2
                                block
-                               text-sm
-                               font-semibold
-                               text-slate-700"
+                               font-semibold"
                     >
                         Reason
                     </label>
-
 
                     <input
                         type="text"
                         id="reason"
                         name="reason"
+                        value="{{
+                            old(
+                                'reason',
+                                $leave->reason
+                            )
+                        }}"
                         maxlength="255"
-                        value="{{ old(
-                            'reason',
-                            $leave->reason
-                        ) }}"
                         class="h-12
                                w-full
                                rounded-xl
-                               border
-                               border-slate-300
-                               px-4"
+                               border-slate-300"
                     >
 
                 </div>
@@ -325,21 +267,16 @@
             </div>
 
 
-
-            {{-- Notes --}}
             <div class="mt-5">
 
                 <label
                     for="notes"
                     class="mb-2
                            block
-                           text-sm
-                           font-semibold
-                           text-slate-700"
+                           font-semibold"
                 >
                     Notes
                 </label>
-
 
                 <textarea
                     id="notes"
@@ -348,9 +285,7 @@
                     maxlength="2000"
                     class="w-full
                            rounded-xl
-                           border
-                           border-slate-300
-                           p-4"
+                           border-slate-300"
                 >{{ old(
                     'notes',
                     $leave->notes
@@ -358,6 +293,19 @@
 
             </div>
 
+
+            <div
+                class="mt-6
+                       rounded-xl
+                       border border-blue-200
+                       bg-blue-50
+                       p-4
+                       text-sm
+                       text-blue-700"
+            >
+                Updating this leave immediately updates
+                the information available to centre staff.
+            </div>
 
 
             <div
@@ -375,14 +323,11 @@
                     class="inline-flex
                            h-12
                            items-center
-                           justify-center
                            rounded-xl
                            border
                            border-slate-300
                            px-6
-                           text-sm
-                           font-semibold
-                           text-slate-600"
+                           font-semibold"
                 >
                     Cancel
                 </a>
@@ -393,16 +338,13 @@
                     class="inline-flex
                            h-12
                            items-center
-                           justify-center
                            rounded-xl
                            bg-violet-600
                            px-7
-                           text-sm
                            font-bold
-                           text-white
-                           hover:bg-violet-700"
+                           text-white"
                 >
-                    Update Request
+                    Update Leave
                 </button>
 
             </div>

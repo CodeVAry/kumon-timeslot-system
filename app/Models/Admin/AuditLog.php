@@ -17,6 +17,7 @@ class AuditLog extends Model
         'action',
         'entity_type',
         'entity_id',
+        'entity_reference',
         'description',
         'old_values',
         'new_values',
@@ -26,10 +27,22 @@ class AuditLog extends Model
     ];
 
     protected $casts = [
-        'old_values' => 'array',
-        'new_values' => 'array',
-        'created_at' => 'datetime',
+        'old_values' =>
+            'array',
+
+        'new_values' =>
+            'array',
+
+        'created_at' =>
+            'datetime',
     ];
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | User
+    |--------------------------------------------------------------------------
+    */
 
     public function user(): BelongsTo
     {
@@ -37,6 +50,20 @@ class AuditLog extends Model
             User::class,
             'user_id',
             'id'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Friendly Entity Name
+    |--------------------------------------------------------------------------
+    */
+
+    public function getEntityNameAttribute(): string
+    {
+        return class_basename(
+            $this->entity_type
         );
     }
 }

@@ -27,6 +27,13 @@
         );
 
 
+    $oldSubSections =
+        old(
+            'sub_section_ids',
+            []
+        );
+
+
     /*
     |--------------------------------------------------------------------------
     | Filter Options
@@ -35,45 +42,31 @@
 
     $availableSections =
         $sectionOfferings
-            ->pluck(
-                'section'
-            )
+            ->pluck('section')
             ->filter()
-            ->unique(
-                'id'
-            )
-            ->sortBy(
-                'section_name'
-            );
+            ->unique('id')
+            ->sortBy('section_name');
 
 
     $availableDays =
         $sectionOfferings
-            ->pluck(
-                'day'
-            )
+            ->pluck('day')
             ->filter()
-            ->unique(
-                'id'
-            )
-            ->sortBy(
-                'sort_order'
-            );
+            ->unique('id')
+            ->sortBy('sort_order');
 
 
     $availableTimes =
         $sectionOfferings
             ->map(
                 function ($offering) {
-
                     return [
                         'raw' =>
                             $offering
                                 ->start_time,
 
                         'label' =>
-                            \Carbon\Carbon::createFromFormat(
-                                'H:i:s',
+                            \Carbon\Carbon::parse(
                                 $offering
                                     ->start_time
                             )->format(
@@ -82,12 +75,8 @@
                     ];
                 }
             )
-            ->unique(
-                'raw'
-            )
-            ->sortBy(
-                'raw'
-            )
+            ->unique('raw')
+            ->sortBy('raw')
             ->values();
 
 @endphp
@@ -104,8 +93,7 @@
 
     <div
         class="mb-6
-               flex
-               flex-wrap
+               flex flex-wrap
                items-center
                gap-3"
     >
@@ -154,81 +142,73 @@
 
 
     {{-- =========================================================
-        ERRORS
+        BACKEND ERRORS
     ========================================================== --}}
 
-    @error('classes')
+    @if ($errors->any())
 
         <div
             class="mb-5
-                   rounded-lg
+                   rounded-xl
                    border
                    border-red-200
                    bg-red-50
-                   px-4 py-3
-                   text-sm
-                   font-medium
-                   text-red-700"
+                   px-5 py-4"
         >
-            {{ $message }}
+
+            <p
+                class="font-semibold
+                       text-red-700"
+            >
+                Please check the class selection.
+            </p>
+
+
+            <ul
+                class="mt-2
+                       list-disc
+                       space-y-1
+                       pl-5
+                       text-sm
+                       text-red-600"
+            >
+
+                @foreach (
+                    $errors->all()
+                    as $error
+                )
+
+                    <li>
+                        {{ $error }}
+                    </li>
+
+                @endforeach
+
+            </ul>
+
         </div>
 
-    @enderror
-
-
-    @error('confirmed_ids')
-
-        <div
-            class="mb-5
-                   rounded-lg
-                   border
-                   border-red-200
-                   bg-red-50
-                   px-4 py-3
-                   text-sm
-                   text-red-700"
-        >
-            {{ $message }}
-        </div>
-
-    @enderror
-
-
-    @error('wishlist_ids')
-
-        <div
-            class="mb-5
-                   rounded-lg
-                   border
-                   border-red-200
-                   bg-red-50
-                   px-4 py-3
-                   text-sm
-                   text-red-700"
-        >
-            {{ $message }}
-        </div>
-
-    @enderror
+    @endif
 
 
 
     {{-- =========================================================
-        JAVASCRIPT VALIDATION MESSAGE
+        JS ERROR
     ========================================================== --}}
 
     <div
         id="classSelectionError"
         class="mb-5 hidden
-               rounded-lg
+               rounded-xl
                border
                border-red-200
                bg-red-50
-               px-4 py-3
+               px-5 py-4
                text-sm
-               font-medium
+               font-semibold
                text-red-700"
-    ></div>
+    >
+    </div>
 
 
 
@@ -238,7 +218,7 @@
 
     <div
         class="mb-6
-               rounded-xl
+               rounded-2xl
                border
                border-gray-200
                bg-white
@@ -249,16 +229,16 @@
         <h2
             class="text-xl
                    font-bold
-                   text-gray-800"
+                   text-gray-900"
         >
             Student Registration Summary
         </h2>
 
 
         <div
-            class="mt-4
+            class="mt-5
                    grid
-                   gap-4
+                   gap-5
                    md:grid-cols-3"
         >
 
@@ -268,16 +248,16 @@
                     class="text-xs
                            font-semibold
                            uppercase
-                           text-gray-500"
+                           tracking-wide
+                           text-gray-400"
                 >
                     Student
                 </p>
 
-
                 <p
                     class="mt-1
-                           font-semibold
-                           text-gray-800"
+                           font-bold
+                           text-gray-900"
                 >
                     {{ $studentData['first_name'] }}
                     {{ $studentData['last_name'] }}
@@ -292,14 +272,15 @@
                     class="text-xs
                            font-semibold
                            uppercase
-                           text-gray-500"
+                           tracking-wide
+                           text-gray-400"
                 >
                     Student ID
                 </p>
 
-
                 <p
                     class="mt-1
+                           font-medium
                            text-gray-800"
                 >
                     {{ $studentData['external_id'] }}
@@ -314,31 +295,25 @@
                     class="text-xs
                            font-semibold
                            uppercase
-                           text-gray-500"
+                           tracking-wide
+                           text-gray-400"
                 >
                     Guardian Count
                 </p>
 
-
                 <p
                     class="mt-1
+                           font-medium
                            text-gray-800"
                 >
-
                     {{
                         count(
                             $guardianData[
-                                'existing'
-                            ] ?? []
-                        )
-                        +
-                        count(
-                            $guardianData[
                                 'new'
-                            ] ?? []
+                            ]
+                            ?? []
                         )
                     }}
-
                 </p>
 
             </div>
@@ -361,7 +336,8 @@
 
 
         <div
-            class="rounded-xl
+            class="overflow-hidden
+                   rounded-2xl
                    border
                    border-gray-200
                    bg-white
@@ -370,7 +346,7 @@
 
 
             {{-- =================================================
-                HEADING
+                HEADER
             ================================================== --}}
 
             <div
@@ -382,7 +358,7 @@
                 <h2
                     class="text-xl
                            font-bold
-                           text-gray-800"
+                           text-gray-900"
                 >
                     Select Classes
                 </h2>
@@ -393,20 +369,32 @@
                            text-sm
                            text-gray-500"
                 >
-                    Confirmed classes use one seat.
-                    Wishlist selections do not use any seats.
+                    Select one time for each class.
+                    Confirmed enrolments use a seat;
+                    wishlist selections do not.
                 </p>
 
 
-                <p
-                    class="mt-2
+                <div
+                    class="mt-4
+                           rounded-xl
+                           border
+                           border-blue-100
+                           bg-blue-50
+                           px-4 py-3
                            text-sm
-                           font-semibold
                            text-blue-700"
                 >
-                    Only one class time can be selected
-                    for each class.
-                </p>
+                    <strong>
+                        Math:
+                    </strong>
+
+                    choose 3A, B-D or E+ before
+                    selecting Enrol or Wishlist.
+
+                    All Math sub-sections share the same
+                    41-seat capacity.
+                </div>
 
             </div>
 
@@ -419,36 +407,32 @@
             <div
                 class="border-b
                        border-gray-200
-                       bg-gray-50/70
+                       bg-gray-50
                        p-6"
             >
 
                 <div
-                    class="flex
-                           flex-col
+                    class="grid
                            gap-4
-                           lg:flex-row
-                           lg:items-end"
+                           md:grid-cols-2
+                           xl:grid-cols-5"
                 >
 
 
-                    {{-- =========================================
-                        CLASS FILTER
-                    ========================================== --}}
-
-                    <div class="flex-1">
+                    {{-- Class --}}
+                    <div>
 
                         <label
                             for="classFilter"
                             class="mb-2
                                    block
                                    text-xs
-                                   font-semibold
+                                   font-bold
                                    uppercase
                                    tracking-wide
                                    text-gray-500"
                         >
-                            Class
+                            1. Class
                         </label>
 
 
@@ -456,13 +440,10 @@
                             id="classFilter"
                             class="h-11
                                    w-full
-                                   rounded-lg
+                                   rounded-xl
                                    border-gray-300
                                    bg-white
-                                   text-sm
-                                   shadow-sm
-                                   focus:border-blue-500
-                                   focus:ring-blue-500"
+                                   text-sm"
                         >
 
                             <option value="">
@@ -489,23 +470,76 @@
 
 
 
-                    {{-- =========================================
-                        DAY FILTER
-                    ========================================== --}}
+                    {{-- Sub-section --}}
+                    <div>
 
-                    <div class="flex-1">
+                        <label
+                            for="subSectionFilter"
+                            class="mb-2
+                                   block
+                                   text-xs
+                                   font-bold
+                                   uppercase
+                                   tracking-wide
+                                   text-gray-500"
+                        >
+                            2. Sub-section
+                        </label>
+
+
+                        <select
+                            id="subSectionFilter"
+                            class="h-11
+                                   w-full
+                                   rounded-xl
+                                   border-gray-300
+                                   bg-white
+                                   text-sm"
+                        >
+
+                            <option value="">
+                                All Sub-sections
+                            </option>
+
+
+                            @foreach (
+                                $availableSubSections
+                                as $subSection
+                            )
+
+                                <option
+                                    value="{{
+                                        $subSection->id
+                                    }}"
+                                >
+                                    {{
+                                        $subSection
+                                            ->sub_section_name
+                                    }}
+                                </option>
+
+                            @endforeach
+
+                        </select>
+
+                    </div>
+
+
+
+                    {{-- Day --}}
+                    <div>
 
                         <label
                             for="dayFilter"
                             class="mb-2
                                    block
                                    text-xs
-                                   font-semibold
+                                   font-bold
                                    uppercase
                                    tracking-wide
                                    text-gray-500"
                         >
-                            Day
+                            3. Day
                         </label>
 
 
@@ -513,13 +547,10 @@
                             id="dayFilter"
                             class="h-11
                                    w-full
-                                   rounded-lg
+                                   rounded-xl
                                    border-gray-300
                                    bg-white
-                                   text-sm
-                                   shadow-sm
-                                   focus:border-blue-500
-                                   focus:ring-blue-500"
+                                   text-sm"
                         >
 
                             <option value="">
@@ -546,23 +577,20 @@
 
 
 
-                    {{-- =========================================
-                        TIME FILTER
-                    ========================================== --}}
-
-                    <div class="flex-1">
+                    {{-- Time --}}
+                    <div>
 
                         <label
                             for="timeFilter"
                             class="mb-2
                                    block
                                    text-xs
-                                   font-semibold
+                                   font-bold
                                    uppercase
                                    tracking-wide
                                    text-gray-500"
                         >
-                            Time
+                            4. Time
                         </label>
 
 
@@ -570,13 +598,10 @@
                             id="timeFilter"
                             class="h-11
                                    w-full
-                                   rounded-lg
+                                   rounded-xl
                                    border-gray-300
                                    bg-white
-                                   text-sm
-                                   shadow-sm
-                                   focus:border-blue-500
-                                   focus:ring-blue-500"
+                                   text-sm"
                         >
 
                             <option value="">
@@ -590,7 +615,9 @@
                             )
 
                                 <option
-                                    value="{{ $time['raw'] }}"
+                                    value="{{
+                                        $time['raw']
+                                    }}"
                                 >
                                     {{ $time['label'] }}
                                 </option>
@@ -603,20 +630,21 @@
 
 
 
-                    {{-- =========================================
-                        CLEAR
-                    ========================================== --}}
-
-                    <div>
+                    {{-- Clear --}}
+                    <div
+                        class="flex
+                               items-end"
+                    >
 
                         <button
                             type="button"
                             id="clearFilters"
                             class="inline-flex
                                    h-11
+                                   w-full
                                    items-center
                                    justify-center
-                                   rounded-lg
+                                   rounded-xl
                                    border
                                    border-gray-300
                                    bg-white
@@ -635,16 +663,14 @@
 
 
 
-                {{-- =============================================
-                    FILTER RESULT MESSAGE
-                ============================================== --}}
-
                 <div
                     class="mt-4
                            flex
-                           items-center
-                           justify-between
-                           gap-4"
+                           flex-col
+                           gap-2
+                           sm:flex-row
+                           sm:items-center
+                           sm:justify-between"
                 >
 
                     <p
@@ -652,17 +678,17 @@
                         class="text-xs
                                text-gray-500"
                     >
-                        Showing all available classes
+                        Showing available classes
                     </p>
 
 
                     <p
+                        id="selectedSummary"
                         class="text-xs
-                               font-medium
+                               font-semibold
                                text-blue-600"
                     >
-                        You can select one offering
-                        from each class.
+                        No class selected yet.
                     </p>
 
                 </div>
@@ -695,7 +721,7 @@
                                        uppercase
                                        text-gray-500"
                             >
-                                Day
+                                Class
                             </th>
 
 
@@ -707,7 +733,19 @@
                                        uppercase
                                        text-gray-500"
                             >
-                                Class
+                                Sub-section
+                            </th>
+
+
+                            <th
+                                class="px-5 py-3
+                                       text-left
+                                       text-xs
+                                       font-semibold
+                                       uppercase
+                                       text-gray-500"
+                            >
+                                Day
                             </th>
 
 
@@ -731,19 +769,7 @@
                                        uppercase
                                        text-gray-500"
                             >
-                                Maximum
-                            </th>
-
-
-                            <th
-                                class="px-5 py-3
-                                       text-center
-                                       text-xs
-                                       font-semibold
-                                       uppercase
-                                       text-gray-500"
-                            >
-                                Allocated
+                                Capacity
                             </th>
 
 
@@ -787,7 +813,6 @@
                     </thead>
 
 
-
                     <tbody
                         id="classOfferingTable"
                         class="divide-y
@@ -804,8 +829,26 @@
                                 $isFull =
                                     $offering
                                         ->available_seats
-                                    <=
-                                    0;
+                                    <= 0;
+
+
+                                $subSectionIds =
+                                    $offering
+                                        ->subSections
+                                        ->pluck('id')
+                                        ->map(
+                                            fn ($id) =>
+                                                (int) $id
+                                        )
+                                        ->implode(',');
+
+
+                                $oldSelectedSubSection =
+                                    $oldSubSections[
+                                        $offering->id
+                                    ]
+                                    ??
+                                    '';
 
                             @endphp
 
@@ -814,7 +857,7 @@
                                 class="class-offering-row
                                 {{
                                     $isFull
-                                        ? 'bg-red-50'
+                                        ? 'bg-red-50/40'
                                         : 'hover:bg-gray-50'
                                 }}"
                                 data-section-id="{{
@@ -826,6 +869,9 @@
                                         ->section
                                         ->section_name
                                 }}"
+                                data-sub-section-ids="{{
+                                    $subSectionIds
+                                }}"
                                 data-day-id="{{
                                     $offering
                                         ->day_id
@@ -835,6 +881,143 @@
                                         ->start_time
                                 }}"
                             >
+
+
+                                {{-- Class --}}
+                                <td
+                                    class="whitespace-nowrap
+                                           px-5 py-4"
+                                >
+
+                                    <p
+                                        class="text-sm
+                                               font-bold
+                                               text-gray-900"
+                                    >
+                                        {{
+                                            $offering
+                                                ->section
+                                                ->section_name
+                                        }}
+                                    </p>
+
+
+                                    @if (
+                                        strtolower(
+                                            $offering
+                                                ->section
+                                                ->section_name
+                                        )
+                                        ===
+                                        'math'
+                                    )
+
+                                        <p
+                                            class="mt-1
+                                                   text-xs
+                                                   text-blue-600"
+                                        >
+                                            Shared capacity:
+                                            {{
+                                                $offering
+                                                    ->max_seats
+                                            }}
+                                        </p>
+
+                                    @endif
+
+                                </td>
+
+
+
+                                {{-- Sub-section --}}
+                                <td
+                                    class="min-w-44
+                                           px-5 py-4"
+                                >
+
+                                    @if (
+                                        $offering
+                                            ->subSections
+                                            ->isNotEmpty()
+                                    )
+
+                                        <select
+                                            name="sub_section_ids[{{
+                                                $offering->id
+                                            }}]"
+                                            class="sub-section-select
+                                                   h-10
+                                                   w-full
+                                                   rounded-lg
+                                                   border-gray-300
+                                                   bg-white
+                                                   text-sm
+                                                   focus:border-blue-500
+                                                   focus:ring-blue-500"
+                                            data-offering="{{
+                                                $offering
+                                                    ->id
+                                            }}"
+                                        >
+
+                                            <option value="">
+                                                Select...
+                                            </option>
+
+
+                                            @foreach (
+                                                $offering
+                                                    ->subSections
+                                                as $subSection
+                                            )
+
+                                                <option
+                                                    value="{{
+                                                        $subSection
+                                                            ->id
+                                                    }}"
+                                                    @selected(
+                                                        (int)
+                                                        $oldSelectedSubSection
+                                                        ===
+                                                        (int)
+                                                        $subSection
+                                                            ->id
+                                                    )
+                                                >
+                                                    {{
+                                                        $subSection
+                                                            ->sub_section_name
+                                                    }}
+                                                </option>
+
+                                            @endforeach
+
+                                        </select>
+
+
+                                        <p
+                                            class="mt-1
+                                                   text-xs
+                                                   text-gray-400"
+                                        >
+                                            Required for Math
+                                        </p>
+
+                                    @else
+
+                                        <span
+                                            class="text-sm
+                                                   text-gray-400"
+                                        >
+                                            —
+                                        </span>
+
+                                    @endif
+
+                                </td>
+
 
 
                                 {{-- Day --}}
@@ -854,23 +1037,6 @@
 
 
 
-                                {{-- Class --}}
-                                <td
-                                    class="whitespace-nowrap
-                                           px-5 py-4
-                                           text-sm
-                                           font-medium
-                                           text-gray-700"
-                                >
-                                    {{
-                                        $offering
-                                            ->section
-                                            ->section_name
-                                    }}
-                                </td>
-
-
-
                                 {{-- Time --}}
                                 <td
                                     class="whitespace-nowrap
@@ -880,8 +1046,7 @@
                                 >
 
                                     {{
-                                        \Carbon\Carbon::createFromFormat(
-                                            'H:i:s',
+                                        \Carbon\Carbon::parse(
                                             $offering
                                                 ->start_time
                                         )->format(
@@ -892,8 +1057,7 @@
                                     –
 
                                     {{
-                                        \Carbon\Carbon::createFromFormat(
-                                            'H:i:s',
+                                        \Carbon\Carbon::parse(
                                             $offering
                                                 ->end_time
                                         )->format(
@@ -905,32 +1069,49 @@
 
 
 
-                                {{-- Maximum --}}
+                                {{-- Capacity --}}
                                 <td
                                     class="px-5 py-4
-                                           text-center
-                                           text-sm
-                                           text-gray-700"
+                                           text-center"
                                 >
-                                    {{
-                                        $offering
-                                            ->max_seats
-                                    }}
-                                </td>
+
+                                    <p
+                                        class="text-sm
+                                               font-semibold
+                                               text-gray-800"
+                                    >
+                                        {{
+                                            $offering
+                                                ->allocated_seats
+                                        }}
+                                        /
+                                        {{
+                                            $offering
+                                                ->max_seats
+                                        }}
+                                    </p>
 
 
+                                    @if (
+                                        strtolower(
+                                            $offering
+                                                ->section
+                                                ->section_name
+                                        )
+                                        ===
+                                        'math'
+                                    )
 
-                                {{-- Allocated --}}
-                                <td
-                                    class="px-5 py-4
-                                           text-center
-                                           text-sm
-                                           text-gray-700"
-                                >
-                                    {{
-                                        $offering
-                                            ->allocated_seats
-                                    }}
+                                        <p
+                                            class="mt-1
+                                                   text-xs
+                                                   text-gray-400"
+                                        >
+                                            total Math
+                                        </p>
+
+                                    @endif
+
                                 </td>
 
 
@@ -987,26 +1168,40 @@
                                     <input
                                         type="checkbox"
                                         name="confirmed_ids[]"
-                                        value="{{ $offering->id }}"
+                                        value="{{
+                                            $offering
+                                                ->id
+                                        }}"
                                         class="class-selection-checkbox
                                                confirmed-checkbox
+                                               h-4 w-4
                                                rounded
                                                border-gray-300
                                                text-blue-600"
                                         data-offering="{{
-                                            $offering->id
+                                            $offering
+                                                ->id
                                         }}"
                                         data-section="{{
-                                            $offering->section_id
+                                            $offering
+                                                ->section_id
                                         }}"
                                         data-section-name="{{
                                             $offering
                                                 ->section
                                                 ->section_name
                                         }}"
+                                        data-has-sub-sections="{{
+                                            $offering
+                                                ->subSections
+                                                ->isNotEmpty()
+                                                ? '1'
+                                                : '0'
+                                        }}"
                                         @checked(
                                             in_array(
-                                                $offering->id,
+                                                $offering
+                                                    ->id,
                                                 $oldConfirmed
                                             )
                                         )
@@ -1014,19 +1209,6 @@
                                             $isFull
                                         )
                                     >
-
-
-                                    @if ($isFull)
-
-                                        <p
-                                            class="mt-1
-                                                   text-xs
-                                                   text-red-600"
-                                        >
-                                            No seats
-                                        </p>
-
-                                    @endif
 
                                 </td>
 
@@ -1041,26 +1223,40 @@
                                     <input
                                         type="checkbox"
                                         name="wishlist_ids[]"
-                                        value="{{ $offering->id }}"
+                                        value="{{
+                                            $offering
+                                                ->id
+                                        }}"
                                         class="class-selection-checkbox
                                                wishlist-checkbox
+                                               h-4 w-4
                                                rounded
                                                border-gray-300
                                                text-purple-600"
                                         data-offering="{{
-                                            $offering->id
+                                            $offering
+                                                ->id
                                         }}"
                                         data-section="{{
-                                            $offering->section_id
+                                            $offering
+                                                ->section_id
                                         }}"
                                         data-section-name="{{
                                             $offering
                                                 ->section
                                                 ->section_name
                                         }}"
+                                        data-has-sub-sections="{{
+                                            $offering
+                                                ->subSections
+                                                ->isNotEmpty()
+                                                ? '1'
+                                                : '0'
+                                        }}"
                                         @checked(
                                             in_array(
-                                                $offering->id,
+                                                $offering
+                                                    ->id,
                                                 $oldWishlist
                                             )
                                         )
@@ -1077,16 +1273,13 @@
                                         <p
                                             class="mt-1
                                                    text-xs
-                                                   text-gray-500"
+                                                   text-gray-400"
                                         >
-
                                             {{
                                                 $offering
                                                     ->wishlist_count
                                             }}
-
                                             waiting
-
                                         </p>
 
                                     @endif
@@ -1104,7 +1297,6 @@
                                     colspan="8"
                                     class="px-6 py-12
                                            text-center
-                                           text-sm
                                            text-gray-500"
                                 >
                                     No active classes are available.
@@ -1115,8 +1307,6 @@
                         @endforelse
 
 
-
-                        {{-- No Filter Results --}}
 
                         <tr
                             id="noFilterResults"
@@ -1130,9 +1320,8 @@
                                        text-sm
                                        text-gray-500"
                             >
-
-                                No classes match the selected filters.
-
+                                No classes match
+                                the selected filters.
                             </td>
 
                         </tr>
@@ -1146,7 +1335,7 @@
 
 
             {{-- =================================================
-                ACTIONS
+                FOOTER
             ================================================== --}}
 
             <div
@@ -1165,11 +1354,11 @@
                     href="{{ route(
                         'admin.student-registration.guardians'
                     ) }}"
-                    class="rounded-lg
+                    class="rounded-xl
                            border
                            border-gray-300
                            bg-white
-                           px-4 py-2.5
+                           px-5 py-2.5
                            text-center
                            text-sm
                            font-semibold
@@ -1182,9 +1371,9 @@
 
                 <button
                     type="submit"
-                    class="rounded-lg
+                    class="rounded-xl
                            bg-blue-600
-                           px-5 py-2.5
+                           px-6 py-2.5
                            text-sm
                            font-semibold
                            text-white
@@ -1219,6 +1408,12 @@ document.addEventListener(
         |--------------------------------------------------------------------------
         */
 
+        const allSelections =
+            document.querySelectorAll(
+                '.class-selection-checkbox'
+            );
+
+
         const confirmedCheckboxes =
             document.querySelectorAll(
                 '.confirmed-checkbox'
@@ -1231,9 +1426,9 @@ document.addEventListener(
             );
 
 
-        const allSelectionCheckboxes =
+        const subSectionSelects =
             document.querySelectorAll(
-                '.class-selection-checkbox'
+                '.sub-section-select'
             );
 
 
@@ -1246,6 +1441,12 @@ document.addEventListener(
         const classFilter =
             document.getElementById(
                 'classFilter'
+            );
+
+
+        const subSectionFilter =
+            document.getElementById(
+                'subSectionFilter'
             );
 
 
@@ -1267,15 +1468,21 @@ document.addEventListener(
             );
 
 
-        const noFilterResults =
-            document.getElementById(
-                'noFilterResults'
-            );
-
-
         const resultCount =
             document.getElementById(
                 'filterResultCount'
+            );
+
+
+        const selectedSummary =
+            document.getElementById(
+                'selectedSummary'
+            );
+
+
+        const noFilterResults =
+            document.getElementById(
+                'noFilterResults'
             );
 
 
@@ -1294,47 +1501,63 @@ document.addEventListener(
 
         /*
         |--------------------------------------------------------------------------
-        | Show Selection Error
+        | Error
         |--------------------------------------------------------------------------
         */
 
-        function showSelectionError(
+        function showError(
             message
         ) {
-
-            if (!selectionError) {
-                return;
-            }
-
-
             selectionError.textContent =
                 message;
 
 
-            selectionError.classList.remove(
-                'hidden'
-            );
+            selectionError
+                .classList
+                .remove(
+                    'hidden'
+                );
 
 
-            selectionError.scrollIntoView({
-                behavior:
-                    'smooth',
+            selectionError
+                .scrollIntoView({
+                    behavior:
+                        'smooth',
 
-                block:
-                    'center',
-            });
+                    block:
+                        'center',
+                });
+        }
 
 
-            setTimeout(
-                function () {
+        function clearError()
+        {
+            selectionError
+                .classList
+                .add(
+                    'hidden'
+                );
+        }
 
-                    selectionError
-                        .classList
-                        .add(
-                            'hidden'
-                        );
-                },
-                4500
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get Sub-section Select
+        |--------------------------------------------------------------------------
+        */
+
+        function getSubSectionSelect(
+            offeringId
+        ) {
+            return document.querySelector(
+                '.sub-section-select'
+                +
+                '[data-offering="'
+                +
+                offeringId
+                +
+                '"]'
             );
         }
 
@@ -1342,21 +1565,77 @@ document.addEventListener(
 
         /*
         |--------------------------------------------------------------------------
-        | Find Another Selected Offering For Same Class
+        | Require Sub-section
         |--------------------------------------------------------------------------
         */
 
-        function findSelectedForSection(
+        function ensureSubSection(
+            checkbox
+        ) {
+            if (
+                checkbox
+                    .dataset
+                    .hasSubSections
+                !==
+                '1'
+            ) {
+                return true;
+            }
+
+
+            const select =
+                getSubSectionSelect(
+                    checkbox
+                        .dataset
+                        .offering
+                );
+
+
+            if (
+                !select ||
+                !select.value
+            ) {
+                checkbox.checked =
+                    false;
+
+
+                showError(
+                    'Please select a Math sub-section before choosing Enrol or Wishlist.'
+                );
+
+
+                if (select) {
+                    select.focus();
+                }
+
+
+                return false;
+            }
+
+
+            return true;
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Only One Offering Per Main Class
+        |--------------------------------------------------------------------------
+        */
+
+        function getExistingSelection(
             sectionId,
             currentCheckbox
         ) {
-
-            return Array.from(
-                allSelectionCheckboxes
-            )
+            return Array
+                .from(
+                    allSelections
+                )
                 .find(
-                    function (checkbox) {
-
+                    function (
+                        checkbox
+                    ) {
                         return (
                             checkbox
                                 !==
@@ -1376,57 +1655,36 @@ document.addEventListener(
         }
 
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Enforce Only One Offering Per Class
-        |--------------------------------------------------------------------------
-        */
-
-        function enforceOneOfferingPerClass(
+        function enforceOnePerClass(
             checkbox
         ) {
-
             if (!checkbox.checked) {
                 return true;
             }
 
 
-            const sectionId =
-                checkbox
-                    .dataset
-                    .section;
-
-
-            const sectionName =
-                checkbox
-                    .dataset
-                    .sectionName;
-
-
-            const existingSelection =
-                findSelectedForSection(
-                    sectionId,
+            const existing =
+                getExistingSelection(
+                    checkbox
+                        .dataset
+                        .section,
                     checkbox
                 );
 
 
-            if (existingSelection) {
-
+            if (existing) {
                 checkbox.checked =
                     false;
 
 
-                showSelectionError(
+                showError(
                     'Only one class time can be selected for '
                     +
-                    sectionName
+                    checkbox
+                        .dataset
+                        .sectionName
                     +
-                    '. Unselect the existing '
-                    +
-                    sectionName
-                    +
-                    ' selection first.'
+                    '.'
                 );
 
 
@@ -1441,168 +1699,252 @@ document.addEventListener(
 
         /*
         |--------------------------------------------------------------------------
-        | Confirmed Selection
+        | Same Offering Cannot Be Enrol + Wishlist
         |--------------------------------------------------------------------------
         */
 
-        confirmedCheckboxes.forEach(
-            function (checkbox) {
-
-                checkbox.addEventListener(
-                    'change',
-                    function () {
-
-                        if (!checkbox.checked) {
-                            return;
-                        }
-
-
-                        /*
-                         * First enforce one class offering.
-                         */
-                        if (
-                            !enforceOneOfferingPerClass(
-                                checkbox
-                            )
-                        ) {
-
-                            return;
-                        }
-
-
-                        /*
-                         * Same offering cannot also
-                         * be Wishlist.
-                         */
-                        const offeringId =
-                            checkbox
-                                .dataset
-                                .offering;
-
-
-                        const wishlistCheckbox =
-                            document.querySelector(
-                                '.wishlist-checkbox'
-                                +
-                                '[data-offering="'
-                                +
-                                offeringId
-                                +
-                                '"]'
-                            );
-
-
-                        if (wishlistCheckbox) {
-
-                            wishlistCheckbox.checked =
-                                false;
-                        }
-                    }
+        function clearOpposite(
+            checkbox,
+            oppositeClass
+        ) {
+            const opposite =
+                document.querySelector(
+                    oppositeClass
+                    +
+                    '[data-offering="'
+                    +
+                    checkbox
+                        .dataset
+                        .offering
+                    +
+                    '"]'
                 );
+
+
+            if (opposite) {
+                opposite.checked =
+                    false;
             }
-        );
+        }
 
 
 
         /*
         |--------------------------------------------------------------------------
-        | Wishlist Selection
+        | Confirmed
         |--------------------------------------------------------------------------
         */
 
-        wishlistCheckboxes.forEach(
-            function (checkbox) {
+        confirmedCheckboxes
+            .forEach(
+                function (
+                    checkbox
+                ) {
+                    checkbox
+                        .addEventListener(
+                            'change',
+                            function () {
 
-                checkbox.addEventListener(
-                    'change',
-                    function () {
-
-                        if (!checkbox.checked) {
-                            return;
-                        }
-
-
-                        /*
-                         * First enforce one offering
-                         * for this class.
-                         */
-                        if (
-                            !enforceOneOfferingPerClass(
-                                checkbox
-                            )
-                        ) {
-
-                            return;
-                        }
+                                clearError();
 
 
-                        /*
-                         * Same offering cannot also
-                         * be confirmed.
-                         */
-                        const offeringId =
-                            checkbox
-                                .dataset
-                                .offering;
+                                if (
+                                    !checkbox
+                                        .checked
+                                ) {
+                                    updateSummary();
+
+                                    return;
+                                }
 
 
-                        const confirmedCheckbox =
-                            document.querySelector(
-                                '.confirmed-checkbox'
-                                +
-                                '[data-offering="'
-                                +
-                                offeringId
-                                +
-                                '"]'
-                            );
+                                if (
+                                    !ensureSubSection(
+                                        checkbox
+                                    )
+                                ) {
+                                    updateSummary();
+
+                                    return;
+                                }
 
 
-                        if (confirmedCheckbox) {
+                                if (
+                                    !enforceOnePerClass(
+                                        checkbox
+                                    )
+                                ) {
+                                    updateSummary();
 
-                            confirmedCheckbox.checked =
-                                false;
-                        }
-                    }
-                );
-            }
-        );
+                                    return;
+                                }
+
+
+                                clearOpposite(
+                                    checkbox,
+                                    '.wishlist-checkbox'
+                                );
+
+
+                                updateSummary();
+                            }
+                        );
+                }
+            );
 
 
 
         /*
         |--------------------------------------------------------------------------
-        | Apply Filters
+        | Wishlist
         |--------------------------------------------------------------------------
         */
 
-        function applyFilters() {
+        wishlistCheckboxes
+            .forEach(
+                function (
+                    checkbox
+                ) {
+                    checkbox
+                        .addEventListener(
+                            'change',
+                            function () {
 
+                                clearError();
+
+
+                                if (
+                                    !checkbox
+                                        .checked
+                                ) {
+                                    updateSummary();
+
+                                    return;
+                                }
+
+
+                                if (
+                                    !ensureSubSection(
+                                        checkbox
+                                    )
+                                ) {
+                                    updateSummary();
+
+                                    return;
+                                }
+
+
+                                if (
+                                    !enforceOnePerClass(
+                                        checkbox
+                                    )
+                                ) {
+                                    updateSummary();
+
+                                    return;
+                                }
+
+
+                                clearOpposite(
+                                    checkbox,
+                                    '.confirmed-checkbox'
+                                );
+
+
+                                updateSummary();
+                            }
+                        );
+                }
+            );
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Changing Sub-section
+        |--------------------------------------------------------------------------
+        */
+
+        subSectionSelects
+            .forEach(
+                function (
+                    select
+                ) {
+                    select
+                        .addEventListener(
+                            'change',
+                            function () {
+
+                                clearError();
+
+
+                                /*
+                                 * Useful filter behaviour:
+                                 * when choosing a row's sub-section,
+                                 * automatically set the filter too.
+                                 */
+                                if (
+                                    select.value
+                                    &&
+                                    subSectionFilter
+                                ) {
+                                    subSectionFilter.value =
+                                        select.value;
+                                }
+
+
+                                updateSummary();
+                            }
+                        );
+                }
+            );
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Filters
+        |--------------------------------------------------------------------------
+        */
+
+        function applyFilters()
+        {
             const selectedClass =
-                classFilter
-                    ? classFilter.value
-                    : '';
+                classFilter.value;
+
+
+            const selectedSubSection =
+                subSectionFilter.value;
 
 
             const selectedDay =
-                dayFilter
-                    ? dayFilter.value
-                    : '';
+                dayFilter.value;
 
 
             const selectedTime =
-                timeFilter
-                    ? timeFilter.value
-                    : '';
+                timeFilter.value;
 
 
-            let visibleCount = 0;
+            let visible =
+                0;
 
 
             rows.forEach(
                 function (row) {
 
-                    const matchesClass =
+                    const rowSubSections =
+                        row
+                            .dataset
+                            .subSectionIds
+                            .split(',')
+                            .filter(
+                                value =>
+                                    value !==
+                                    ''
+                            );
+
+
+                    const classMatches =
                         !selectedClass
                         ||
                         row
@@ -1612,7 +1954,16 @@ document.addEventListener(
                         selectedClass;
 
 
-                    const matchesDay =
+                    const subSectionMatches =
+                        !selectedSubSection
+                        ||
+                        rowSubSections
+                            .includes(
+                                selectedSubSection
+                            );
+
+
+                    const dayMatches =
                         !selectedDay
                         ||
                         row
@@ -1622,7 +1973,7 @@ document.addEventListener(
                         selectedDay;
 
 
-                    const matchesTime =
+                    const timeMatches =
                         !selectedTime
                         ||
                         row
@@ -1633,131 +1984,143 @@ document.addEventListener(
 
 
                     const show =
-                        matchesClass
+                        classMatches
                         &&
-                        matchesDay
+                        subSectionMatches
                         &&
-                        matchesTime;
+                        dayMatches
+                        &&
+                        timeMatches;
+
+
+                    row.classList.toggle(
+                        'hidden',
+                        !show
+                    );
 
 
                     if (show) {
-
-                        row.classList.remove(
-                            'hidden'
-                        );
-
-
-                        visibleCount++;
-
-                    } else {
-
-                        row.classList.add(
-                            'hidden'
-                        );
+                        visible++;
                     }
                 }
             );
 
 
-            /*
-             * No results message.
-             */
-            if (noFilterResults) {
-
-                if (
-                    visibleCount
-                    ===
-                    0
-                ) {
-
-                    noFilterResults
-                        .classList
-                        .remove(
-                            'hidden'
-                        );
-
-                } else {
-
-                    noFilterResults
-                        .classList
-                        .add(
-                            'hidden'
-                        );
-                }
-            }
+            noFilterResults
+                .classList
+                .toggle(
+                    'hidden',
+                    visible !== 0
+                );
 
 
-            /*
-             * Result count.
-             */
-            if (resultCount) {
-
-                if (
-                    !selectedClass
-                    &&
-                    !selectedDay
-                    &&
-                    !selectedTime
-                ) {
-
-                    resultCount.textContent =
-                        'Showing all '
-                        +
-                        visibleCount
-                        +
-                        ' available classes';
-
-                } else {
-
-                    resultCount.textContent =
-                        'Showing '
-                        +
-                        visibleCount
-                        +
-                        ' matching '
-                        +
-                        (
-                            visibleCount === 1
-                                ? 'class'
-                                : 'classes'
-                        );
-                }
-            }
+            resultCount.textContent =
+                'Showing '
+                +
+                visible
+                +
+                (
+                    visible === 1
+                        ? ' matching class'
+                        : ' matching classes'
+                );
         }
 
 
 
         /*
         |--------------------------------------------------------------------------
-        | Filter Events
+        | Class Filter Improvement
+        |--------------------------------------------------------------------------
+        |
+        | If selected class has no sub-sections,
+        | disable the sub-section filter.
         |--------------------------------------------------------------------------
         */
 
-        if (classFilter) {
+        function updateSubSectionFilterState()
+        {
+            const selectedClass =
+                classFilter.value;
 
-            classFilter.addEventListener(
-                'change',
-                applyFilters
-            );
+
+            if (!selectedClass) {
+                subSectionFilter.disabled =
+                    false;
+
+                return;
+            }
+
+
+            const matchingRows =
+                Array.from(
+                    rows
+                )
+                    .filter(
+                        row =>
+                            row
+                                .dataset
+                                .sectionId
+                            ===
+                            selectedClass
+                    );
+
+
+            const hasSubSections =
+                matchingRows.some(
+                    row =>
+                        row
+                            .dataset
+                            .subSectionIds
+                            !==
+                            ''
+                );
+
+
+            if (!hasSubSections) {
+                subSectionFilter.value =
+                    '';
+
+                subSectionFilter.disabled =
+                    true;
+            } else {
+                subSectionFilter.disabled =
+                    false;
+            }
         }
 
 
-        if (dayFilter) {
 
-            dayFilter.addEventListener(
+        classFilter
+            .addEventListener(
+                'change',
+                function () {
+                    updateSubSectionFilterState();
+
+                    applyFilters();
+                }
+            );
+
+
+        subSectionFilter
+            .addEventListener(
                 'change',
                 applyFilters
             );
-        }
 
 
-        if (timeFilter) {
-
-            timeFilter.addEventListener(
+        dayFilter
+            .addEventListener(
                 'change',
                 applyFilters
             );
-        }
+
+
+        timeFilter
+            .addEventListener(
+                'change',
+                applyFilters
+            );
 
 
 
@@ -1767,126 +2130,187 @@ document.addEventListener(
         |--------------------------------------------------------------------------
         */
 
-        if (clearFilters) {
-
-            clearFilters.addEventListener(
+        clearFilters
+            .addEventListener(
                 'click',
                 function () {
 
-                    if (classFilter) {
-                        classFilter.value = '';
-                    }
+                    classFilter.value =
+                        '';
 
+                    subSectionFilter.value =
+                        '';
 
-                    if (dayFilter) {
-                        dayFilter.value = '';
-                    }
+                    subSectionFilter.disabled =
+                        false;
 
+                    dayFilter.value =
+                        '';
 
-                    if (timeFilter) {
-                        timeFilter.value = '';
-                    }
+                    timeFilter.value =
+                        '';
 
 
                     applyFilters();
                 }
             );
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Selection Summary
+        |--------------------------------------------------------------------------
+        */
+
+        function updateSummary()
+        {
+            const confirmed =
+                Array
+                    .from(
+                        confirmedCheckboxes
+                    )
+                    .filter(
+                        checkbox =>
+                            checkbox
+                                .checked
+                    )
+                    .length;
+
+
+            const wishlist =
+                Array
+                    .from(
+                        wishlistCheckboxes
+                    )
+                    .filter(
+                        checkbox =>
+                            checkbox
+                                .checked
+                    )
+                    .length;
+
+
+            if (
+                confirmed === 0
+                &&
+                wishlist === 0
+            ) {
+                selectedSummary.textContent =
+                    'No class selected yet.';
+
+                return;
+            }
+
+
+            selectedSummary.textContent =
+                confirmed
+                +
+                ' enrolled · '
+                +
+                wishlist
+                +
+                ' wishlist';
         }
 
 
 
         /*
         |--------------------------------------------------------------------------
-        | Final Browser-Side Validation
-        |--------------------------------------------------------------------------
-        |
-        | Backend also performs this check.
+        | Submit Validation
         |--------------------------------------------------------------------------
         */
 
-        if (form) {
+        form.addEventListener(
+            'submit',
+            function (event) {
 
-            form.addEventListener(
-                'submit',
-                function (event) {
-
-                    const selectedBySection =
-                        {};
+                clearError();
 
 
-                    let invalidClassName =
-                        null;
+                const selectedBySection =
+                    {};
 
 
-                    allSelectionCheckboxes
-                        .forEach(
-                            function (checkbox) {
-
-                                if (!checkbox.checked) {
-                                    return;
-                                }
-
-
-                                const sectionId =
-                                    checkbox
-                                        .dataset
-                                        .section;
+                for (
+                    const checkbox
+                    of allSelections
+                ) {
+                    if (
+                        !checkbox
+                            .checked
+                    ) {
+                        continue;
+                    }
 
 
-                                const sectionName =
-                                    checkbox
-                                        .dataset
-                                        .sectionName;
+                    /*
+                     * Sub-section required.
+                     */
+                    if (
+                        !ensureSubSection(
+                            checkbox
+                        )
+                    ) {
+                        event.preventDefault();
+
+                        return;
+                    }
 
 
-                                if (
-                                    selectedBySection[
-                                        sectionId
-                                    ]
-                                ) {
-
-                                    invalidClassName =
-                                        sectionName;
-
-
-                                    return;
-                                }
+                    /*
+                     * One offering per main class.
+                     */
+                    const sectionId =
+                        checkbox
+                            .dataset
+                            .section;
 
 
-                                selectedBySection[
-                                    sectionId
-                                ] =
-                                    true;
-                            }
-                        );
-
-
-                    if (invalidClassName) {
-
+                    if (
+                        selectedBySection[
+                            sectionId
+                        ]
+                    ) {
                         event.preventDefault();
 
 
-                        showSelectionError(
+                        showError(
                             'Only one class time can be selected for '
                             +
-                            invalidClassName
+                            checkbox
+                                .dataset
+                                .sectionName
                             +
                             '.'
                         );
+
+
+                        return;
                     }
+
+
+                    selectedBySection[
+                        sectionId
+                    ] =
+                        true;
                 }
-            );
-        }
+            }
+        );
 
 
 
         /*
         |--------------------------------------------------------------------------
-        | Initial Filter
+        | Initial State
         |--------------------------------------------------------------------------
         */
 
+        updateSubSectionFilterState();
+
         applyFilters();
+
+        updateSummary();
 
     }
 );

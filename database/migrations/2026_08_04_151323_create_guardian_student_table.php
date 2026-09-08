@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->foreignId('guardian_id')
                 ->constrained('guardians')
                 ->cascadeOnDelete();
-                
+
             $table->string('relationship', 50)
                 ->nullable();
 

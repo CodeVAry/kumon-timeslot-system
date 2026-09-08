@@ -7,6 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 
 class StudentLeave extends Model
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Dynamic Vacation Display
+    |--------------------------------------------------------------------------
+    |
+    | Vacation is NOT a permanent StudentStatus.
+    | It temporarily overrides the student's normal status.
+    |--------------------------------------------------------------------------
+    */
+
+    public const VACATION_LABEL = 'Vacation';
+
+    public const VACATION_COLOR = '#0891b2';
+
+
     protected $fillable = [
         'student_id',
         'status',
@@ -26,20 +41,11 @@ class StudentLeave extends Model
 
 
     protected $casts = [
-        'start_date' =>
-            'date',
-
-        'expected_return_date' =>
-            'date',
-
-        'actual_return_date' =>
-            'date',
-
-        'returned_early' =>
-            'boolean',
-
-        'reviewed_at' =>
-            'datetime',
+        'start_date' => 'date',
+        'expected_return_date' => 'date',
+        'actual_return_date' => 'date',
+        'returned_early' => 'boolean',
+        'reviewed_at' => 'datetime',
     ];
 
 
@@ -86,33 +92,15 @@ class StudentLeave extends Model
 
     /*
     |--------------------------------------------------------------------------
-    | Request Status Scopes
+    | Approved / Recorded Leave
     |--------------------------------------------------------------------------
     */
-
-    public function scopePending($query)
-    {
-        return $query->where(
-            'status',
-            'pending'
-        );
-    }
-
 
     public function scopeApproved($query)
     {
         return $query->where(
             'status',
             'approved'
-        );
-    }
-
-
-    public function scopeRejected($query)
-    {
-        return $query->where(
-            'status',
-            'rejected'
         );
     }
 
@@ -128,14 +116,18 @@ class StudentLeave extends Model
 
     /*
     |--------------------------------------------------------------------------
-    | Current Approved Leave
+    | Leave Active On A Specific Date
     |--------------------------------------------------------------------------
     */
 
-    public function scopeCurrent($query)
-    {
-        $today =
-            now()->toDateString();
+    public function scopeActiveOnDate(
+        $query,
+        $date
+    ) {
+        $date =
+            \Carbon\Carbon::parse(
+                $date
+            )->toDateString();
 
 
         return $query
@@ -146,22 +138,55 @@ class StudentLeave extends Model
             ->whereDate(
                 'start_date',
                 '<=',
-                $today
-            )
-            ->whereNull(
-                'actual_return_date'
+                $date
             )
             ->whereDate(
                 'expected_return_date',
                 '>=',
-                $today
+                $date
+            )
+            ->where(
+                function ($query) use ($date) {
+
+                    /*
+                     * Not returned yet.
+                     */
+                    $query
+                        ->whereNull(
+                            'actual_return_date'
+                        )
+
+                        /*
+                         * Or returned later than
+                         * the date being checked.
+                         */
+                        ->orWhereDate(
+                            'actual_return_date',
+                            '>',
+                            $date
+                        );
+                }
             );
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Upcoming Approved Leave
+    | Current Leave
+    |--------------------------------------------------------------------------
+    */
+
+    public function scopeCurrent($query)
+    {
+        return $query->activeOnDate(
+            now()->toDateString()
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Upcoming Leave
     |--------------------------------------------------------------------------
     */
 
@@ -185,7 +210,7 @@ class StudentLeave extends Model
 
     /*
     |--------------------------------------------------------------------------
-    | Completed Approved Leave
+    | Completed Leave
     |--------------------------------------------------------------------------
     */
 

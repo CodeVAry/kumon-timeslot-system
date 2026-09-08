@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\StudentEnrolmentController;
 use App\Http\Controllers\Admin\StudentRegistrationController;
 use App\Http\Controllers\Admin\StudentReviewController;
 use App\Http\Controllers\Admin\StudentStatusController;
+use App\Http\Controllers\Admin\SubSectionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WishlistController;
 use App\Http\Controllers\Parent\Auth\ParentLoginController;
@@ -376,6 +377,90 @@ Route::middleware('auth')
         )
             ->middleware('permission:sections.delete')
             ->name('sections.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Sub-section Routes
+        |--------------------------------------------------------------------------
+        |
+        | Sub-sections belong to Sections.
+        |
+        | Example:
+        |
+        | Math
+        |   ├── 3A
+        |   ├── B-D
+        |   └── E+
+        |
+        | For now these routes use the existing Section permissions.
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/sub-sections',
+            [
+                SubSectionController::class,
+                'index',
+            ]
+        )
+            ->middleware('permission:sections.view')
+            ->name('sub-sections.index');
+
+
+        Route::get(
+            '/sub-sections/create',
+            [
+                SubSectionController::class,
+                'create',
+            ]
+        )
+            ->middleware('permission:sections.create')
+            ->name('sub-sections.create');
+
+
+        Route::post(
+            '/sub-sections',
+            [
+                SubSectionController::class,
+                'store',
+            ]
+        )
+            ->middleware('permission:sections.create')
+            ->name('sub-sections.store');
+
+
+        Route::get(
+            '/sub-sections/{subSection}/edit',
+            [
+                SubSectionController::class,
+                'edit',
+            ]
+        )
+            ->middleware('permission:sections.edit')
+            ->name('sub-sections.edit');
+
+
+        Route::put(
+            '/sub-sections/{subSection}',
+            [
+                SubSectionController::class,
+                'update',
+            ]
+        )
+            ->middleware('permission:sections.edit')
+            ->name('sub-sections.update');
+
+
+        Route::delete(
+            '/sub-sections/{subSection}',
+            [
+                SubSectionController::class,
+                'destroy',
+            ]
+        )
+            ->middleware('permission:sections.delete')
+            ->name('sub-sections.destroy');
 
 
         /*
@@ -855,12 +940,6 @@ Route::middleware('auth')
             ->name('schedule.index');
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | New Print / Export Routes
-        |--------------------------------------------------------------------------
-        */
-
         Route::get(
             '/schedule/export',
             [
@@ -882,16 +961,6 @@ Route::middleware('auth')
             ->middleware('permission:enrolments.print')
             ->name('schedule.export');
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Existing Print Routes
-        |--------------------------------------------------------------------------
-        |
-        | These remain so old buttons still work.
-        | Controller redirects them to the new filter page.
-        |--------------------------------------------------------------------------
-        */
 
         Route::get(
             '/schedule/print-day',

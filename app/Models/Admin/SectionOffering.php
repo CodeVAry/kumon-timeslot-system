@@ -4,6 +4,7 @@ namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class SectionOffering extends Model
 {
@@ -45,11 +46,21 @@ class SectionOffering extends Model
     }
 
     public function enrolments()
-{
-    return $this->hasMany(
-        Enrolment::class,
-        'section_offering_id',
-        'id'
-    );
-}
+    {
+        return $this->hasMany(
+            Enrolment::class,
+            'section_offering_id',
+            'id'
+        );
+
+    }
+    public function subSections(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            SubSection::class,
+            'section_offering_sub_section',
+            'section_offering_id',
+            'sub_section_id'
+        )->withTimestamps();
+    }
 }

@@ -9,6 +9,8 @@ use App\Models\Admin\Enrolment;
 use App\Models\Admin\Section;
 use App\Models\Admin\SectionOffering;
 use App\Models\Admin\StudentLeave;
+use App\Models\Admin\SubSection;
+use App\Services\ScheduleExcelExporter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -17,7 +19,7 @@ class ScheduleController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
-    | Schedule Page
+    | Schedule
     |--------------------------------------------------------------------------
     */
 
@@ -28,17 +30,22 @@ class ScheduleController extends Controller
                 $request->input('day_id')
             );
 
+
         $days =
             $context['days'];
+
 
         $dayDates =
             $context['dayDates'];
 
+
         $selectedDay =
             $context['selectedDay'];
 
+
         $selectedDayId =
             $selectedDay?->id;
+
 
         $selectedDate =
             $selectedDay
@@ -87,6 +94,9 @@ class ScheduleController extends Controller
                     'previewEnrolments' =>
                         collect(),
 
+                    'vacationStudentIds' =>
+                        collect(),
+
                     'totalClasses' =>
                         0,
 
@@ -102,7 +112,7 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Load Active Offerings
+        | Active Offerings
         |--------------------------------------------------------------------------
         */
 
@@ -110,6 +120,7 @@ class ScheduleController extends Controller
             SectionOffering::with([
                 'section',
                 'day',
+                'subSections',
             ])
                 ->withCount([
                     'enrolments as allocated_seats' =>
@@ -157,25 +168,27 @@ class ScheduleController extends Controller
                 ->get();
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Summary
-        |--------------------------------------------------------------------------
-        */
-
         $offeringIds =
-            $offerings->pluck('id');
+            $offerings
+                ->pluck('id');
 
 
         $totalClasses =
-            $offerings->count();
+            $offerings
+                ->count();
 
 
-        if ($offeringIds->isEmpty()) {
+        if (
+            $offeringIds
+                ->isEmpty()
+        ) {
 
-            $totalStudents = 0;
+            $totalStudents =
+                0;
 
-            $totalWishlist = 0;
+
+            $totalWishlist =
+                0;
 
         } else {
 
@@ -217,7 +230,7 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Group By Start Time
+        | Group Offerings By Time
         |--------------------------------------------------------------------------
         */
 
@@ -226,25 +239,28 @@ class ScheduleController extends Controller
 
 
         $groupedOfferings =
-            $offerings->groupBy(
-                function ($offering) {
+            $offerings
+                ->groupBy(
+                    function ($offering) {
 
-                    return Carbon::parse(
-                        $offering->start_time
-                    )->format(
-                        'H:i:s'
-                    );
-                }
-            );
+                        return
+                            Carbon::parse(
+                                $offering
+                                    ->start_time
+                            )->format(
+                                'H:i:s'
+                            );
+                    }
+                );
 
 
         foreach (
             $groupedOfferings
-            as $rawTime => $group
+            as $rawTime =>
+                $group
         ) {
 
             $scheduleRows->push([
-
                 'raw_time' =>
                     $rawTime,
 
@@ -256,17 +272,20 @@ class ScheduleController extends Controller
                     ),
 
                 'class_count' =>
-                    $group->count(),
+                    $group
+                        ->count(),
 
                 'enrolment_count' =>
-                    $group->sum(
-                        'allocated_seats'
-                    ),
+                    $group
+                        ->sum(
+                            'allocated_seats'
+                        ),
 
                 'wishlist_count' =>
-                    $group->sum(
-                        'wishlist_count'
-                    ),
+                    $group
+                        ->sum(
+                            'wishlist_count'
+                        ),
             ]);
         }
 
@@ -296,7 +315,8 @@ class ScheduleController extends Controller
             ||
             !in_array(
                 $selectedTime,
-                $validTimes
+                $validTimes,
+                true
             )
         ) {
 
@@ -325,7 +345,8 @@ class ScheduleController extends Controller
 
                         return
                             Carbon::parse(
-                                $offering->start_time
+                                $offering
+                                    ->start_time
                             )->format(
                                 'H:i:s'
                             )
@@ -367,11 +388,15 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Student Preview
+        | Preview Students
         |--------------------------------------------------------------------------
         */
 
         $previewEnrolments =
+            collect();
+
+
+        $vacationStudentIds =
             collect();
 
 
@@ -380,6 +405,7 @@ class ScheduleController extends Controller
             $selectedOffering->load([
                 'section',
                 'day',
+                'subSections',
 
                 'enrolments' =>
                     function ($query) {
@@ -398,8 +424,8 @@ class ScheduleController extends Controller
                             );
                     },
 
+                'enrolments.subSection',
                 'enrolments.student.studentStatus',
-
                 'enrolments.student.guardians',
             ]);
 
@@ -408,6 +434,41 @@ class ScheduleController extends Controller
                 $selectedOffering
                     ->enrolments
                     ->take(8);
+
+
+            $previewStudentIds =
+                $previewEnrolments
+                    ->pluck(
+                        'student_id'
+                    );
+
+
+            if (
+                $selectedDate
+                &&
+                $previewStudentIds
+                    ->isNotEmpty()
+            ) {
+
+                $vacationStudentIds =
+                    StudentLeave::activeOnDate(
+                        $selectedDate
+                    )
+                        ->whereIn(
+                            'student_id',
+                            $previewStudentIds
+                        )
+                        ->pluck(
+                            'student_id'
+                        )
+                        ->map(
+                            fn ($id) =>
+                                (int)
+                                $id
+                        )
+                        ->unique()
+                        ->values();
+            }
         }
 
 
@@ -424,6 +485,7 @@ class ScheduleController extends Controller
                 'selectedTime',
                 'selectedOffering',
                 'previewEnrolments',
+                'vacationStudentIds',
                 'totalClasses',
                 'totalStudents',
                 'totalWishlist'
@@ -434,7 +496,7 @@ class ScheduleController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Full Student List For One Class
+    | Class Students
     |--------------------------------------------------------------------------
     */
 
@@ -444,11 +506,13 @@ class ScheduleController extends Controller
         $sectionOffering->load([
             'section',
             'day',
+            'subSections',
         ]);
 
 
         $enrolments =
             Enrolment::with([
+                'subSection',
                 'student.studentStatus',
                 'student.guardians',
             ])
@@ -486,12 +550,110 @@ class ScheduleController extends Controller
                 ->count();
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Class Date
+        |--------------------------------------------------------------------------
+        */
+
+        $today =
+            now()
+                ->startOfDay();
+
+
+        $dayName =
+            $sectionOffering
+                ->day
+                ?->day_name;
+
+
+        if (
+            $dayName
+            &&
+            strtolower(
+                $dayName
+            )
+            ===
+            strtolower(
+                $today->format(
+                    'l'
+                )
+            )
+        ) {
+
+            $classDate =
+                $today
+                    ->copy();
+
+        } elseif ($dayName) {
+
+            $classDate =
+                $today
+                    ->copy()
+                    ->next(
+                        $dayName
+                    );
+
+        } else {
+
+            $classDate =
+                $today
+                    ->copy();
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Vacation Students
+        |--------------------------------------------------------------------------
+        */
+
+        $studentIds =
+            $enrolments
+                ->getCollection()
+                ->pluck(
+                    'student_id'
+                );
+
+
+        $vacationStudentIds =
+            collect();
+
+
+        if (
+            $studentIds
+                ->isNotEmpty()
+        ) {
+
+            $vacationStudentIds =
+                StudentLeave::activeOnDate(
+                    $classDate
+                )
+                    ->whereIn(
+                        'student_id',
+                        $studentIds
+                    )
+                    ->pluck(
+                        'student_id'
+                    )
+                    ->map(
+                        fn ($id) =>
+                            (int)
+                            $id
+                    )
+                    ->unique()
+                    ->values();
+        }
+
+
         return view(
             'admin.schedule.class-students',
             compact(
                 'sectionOffering',
                 'enrolments',
-                'wishlistCount'
+                'wishlistCount',
+                'vacationStudentIds',
+                'classDate'
             )
         );
     }
@@ -499,7 +661,7 @@ class ScheduleController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Print / Export Filter Page
+    | Export Form
     |--------------------------------------------------------------------------
     */
 
@@ -515,24 +677,30 @@ class ScheduleController extends Controller
 
 
         $days =
-            $context['days'];
+            $context[
+                'days'
+            ];
 
 
         $selectedDay =
-            $context['selectedDay'];
+            $context[
+                'selectedDay'
+            ];
 
 
         $selectedDate =
             $selectedDay
                 ? $context[
                     'dayDates'
-                ][$selectedDay->id]
+                ][
+                    $selectedDay->id
+                ]
                 : null;
 
 
         /*
         |--------------------------------------------------------------------------
-        | Active Sections
+        | Classes
         |--------------------------------------------------------------------------
         */
 
@@ -541,6 +709,20 @@ class ScheduleController extends Controller
                 'is_active',
                 true
             )
+                ->with([
+                    'subSections' =>
+                        function ($query) {
+
+                            $query
+                                ->where(
+                                    'is_active',
+                                    true
+                                )
+                                ->orderBy(
+                                    'sub_section_name'
+                                );
+                        },
+                ])
                 ->orderBy(
                     'section_name'
                 )
@@ -549,7 +731,27 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Offerings For Selected Day
+        | Math Sub-sections
+        |--------------------------------------------------------------------------
+        */
+
+        $subSections =
+            SubSection::with(
+                'section'
+            )
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->orderBy(
+                    'sub_section_name'
+                )
+                ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Offerings
         |--------------------------------------------------------------------------
         */
 
@@ -563,6 +765,7 @@ class ScheduleController extends Controller
                 SectionOffering::with([
                     'section',
                     'day',
+                    'subSections',
                 ])
                     ->where(
                         'day_id',
@@ -584,7 +787,7 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Unique Class Times
+        | Times
         |--------------------------------------------------------------------------
         */
 
@@ -593,22 +796,18 @@ class ScheduleController extends Controller
                 ->map(
                     function ($offering) {
 
-                        return Carbon::parse(
-                            $offering->start_time
-                        )->format(
-                            'H:i:s'
-                        );
+                        return
+                            Carbon::parse(
+                                $offering
+                                    ->start_time
+                            )->format(
+                                'H:i:s'
+                            );
                     }
                 )
                 ->unique()
                 ->values();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Preselected Offering
-        |--------------------------------------------------------------------------
-        */
 
         $selectedOfferingId =
             $request->input(
@@ -623,6 +822,7 @@ class ScheduleController extends Controller
                 'selectedDay',
                 'selectedDate',
                 'sections',
+                'subSections',
                 'offerings',
                 'times',
                 'selectedOfferingId'
@@ -633,29 +833,40 @@ class ScheduleController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Generate Export
+    | Export
     |--------------------------------------------------------------------------
     */
 
     public function export(
-        Request $request
+        Request $request,
+        ScheduleExcelExporter $excelExporter
     ) {
+        /*
+        |--------------------------------------------------------------------------
+        | IMPORTANT
+        |--------------------------------------------------------------------------
+        |
+        | There is NO date field here.
+        |
+        | Date is calculated automatically from selected Day.
+        |--------------------------------------------------------------------------
+        */
+
         $validated =
             $request->validate([
-
                 'day_id' => [
                     'required',
                     'exists:days,id',
                 ],
 
-                'date' => [
-                    'required',
-                    'date',
-                ],
-
                 'section_id' => [
                     'nullable',
                     'exists:sections,id',
+                ],
+
+                'sub_section_id' => [
+                    'nullable',
+                    'exists:sub_sections,id',
                 ],
 
                 'time' => [
@@ -682,7 +893,116 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Build Rows
+        | Validate Sub-section
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            !empty(
+                $validated[
+                    'sub_section_id'
+                ]
+            )
+            &&
+            !empty(
+                $validated[
+                    'section_id'
+                ]
+            )
+        ) {
+
+            $validSubSection =
+                SubSection::where(
+                    'id',
+                    $validated[
+                        'sub_section_id'
+                    ]
+                )
+                    ->where(
+                        'section_id',
+                        $validated[
+                            'section_id'
+                        ]
+                    )
+                    ->exists();
+
+
+            if (!$validSubSection) {
+
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'sub_section_id' =>
+                            'The selected sub-section does not belong to the selected class.',
+                    ]);
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Determine Date Automatically
+        |--------------------------------------------------------------------------
+        */
+
+        $selectedDay =
+            Day::findOrFail(
+                $validated[
+                    'day_id'
+                ]
+            );
+
+
+        $today =
+            now()
+                ->startOfDay();
+
+
+        if (
+            strtolower(
+                $selectedDay
+                    ->day_name
+            )
+            ===
+            strtolower(
+                $today->format(
+                    'l'
+                )
+            )
+        ) {
+
+            $date =
+                $today
+                    ->copy();
+
+        } else {
+
+            $date =
+                $today
+                    ->copy()
+                    ->next(
+                        $selectedDay
+                            ->day_name
+                    );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Add Internal Date
+        |--------------------------------------------------------------------------
+        */
+
+        $validated[
+            'date'
+        ] =
+            $date
+                ->toDateString();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Build Export Rows
         |--------------------------------------------------------------------------
         */
 
@@ -691,18 +1011,6 @@ class ScheduleController extends Controller
                 $validated
             );
 
-
-        $date =
-            Carbon::parse(
-                $validated['date']
-            );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | File Name
-        |--------------------------------------------------------------------------
-        */
 
         $fileName =
             'kumon-class-list-'
@@ -714,25 +1022,24 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Excel / CSV
-        |--------------------------------------------------------------------------
-        |
-        | No Excel package needed.
-        |
-        | CSV opens directly in Microsoft Excel.
+        | Excel
         |--------------------------------------------------------------------------
         */
 
         if (
-            $validated['format']
+            $validated[
+                'format'
+            ]
             ===
             'excel'
         ) {
 
-            return $this->downloadCsv(
-                $rows,
-                $fileName
-            );
+            return $excelExporter
+                ->download(
+                    $rows,
+                    $date,
+                    $fileName
+                );
         }
 
 
@@ -742,16 +1049,11 @@ class ScheduleController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $groupedRows =
-            $rows->groupBy(
-                function ($row) {
-
-                    return
-                        $row[
-                            'offering_id'
-                        ];
-                }
-            );
+        $timeGroups =
+            $rows
+                ->groupBy(
+                    'start_time'
+                );
 
 
         $pdf =
@@ -761,8 +1063,8 @@ class ScheduleController extends Controller
                     'rows' =>
                         $rows,
 
-                    'groupedRows' =>
-                        $groupedRows,
+                    'timeGroups' =>
+                        $timeGroups,
 
                     'date' =>
                         $date,
@@ -796,14 +1098,16 @@ class ScheduleController extends Controller
     ) {
         $date =
             Carbon::parse(
-                $filters['date']
+                $filters[
+                    'date'
+                ]
             )
                 ->startOfDay();
 
 
         /*
         |--------------------------------------------------------------------------
-        | Matching Class Offerings
+        | Offering Query
         |--------------------------------------------------------------------------
         */
 
@@ -811,10 +1115,13 @@ class ScheduleController extends Controller
             SectionOffering::with([
                 'section',
                 'day',
+                'subSections',
             ])
                 ->where(
                     'day_id',
-                    $filters['day_id']
+                    $filters[
+                        'day_id'
+                    ]
                 )
                 ->where(
                     'is_active',
@@ -824,19 +1131,23 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Section Filter
+        | Class Filter
         |--------------------------------------------------------------------------
         */
 
         if (
             !empty(
-                $filters['section_id']
+                $filters[
+                    'section_id'
+                ]
             )
         ) {
 
             $offeringQuery->where(
                 'section_id',
-                $filters['section_id']
+                $filters[
+                    'section_id'
+                ]
             );
         }
 
@@ -849,33 +1160,74 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-                $filters['time']
+                $filters[
+                    'time'
+                ]
             )
         ) {
 
-            $offeringQuery->whereTime(
-                'start_time',
-                $filters['time']
+            $offeringQuery
+                ->whereTime(
+                    'start_time',
+                    $filters[
+                        'time'
+                    ]
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Specific Offering
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            !empty(
+                $filters[
+                    'offering_id'
+                ]
+            )
+        ) {
+
+            $offeringQuery->where(
+                'id',
+                $filters[
+                    'offering_id'
+                ]
             );
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Specific Class Filter
+        | Sub-section Filter
         |--------------------------------------------------------------------------
         */
 
         if (
             !empty(
-                $filters['offering_id']
+                $filters[
+                    'sub_section_id'
+                ]
             )
         ) {
 
-            $offeringQuery->where(
-                'id',
-                $filters['offering_id']
-            );
+            $offeringQuery
+                ->whereHas(
+                    'subSections',
+                    function ($query) use (
+                        $filters
+                    ) {
+
+                        $query->where(
+                            'sub_sections.id',
+                            $filters[
+                                'sub_section_id'
+                            ]
+                        );
+                    }
+                );
         }
 
 
@@ -892,16 +1244,15 @@ class ScheduleController extends Controller
 
         $offeringIds =
             $offerings
-                ->pluck('id');
+                ->pluck(
+                    'id'
+                );
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | No Matching Classes
-        |--------------------------------------------------------------------------
-        */
-
-        if ($offeringIds->isEmpty()) {
+        if (
+            $offeringIds
+                ->isEmpty()
+        ) {
 
             return collect();
         }
@@ -909,17 +1260,15 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Confirmed Students
+        | Enrolments
         |--------------------------------------------------------------------------
         */
 
-        $enrolments =
+        $enrolmentsQuery =
             Enrolment::with([
+                'subSection',
                 'student.studentStatus',
-                'student.guardians',
-
                 'sectionOffering.section',
-
                 'sectionOffering.day',
             ])
                 ->whereIn(
@@ -933,13 +1282,28 @@ class ScheduleController extends Controller
                 ->where(
                     'is_wishlist',
                     false
-                )
-                ->orderBy(
-                    'section_offering_id'
-                )
-                ->orderBy(
-                    'student_id'
-                )
+                );
+
+
+        if (
+            !empty(
+                $filters[
+                    'sub_section_id'
+                ]
+            )
+        ) {
+
+            $enrolmentsQuery->where(
+                'sub_section_id',
+                $filters[
+                    'sub_section_id'
+                ]
+            );
+        }
+
+
+        $enrolments =
+            $enrolmentsQuery
                 ->get();
 
 
@@ -953,7 +1317,9 @@ class ScheduleController extends Controller
             Attendance::whereIn(
                 'enrolment_id',
                 $enrolments
-                    ->pluck('id')
+                    ->pluck(
+                        'id'
+                    )
             )
                 ->whereDate(
                     'attendance_date',
@@ -968,7 +1334,7 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Automatic Vacation Students
+        | Vacation Students
         |--------------------------------------------------------------------------
         */
 
@@ -982,15 +1348,38 @@ class ScheduleController extends Controller
 
 
         $vacationStudentIds =
-            $this->getVacationStudentIds(
-                $studentIds,
-                $date
-            );
+            collect();
+
+
+        if (
+            $studentIds
+                ->isNotEmpty()
+        ) {
+
+            $vacationStudentIds =
+                StudentLeave::activeOnDate(
+                    $date
+                )
+                    ->whereIn(
+                        'student_id',
+                        $studentIds
+                    )
+                    ->pluck(
+                        'student_id'
+                    )
+                    ->map(
+                        fn ($id) =>
+                            (int)
+                            $id
+                    )
+                    ->unique()
+                    ->values();
+        }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Final Rows
+        | Build Rows
         |--------------------------------------------------------------------------
         */
 
@@ -1004,10 +1393,20 @@ class ScheduleController extends Controller
         ) {
 
             $student =
-                $enrolment->student;
+                $enrolment
+                    ->student;
 
 
-            if (!$student) {
+            $offering =
+                $enrolment
+                    ->sectionOffering;
+
+
+            if (
+                !$student
+                ||
+                !$offering
+            ) {
 
                 continue;
             }
@@ -1015,39 +1414,67 @@ class ScheduleController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Attendance
+            | Vacation Override
             |--------------------------------------------------------------------------
             */
 
-            if (
+            $isVacation =
                 $vacationStudentIds
                     ->contains(
+                        (int)
                         $student->id
-                    )
-            ) {
+                    );
+
+
+            $attendance =
+                $attendanceRecords
+                    ->get(
+                        $enrolment->id
+                    );
+
+
+            if ($isVacation) {
 
                 $attendanceStatus =
                     'vacation';
 
+
+                $displayStudentStatus =
+                    StudentLeave::VACATION_LABEL;
+
+
+                $statusColour =
+                    StudentLeave::VACATION_COLOR;
+
             } else {
 
-                $attendance =
-                    $attendanceRecords
-                        ->get(
-                            $enrolment->id
-                        );
-
-
                 $attendanceStatus =
-                    $attendance?->status
+                    $attendance
+                        ?->status
                     ??
                     'not_marked';
+
+
+                $displayStudentStatus =
+                    $student
+                        ->studentStatus
+                        ?->status_name
+                    ??
+                    'Active';
+
+
+                $statusColour =
+                    $student
+                        ->studentStatus
+                        ?->color_code
+                    ??
+                    null;
             }
 
 
             /*
             |--------------------------------------------------------------------------
-            | Attendance Filter
+            | Student Filter
             |--------------------------------------------------------------------------
             */
 
@@ -1071,43 +1498,78 @@ class ScheduleController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Primary Guardian
+            | Status Fill
+            |--------------------------------------------------------------------------
+            |
+            | Active student = no colour.
             |--------------------------------------------------------------------------
             */
 
-            $guardian =
-                $student
-                    ->guardians
-                    ->first(
-                        function ($guardian) {
-
-                            return
-                                (bool)
-                                $guardian
-                                    ->pivot
-                                    ->is_primary;
-                        }
-                    );
+            $statusFill =
+                null;
 
 
-            if (!$guardian) {
+            if ($isVacation) {
 
-                $guardian =
-                    $student
-                        ->guardians
-                        ->first();
+                $statusFill =
+                    StudentLeave::VACATION_COLOR;
+
+            } elseif (
+                strtolower(
+                    trim(
+                        $displayStudentStatus
+                    )
+                )
+                !==
+                'active'
+            ) {
+
+                if (
+                    $statusColour
+                    &&
+                    preg_match(
+                        '/^#[0-9A-Fa-f]{6}$/',
+                        $statusColour
+                    )
+                ) {
+
+                    $statusFill =
+                        $statusColour;
+                }
             }
 
 
             /*
             |--------------------------------------------------------------------------
-            | Offering
+            | Subject
             |--------------------------------------------------------------------------
             */
 
-            $offering =
+            $sectionName =
+                $offering
+                    ->section
+                    ?->section_name
+                ??
+                'Class';
+
+
+            $subSectionName =
                 $enrolment
-                    ->sectionOffering;
+                    ->subSection
+                    ?->sub_section_name;
+
+
+            $classDisplay =
+                $sectionName;
+
+
+            if ($subSectionName) {
+
+                $classDisplay .=
+                    ' - '
+                    .
+                    $subSectionName;
+            }
 
 
             /*
@@ -1117,16 +1579,6 @@ class ScheduleController extends Controller
             */
 
             $rows->push([
-
-                'offering_id' =>
-                    $offering?->id,
-
-                'student_id' =>
-                    $student
-                        ->external_id
-                    ??
-                    '—',
-
                 'student_name' =>
                     trim(
                         $student
@@ -1138,353 +1590,96 @@ class ScheduleController extends Controller
                             ->last_name
                     ),
 
-                'guardian' =>
-                    $guardian
-                        ? trim(
-                            $guardian
-                                ->first_name
-                            .
-                            ' '
-                            .
-                            $guardian
-                                ->last_name
-                        )
-                        : '—',
-
-                'section' =>
-                    $offering
-                        ?->section
-                        ?->section_name
-                    ??
-                    '—',
-
                 'day' =>
                     $offering
-                        ?->day
+                        ->day
                         ?->day_name
                     ??
-                    '—',
-
-                'date' =>
                     $date->format(
-                        'd M Y'
+                        'l'
                     ),
 
                 'start_time' =>
-                    $offering
-                        ? Carbon::parse(
-                            $offering
-                                ->start_time
-                        )->format(
-                            'g:i A'
-                        )
-                        : '—',
+                    Carbon::parse(
+                        $offering
+                            ->start_time
+                    )->format(
+                        'g:i A'
+                    ),
 
-                'end_time' =>
-                    $offering
-                        ? Carbon::parse(
-                            $offering
-                                ->end_time
-                        )->format(
-                            'g:i A'
-                        )
-                        : '—',
+                'start_time_sort' =>
+                    Carbon::parse(
+                        $offering
+                            ->start_time
+                    )->format(
+                        'H:i:s'
+                    ),
+
+                'section' =>
+                    $sectionName,
+
+                'sub_section' =>
+                    $subSectionName,
+
+                'class_display' =>
+                    $classDisplay,
 
                 'student_status' =>
-                    $student
-                        ->studentStatus
-                        ?->status_name
-                    ??
-                    '—',
+                    $displayStudentStatus,
+
+                'status_fill' =>
+                    $statusFill,
 
                 'attendance_status' =>
-                    match (
-                        $attendanceStatus
-                    ) {
-
-                        'present' =>
-                            'Present',
-
-                        'absent' =>
-                            'Absent',
-
-                        'vacation' =>
-                            'Vacation',
-
-                        default =>
-                            'Not Marked',
-                    },
+                    $attendanceStatus,
             ]);
         }
 
 
-        return $rows;
-    }
+        /*
+        |--------------------------------------------------------------------------
+        | Sort
+        |--------------------------------------------------------------------------
+        |
+        | Time
+        | → Subject
+        | → Student
+        |--------------------------------------------------------------------------
+        */
 
+        return $rows
+            ->sortBy(
+                function ($row) {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Download Excel-Compatible CSV
-    |--------------------------------------------------------------------------
-    */
-
-    private function downloadCsv(
-        $rows,
-        string $fileName
-    ) {
-        $headers = [
-
-            'Content-Type' =>
-                'text/csv; charset=UTF-8',
-
-            'Content-Disposition' =>
-                'attachment; filename="'
-                .
-                $fileName
-                .
-                '.csv"',
-        ];
-
-
-        $callback =
-            function () use (
-                $rows
-            ) {
-
-                $file =
-                    fopen(
-                        'php://output',
-                        'w'
-                    );
-
-
-                /*
-                 * UTF-8 BOM.
-                 *
-                 * Helps Excel display text correctly.
-                 */
-                fwrite(
-                    $file,
-                    "\xEF\xBB\xBF"
-                );
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Headings
-                |--------------------------------------------------------------------------
-                */
-
-                fputcsv(
-                    $file,
-                    [
-                        'Student ID',
-                        'Student Name',
-                        'Guardian',
-                        'Class',
-                        'Day',
-                        'Date',
-                        'Start Time',
-                        'End Time',
-                        'Student Status',
-                        'Attendance',
-                    ]
-                );
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Data
-                |--------------------------------------------------------------------------
-                */
-
-                foreach (
-                    $rows
-                    as $row
-                ) {
-
-                    fputcsv(
-                        $file,
-                        [
+                    return
+                        $row[
+                            'start_time_sort'
+                        ]
+                        .
+                        '|'
+                        .
+                        strtolower(
                             $row[
-                                'student_id'
-                            ],
-
+                                'class_display'
+                            ]
+                        )
+                        .
+                        '|'
+                        .
+                        strtolower(
                             $row[
                                 'student_name'
-                            ],
-
-                            $row[
-                                'guardian'
-                            ],
-
-                            $row[
-                                'section'
-                            ],
-
-                            $row[
-                                'day'
-                            ],
-
-                            $row[
-                                'date'
-                            ],
-
-                            $row[
-                                'start_time'
-                            ],
-
-                            $row[
-                                'end_time'
-                            ],
-
-                            $row[
-                                'student_status'
-                            ],
-
-                            $row[
-                                'attendance_status'
-                            ],
-                        ]
-                    );
-                }
-
-
-                fclose(
-                    $file
-                );
-            };
-
-
-        return response()->stream(
-            $callback,
-            200,
-            $headers
-        );
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Automatic Vacation Detection
-    |--------------------------------------------------------------------------
-    */
-
-    private function getVacationStudentIds(
-        $studentIds,
-        Carbon $attendanceDate
-    ) {
-        if ($studentIds->isEmpty()) {
-
-            return collect();
-        }
-
-
-        $date =
-            $attendanceDate
-                ->toDateString();
-
-
-        return StudentLeave::whereIn(
-            'student_id',
-            $studentIds
-        )
-
-            /*
-             * Approved leave or old admin leave
-             * where status may still be NULL.
-             */
-            ->where(
-                function ($query) {
-
-                    $query
-                        ->where(
-                            'status',
-                            'approved'
-                        )
-                        ->orWhereNull(
-                            'status'
+                            ]
                         );
                 }
             )
-
-            /*
-             * Leave started on/before
-             * attendance date.
-             */
-            ->whereDate(
-                'start_date',
-                '<=',
-                $date
-            )
-
-            /*
-             * Effective leave end.
-             */
-            ->where(
-                function ($query) use (
-                    $date
-                ) {
-
-                    /*
-                     * Not returned yet.
-                     */
-                    $query->where(
-                        function ($query) use (
-                            $date
-                        ) {
-
-                            $query
-                                ->whereNull(
-                                    'actual_return_date'
-                                )
-                                ->whereDate(
-                                    'expected_return_date',
-                                    '>=',
-                                    $date
-                                );
-                        }
-                    )
-
-                    /*
-                     * Returned early.
-                     *
-                     * Vacation only applies
-                     * before actual return date.
-                     */
-                    ->orWhere(
-                        function ($query) use (
-                            $date
-                        ) {
-
-                            $query
-                                ->whereNotNull(
-                                    'actual_return_date'
-                                )
-                                ->whereDate(
-                                    'actual_return_date',
-                                    '>',
-                                    $date
-                                );
-                        }
-                    );
-                }
-            )
-            ->pluck(
-                'student_id'
-            )
-            ->unique()
             ->values();
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Old Print Whole Day
-    |--------------------------------------------------------------------------
-    |
-    | Existing button still works.
-    | Now redirects to new filter page.
+    | Print Day
     |--------------------------------------------------------------------------
     */
 
@@ -1506,10 +1701,7 @@ class ScheduleController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Old Print One Class
-    |--------------------------------------------------------------------------
-    |
-    | Existing Print List button still works.
+    | Print Class
     |--------------------------------------------------------------------------
     */
 
@@ -1534,18 +1726,36 @@ class ScheduleController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Day Selection Helper
+    | Day Context
     |--------------------------------------------------------------------------
     */
 
     private function getDayContext(
         $requestedDayId = null
     ) {
+        /*
+        |--------------------------------------------------------------------------
+        | Only Working Days
+        |--------------------------------------------------------------------------
+        */
+
         $days =
             Day::where(
                 'is_active',
                 true
             )
+                ->whereIn(
+                    'id',
+                    SectionOffering::query()
+                        ->where(
+                            'is_active',
+                            true
+                        )
+                        ->select(
+                            'day_id'
+                        )
+                        ->distinct()
+                )
                 ->orderBy(
                     'sort_order'
                 )
@@ -1559,15 +1769,18 @@ class ScheduleController extends Controller
 
         $todayName =
             $today
-                ->format('l');
+                ->format(
+                    'l'
+                );
 
 
-        $dayDates = [];
+        $dayDates =
+            [];
 
 
         /*
         |--------------------------------------------------------------------------
-        | Build Real Dates
+        | Calculate Next Date For Each Working Day
         |--------------------------------------------------------------------------
         */
 
@@ -1612,41 +1825,35 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Today As Default
+        | Default Day
         |--------------------------------------------------------------------------
         */
 
         $defaultDay =
-            $days->first(
-                function (
-                    $day
-                ) use (
-                    $todayName
-                ) {
+            $days
+                ->first(
+                    function ($day) use (
+                        $todayName
+                    ) {
 
-                    return
-                        strtolower(
-                            $day
-                                ->day_name
-                        )
-                        ===
-                        strtolower(
-                            $todayName
-                        );
-                }
-            );
+                        return
+                            strtolower(
+                                $day
+                                    ->day_name
+                            )
+                            ===
+                            strtolower(
+                                $todayName
+                            );
+                    }
+                );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Otherwise Nearest Day
-        |--------------------------------------------------------------------------
-        */
 
         if (
             !$defaultDay
             &&
-            $days->isNotEmpty()
+            $days
+                ->isNotEmpty()
         ) {
 
             $defaultDay =
@@ -1671,16 +1878,17 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Requested Day
+        | Selected Day
         |--------------------------------------------------------------------------
         */
 
         $selectedDay =
-            $days->firstWhere(
-                'id',
-                (int)
-                $requestedDayId
-            );
+            $days
+                ->firstWhere(
+                    'id',
+                    (int)
+                    $requestedDayId
+                );
 
 
         if (!$selectedDay) {
@@ -1691,7 +1899,6 @@ class ScheduleController extends Controller
 
 
         return [
-
             'days' =>
                 $days,
 

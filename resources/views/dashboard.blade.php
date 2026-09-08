@@ -90,7 +90,6 @@
                xl:justify-between"
     >
 
-        {{-- Left --}}
         <div>
 
             <h1
@@ -127,7 +126,6 @@
 
 
 
-        {{-- Right --}}
         <div
             class="flex
                    flex-wrap
@@ -403,22 +401,7 @@
                            bg-white/80
                            text-green-600"
                 >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        class="h-6 w-6"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="m4.5 12.75 6 6 9-13.5"
-                        />
-                    </svg>
-
+                    ✓
                 </div>
 
             </div>
@@ -502,24 +485,7 @@
                            bg-white/80
                            text-amber-600"
                 >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        class="h-6 w-6"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M12 6v6h4.5m4.5 0a9 9
-                               0 1 1-18 0 9 9 0 0 1
-                               18 0Z"
-                        />
-                    </svg>
-
+                    ◷
                 </div>
 
             </div>
@@ -585,25 +551,7 @@
                            bg-white/80
                            text-red-500"
                 >
-
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        class="h-6 w-6"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M12 9v3.75m9-.75a9 9 0
-                               1 1-18 0 9 9 0 0 1 18
-                               0Zm-9 3.75h.008v.008H12
-                               v-.008Z"
-                        />
-                    </svg>
-
+                    !
                 </div>
 
             </div>
@@ -676,10 +624,6 @@
 
 
 
-                {{-- =================================================
-                    SCHEDULE / PRINT BUTTONS
-                ================================================== --}}
-
                 <div
                     class="flex
                            flex-wrap
@@ -751,29 +695,7 @@
                                    transition
                                    hover:bg-blue-100"
                         >
-
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                                class="h-5 w-5"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M6 9V2h12v7
-                                       M6 18H4a2 2 0 0 1-2-2v-5
-                                       a2 2 0 0 1 2-2h16
-                                       a2 2 0 0 1 2 2v5
-                                       a2 2 0 0 1-2 2h-2
-                                       M6 14h12v8H6z"
-                                />
-                            </svg>
-
                             Print / Export
-
                         </a>
 
                     @endif
@@ -935,8 +857,7 @@
                                     $statusStyle =
                                         'bg-green-100 text-green-700';
 
-                                }
-                                elseif (
+                                } elseif (
                                     str_contains(
                                         $normalStatus,
                                         'start'
@@ -946,8 +867,7 @@
                                     $statusStyle =
                                         'bg-amber-100 text-amber-700';
 
-                                }
-                                elseif (
+                                } elseif (
                                     str_contains(
                                         $normalStatus,
                                         'complete'
@@ -957,8 +877,7 @@
                                     $statusStyle =
                                         'bg-slate-100 text-slate-600';
 
-                                }
-                                else {
+                                } else {
 
                                     $statusStyle =
                                         'bg-cyan-100 text-cyan-700';
@@ -1045,23 +964,8 @@
                                            text-center"
                                 >
 
-                                    <div
-                                        class="mx-auto
-                                               flex
-                                               h-14 w-14
-                                               items-center
-                                               justify-center
-                                               rounded-full
-                                               bg-cyan-50
-                                               text-cyan-600"
-                                    >
-                                        📅
-                                    </div>
-
-
                                     <p
-                                        class="mt-4
-                                               font-semibold
+                                        class="font-semibold
                                                text-slate-700"
                                     >
                                         No classes today
@@ -1113,32 +1017,28 @@
                        shadow-sm"
             >
 
-                <div>
-
-                    <h2
-                        class="text-2xl
-                               font-bold
-                               text-slate-900"
-                    >
-                        Absent today
-                    </h2>
+                <h2
+                    class="text-2xl
+                           font-bold
+                           text-slate-900"
+                >
+                    Absent today
+                </h2>
 
 
-                    <p
-                        class="mt-1
-                               text-sm
-                               text-slate-500"
-                    >
-                        {{ number_format($absentToday) }}
+                <p
+                    class="mt-1
+                           text-sm
+                           text-slate-500"
+                >
+                    {{ number_format($absentToday) }}
 
-                        {{
-                            $absentToday === 1
-                                ? 'student'
-                                : 'students'
-                        }}
-                    </p>
-
-                </div>
+                    {{
+                        $absentToday === 1
+                            ? 'student'
+                            : 'students'
+                    }}
+                </p>
 
 
 
@@ -1287,7 +1187,7 @@
 
 
             {{-- =================================================
-                STUDENT REVIEWS
+                ADMIN NOTIFICATIONS
             ================================================== --}}
 
             <section
@@ -1313,7 +1213,7 @@
                                    font-bold
                                    text-slate-900"
                         >
-                            Student Reviews
+                            Admin Notifications
                         </h2>
 
 
@@ -1322,26 +1222,58 @@
                                    text-sm
                                    text-slate-500"
                         >
-                            Trial, absence and inactive reviews
+                            Reviews, warnings and parent updates
                         </p>
 
                     </div>
 
 
-                    <span
-                        class="inline-flex
-                               min-w-8
-                               items-center
-                               justify-center
-                               rounded-full
-                               bg-purple-100
-                               px-2 py-1
-                               text-xs
-                               font-semibold
-                               text-purple-700"
-                    >
-                        {{ $adminReminders->count() }}
-                    </span>
+
+                    @if (
+                        $adminReminders->count()
+                        >
+                        0
+                    )
+
+                        <span
+                            class="inline-flex
+                                   min-w-8
+                                   items-center
+                                   justify-center
+                                   rounded-full
+                                   bg-red-500
+                                   px-2 py-1
+                                   text-xs
+                                   font-bold
+                                   text-white"
+                        >
+                            {{
+                                $adminReminders->count()
+                                >
+                                99
+                                    ? '99+'
+                                    : $adminReminders->count()
+                            }}
+                        </span>
+
+                    @else
+
+                        <span
+                            class="inline-flex
+                                   min-w-8
+                                   items-center
+                                   justify-center
+                                   rounded-full
+                                   bg-green-100
+                                   px-2 py-1
+                                   text-xs
+                                   font-semibold
+                                   text-green-700"
+                        >
+                            0
+                        </span>
+
+                    @endif
 
                 </div>
 
@@ -1371,7 +1303,7 @@
                                 data_get(
                                     $reminder,
                                     'title',
-                                    'Student review required'
+                                    'Notification'
                                 );
 
 
@@ -1379,7 +1311,7 @@
                                 data_get(
                                     $reminder,
                                     'message',
-                                    'A student requires review.'
+                                    'An item requires attention.'
                                 );
 
 
@@ -1390,11 +1322,81 @@
                                 );
 
 
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Early Return
+                            |--------------------------------------------------------------------------
+                            */
+
                             if (
                                 $reminderType
                                 ===
+                                'early-return'
+                            ) {
+
+                                $reminderCardStyle =
+                                    'border-blue-200 bg-blue-50';
+
+                                $reminderIconStyle =
+                                    'bg-blue-100 text-blue-700';
+
+                                $reminderTitleStyle =
+                                    'text-blue-800';
+
+                                $reminderTextStyle =
+                                    'text-blue-700';
+
+                                $reminderIcon =
+                                    '↩';
+
+                                $reminderLabel =
+                                    'Parent Early Return';
+
+                                $reminderLabelStyle =
+                                    'bg-blue-100 text-blue-700';
+
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Absence
+                            |--------------------------------------------------------------------------
+                            */
+
+                            } elseif (
+                                $reminderType
+                                ===
                                 'absence'
-                                ||
+                            ) {
+
+                                $reminderCardStyle =
+                                    'border-red-200 bg-red-50';
+
+                                $reminderIconStyle =
+                                    'bg-red-100 text-red-700';
+
+                                $reminderTitleStyle =
+                                    'text-red-800';
+
+                                $reminderTextStyle =
+                                    'text-red-600';
+
+                                $reminderIcon =
+                                    '!';
+
+                                $reminderLabel =
+                                    'Absence Review';
+
+                                $reminderLabelStyle =
+                                    'bg-red-100 text-red-700';
+
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Deletion
+                            |--------------------------------------------------------------------------
+                            */
+
+                            } elseif (
                                 $reminderType
                                 ===
                                 'deletion'
@@ -1403,17 +1405,32 @@
                                 $reminderCardStyle =
                                     'border-red-200 bg-red-50';
 
-                                $reminderDotStyle =
-                                    'bg-red-500';
+                                $reminderIconStyle =
+                                    'bg-red-100 text-red-700';
 
                                 $reminderTitleStyle =
-                                    'text-red-700';
+                                    'text-red-800';
 
                                 $reminderTextStyle =
                                     'text-red-600';
 
-                            }
-                            elseif (
+                                $reminderIcon =
+                                    '!';
+
+                                $reminderLabel =
+                                    'Deletion Review';
+
+                                $reminderLabelStyle =
+                                    'bg-red-100 text-red-700';
+
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Inactive Warning
+                            |--------------------------------------------------------------------------
+                            */
+
+                            } elseif (
                                 $reminderType
                                 ===
                                 'inactive-warning'
@@ -1422,32 +1439,91 @@
                                 $reminderCardStyle =
                                     'border-amber-200 bg-amber-50';
 
-                                $reminderDotStyle =
-                                    'bg-amber-500';
+                                $reminderIconStyle =
+                                    'bg-amber-100 text-amber-700';
 
                                 $reminderTitleStyle =
-                                    'text-amber-700';
+                                    'text-amber-800';
 
                                 $reminderTextStyle =
                                     'text-amber-600';
 
-                            }
-                            else {
+                                $reminderIcon =
+                                    '!';
+
+                                $reminderLabel =
+                                    'Inactive Warning';
+
+                                $reminderLabelStyle =
+                                    'bg-amber-100 text-amber-700';
+
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Trial
+                            |--------------------------------------------------------------------------
+                            */
+
+                            } elseif (
+                                $reminderType
+                                ===
+                                'trial'
+                            ) {
 
                                 $reminderCardStyle =
                                     'border-purple-200 bg-purple-50';
 
-                                $reminderDotStyle =
-                                    'bg-purple-500';
+                                $reminderIconStyle =
+                                    'bg-purple-100 text-purple-700';
 
                                 $reminderTitleStyle =
-                                    'text-purple-700';
+                                    'text-purple-800';
 
                                 $reminderTextStyle =
                                     'text-purple-600';
+
+                                $reminderIcon =
+                                    '●';
+
+                                $reminderLabel =
+                                    'Student Review';
+
+                                $reminderLabelStyle =
+                                    'bg-purple-100 text-purple-700';
+
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Default
+                            |--------------------------------------------------------------------------
+                            */
+
+                            } else {
+
+                                $reminderCardStyle =
+                                    'border-slate-200 bg-slate-50';
+
+                                $reminderIconStyle =
+                                    'bg-slate-200 text-slate-700';
+
+                                $reminderTitleStyle =
+                                    'text-slate-800';
+
+                                $reminderTextStyle =
+                                    'text-slate-600';
+
+                                $reminderIcon =
+                                    '●';
+
+                                $reminderLabel =
+                                    'Notification';
+
+                                $reminderLabelStyle =
+                                    'bg-slate-200 text-slate-700';
                             }
 
                         @endphp
+
 
 
                         @if ($reminderUrl)
@@ -1456,31 +1532,41 @@
                                 href="{{ $reminderUrl }}"
                                 class="group
                                        block
-                                       rounded-xl
+                                       rounded-2xl
                                        border
-                                       px-4 py-4
+                                       p-4
                                        transition
                                        hover:-translate-y-0.5
-                                       hover:shadow-sm
+                                       hover:shadow-md
                                        {{ $reminderCardStyle }}"
                             >
 
                                 <div
                                     class="flex
                                            items-start
-                                           gap-3"
+                                           gap-4"
                                 >
 
-                                    <span
-                                        class="mt-2
-                                               h-2.5 w-2.5
+                                    <div
+                                        class="flex
+                                               h-10 w-10
                                                shrink-0
-                                               rounded-full
-                                               {{ $reminderDotStyle }}"
-                                    ></span>
+                                               items-center
+                                               justify-center
+                                               rounded-xl
+                                               text-base
+                                               font-bold
+                                               {{ $reminderIconStyle }}"
+                                    >
+                                        {{ $reminderIcon }}
+                                    </div>
 
 
-                                    <div class="min-w-0 flex-1">
+
+                                    <div
+                                        class="min-w-0
+                                               flex-1"
+                                    >
 
                                         <div
                                             class="flex
@@ -1489,12 +1575,31 @@
                                                    gap-3"
                                         >
 
-                                            <p
-                                                class="font-semibold
-                                                       {{ $reminderTitleStyle }}"
-                                            >
-                                                {{ $reminderTitle }}
-                                            </p>
+                                            <div>
+
+                                                <span
+                                                    class="mb-2
+                                                           inline-flex
+                                                           rounded-full
+                                                           px-2.5 py-1
+                                                           text-[10px]
+                                                           font-bold
+                                                           uppercase
+                                                           tracking-wide
+                                                           {{ $reminderLabelStyle }}"
+                                                >
+                                                    {{ $reminderLabel }}
+                                                </span>
+
+
+                                                <p
+                                                    class="font-bold
+                                                           {{ $reminderTitleStyle }}"
+                                                >
+                                                    {{ $reminderTitle }}
+                                                </p>
+
+                                            </div>
 
 
                                             <span
@@ -1510,13 +1615,41 @@
                                         </div>
 
 
+
                                         <p
-                                            class="mt-1
+                                            class="mt-2
                                                    text-sm
+                                                   leading-6
                                                    {{ $reminderTextStyle }}"
                                         >
                                             {{ $reminderMessage }}
                                         </p>
+
+
+
+                                        @if (
+                                            $reminderType
+                                            ===
+                                            'early-return'
+                                        )
+
+                                            <div
+                                                class="mt-3
+                                                       inline-flex
+                                                       items-center
+                                                       gap-1
+                                                       text-xs
+                                                       font-semibold
+                                                       text-blue-700"
+                                            >
+                                                View Leave Details
+
+                                                <span>
+                                                    →
+                                                </span>
+                                            </div>
+
+                                        @endif
 
                                     </div>
 
@@ -1528,31 +1661,52 @@
                         @else
 
                             <div
-                                class="rounded-xl
+                                class="rounded-2xl
                                        border
-                                       px-4 py-4
+                                       p-4
                                        {{ $reminderCardStyle }}"
                             >
 
                                 <div
                                     class="flex
                                            items-start
-                                           gap-3"
+                                           gap-4"
                                 >
 
-                                    <span
-                                        class="mt-2
-                                               h-2.5 w-2.5
+                                    <div
+                                        class="flex
+                                               h-10 w-10
                                                shrink-0
-                                               rounded-full
-                                               {{ $reminderDotStyle }}"
-                                    ></span>
+                                               items-center
+                                               justify-center
+                                               rounded-xl
+                                               text-base
+                                               font-bold
+                                               {{ $reminderIconStyle }}"
+                                    >
+                                        {{ $reminderIcon }}
+                                    </div>
 
 
                                     <div>
 
+                                        <span
+                                            class="mb-2
+                                                   inline-flex
+                                                   rounded-full
+                                                   px-2.5 py-1
+                                                   text-[10px]
+                                                   font-bold
+                                                   uppercase
+                                                   tracking-wide
+                                                   {{ $reminderLabelStyle }}"
+                                        >
+                                            {{ $reminderLabel }}
+                                        </span>
+
+
                                         <p
-                                            class="font-semibold
+                                            class="font-bold
                                                    {{ $reminderTitleStyle }}"
                                         >
                                             {{ $reminderTitle }}
@@ -1562,6 +1716,7 @@
                                         <p
                                             class="mt-1
                                                    text-sm
+                                                   leading-6
                                                    {{ $reminderTextStyle }}"
                                         >
                                             {{ $reminderMessage }}
@@ -1579,18 +1734,18 @@
                     @empty
 
                         <div
-                            class="rounded-xl
+                            class="rounded-2xl
                                    border
-                                   border-slate-100
-                                   bg-slate-50
-                                   px-4 py-7
+                                   border-green-100
+                                   bg-green-50
+                                   px-4 py-8
                                    text-center"
                         >
 
                             <div
                                 class="mx-auto
                                        flex
-                                       h-10 w-10
+                                       h-11 w-11
                                        items-center
                                        justify-center
                                        rounded-full
@@ -1605,18 +1760,19 @@
                                 class="mt-3
                                        text-sm
                                        font-semibold
-                                       text-slate-700"
+                                       text-green-800"
                             >
-                                No reviews requiring attention
+                                No notifications requiring attention
                             </p>
 
 
                             <p
                                 class="mt-1
                                        text-xs
-                                       text-slate-500"
+                                       text-green-600"
                             >
-                                New student review warnings will appear here.
+                                Student reviews and parent updates
+                                will appear here.
                             </p>
 
                         </div>
@@ -1627,6 +1783,7 @@
 
 
 
+                {{-- Student Reviews Button --}}
                 @if (
                     Route::has(
                         'admin.student-reviews.index'
@@ -1645,7 +1802,8 @@
                         ) }}"
                         class="mt-5
                                inline-flex
-                               h-11 w-full
+                               h-11
+                               w-full
                                items-center
                                justify-center
                                gap-2
@@ -1786,7 +1944,6 @@
                                 </div>
 
 
-
                                 <p
                                     class="mt-2
                                            text-3xl
@@ -1795,7 +1952,6 @@
                                 >
                                     {{ number_format($wishlistCount) }}
                                 </p>
-
 
 
                                 <p
@@ -1821,7 +1977,6 @@
                                 </p>
 
 
-
                                 <div
                                     class="mt-4
                                            inline-flex
@@ -1829,28 +1984,20 @@
                                            gap-1
                                            text-xs
                                            font-semibold
-                                           text-purple-700
-                                           transition
-                                           group-hover:text-purple-900"
+                                           text-purple-700"
                                 >
                                     Open Wishlist
 
-                                    <span
-                                        class="transition
-                                               group-hover:translate-x-1"
-                                    >
+                                    <span>
                                         →
                                     </span>
-
                                 </div>
 
                             </div>
 
 
-
                             <div
-                                class="relative
-                                       flex
+                                class="flex
                                        h-12 w-12
                                        shrink-0
                                        items-center
@@ -1858,77 +2005,9 @@
                                        rounded-2xl
                                        bg-white
                                        text-purple-600
-                                       shadow-sm
-                                       transition
-                                       group-hover:bg-purple-100"
+                                       shadow-sm"
                             >
-
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="1.8"
-                                    class="h-6 w-6"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M11.48 3.499a.562.562 0
-                                           0 1 1.04 0l2.125 5.111a.563
-                                           .563 0 0 0 .475.345l5.518
-                                           .442c.499.04.701.663.321
-                                           .988l-4.204 3.602a.563.563
-                                           0 0 0-.182.557l1.285
-                                           5.385a.562.562 0 0 1-.84
-                                           .61l-4.725-2.885a.563.563
-                                           0 0 0-.586 0L5.982
-                                           20.54a.562.562 0 0 1-.84
-                                           -.61l1.285-5.386a.562.562
-                                           0 0 0-.182-.557l-4.204
-                                           -3.602a.562.562 0 0 1
-                                           .321-.988l5.518-.442a.563
-                                           .563 0 0 0 .475-.345L11.48
-                                           3.5Z"
-                                    />
-                                </svg>
-
-
-                                @if ($wishlistCount > 0)
-
-                                    <span
-                                        class="absolute
-                                               -right-1
-                                               -top-1
-                                               flex
-                                               h-4 w-4"
-                                    >
-
-                                        <span
-                                            class="absolute
-                                                   inline-flex
-                                                   h-full w-full
-                                                   animate-ping
-                                                   rounded-full
-                                                   bg-red-400
-                                                   opacity-75"
-                                        ></span>
-
-
-                                        <span
-                                            class="relative
-                                                   inline-flex
-                                                   h-4 w-4
-                                                   rounded-full
-                                                   border-2
-                                                   border-white
-                                                   bg-red-500"
-                                        ></span>
-
-                                    </span>
-
-                                @endif
-
+                                ★
                             </div>
 
                         </div>
@@ -1949,59 +2028,23 @@
                            shadow-sm"
                 >
 
-                    <div
-                        class="flex
-                               items-center
-                               justify-between
-                               gap-4"
+                    <p
+                        class="text-sm
+                               font-semibold
+                               text-purple-700"
                     >
-
-                        <div>
-
-                            <p
-                                class="text-sm
-                                       font-semibold
-                                       text-purple-700"
-                            >
-                                Wishlist requests
-                            </p>
+                        Wishlist requests
+                    </p>
 
 
-                            <p
-                                class="mt-2
-                                       text-3xl
-                                       font-bold
-                                       text-purple-800"
-                            >
-                                {{ number_format($wishlistCount) }}
-                            </p>
-
-
-                            <p
-                                class="mt-1
-                                       text-xs
-                                       text-purple-600"
-                            >
-                                Students waiting for
-                                future class places
-                            </p>
-
-                        </div>
-
-
-                        <div
-                            class="flex
-                                   h-12 w-12
-                                   items-center
-                                   justify-center
-                                   rounded-2xl
-                                   bg-white
-                                   text-purple-600"
-                        >
-                            ★
-                        </div>
-
-                    </div>
+                    <p
+                        class="mt-2
+                               text-3xl
+                               font-bold
+                               text-purple-800"
+                    >
+                        {{ number_format($wishlistCount) }}
+                    </p>
 
                 </section>
 
@@ -2041,8 +2084,8 @@ document.addEventListener(
             );
 
 
-        function updateDashboardTime() {
-
+        function updateDashboardTime()
+        {
             const now =
                 new Date();
 
