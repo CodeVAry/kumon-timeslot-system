@@ -12,23 +12,71 @@ use App\Models\Admin\StudentLeave;
 use App\Models\Admin\StudentStatus;
 use App\Services\StudentStatusReviewService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     public function index(
+        Request $request,
         StudentStatusReviewService $reviewService
     ) {
         /*
         |--------------------------------------------------------------------------
-        | Current Date / Time
+        | Real Current Date / Time
         |--------------------------------------------------------------------------
         */
 
-        $dashboardDate =
+        $now =
             now();
 
 
-        $todayName =
+        /*
+        |--------------------------------------------------------------------------
+        | Selected Dashboard Date
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $request->filled(
+                'date'
+            )
+        ) {
+
+            try {
+
+                $dashboardDate =
+                    Carbon::parse(
+                        $request->input(
+                            'date'
+                        )
+                    )
+                        ->startOfDay();
+
+            } catch (\Exception $exception) {
+
+                $dashboardDate =
+                    $now
+                        ->copy()
+                        ->startOfDay();
+            }
+
+        } else {
+
+            $dashboardDate =
+                $now
+                    ->copy()
+                    ->startOfDay();
+        }
+
+
+        $isToday =
+            $dashboardDate
+                ->isSameDay(
+                    $now
+                );
+
+
+        $selectedDayName =
             $dashboardDate
                 ->format(
                     'l'
@@ -36,10 +84,157 @@ class DashboardController extends Controller
 
 
         $currentTime =
-            $dashboardDate
-                ->format(
+            $isToday
+                ? $now->format(
                     'H:i:s'
-                );
+                )
+                : null;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Working Days
+        |--------------------------------------------------------------------------
+        |
+        | Only active days that actually have active offerings.
+        |--------------------------------------------------------------------------
+        */
+
+        $workingDays =
+            Day::where(
+                'is_active',
+                true
+            )
+                ->whereIn(
+                    'id',
+                    SectionOffering::query()
+                        ->where(
+                            'is_active',
+                            true
+                        )
+                        ->select(
+                            'day_id'
+                        )
+                        ->distinct()
+                )
+                ->orderBy(
+                    'sort_order'
+                )
+                ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Previous Working Date
+        |--------------------------------------------------------------------------
+        */
+
+        $previousScheduleDate =
+            null;
+
+
+        for (
+            $i = 1;
+            $i <= 7;
+            $i++
+        ) {
+
+            $candidateDate =
+                $dashboardDate
+                    ->copy()
+                    ->subDays(
+                        $i
+                    );
+
+
+            $isWorkingDay =
+                $workingDays
+                    ->contains(
+                        function ($day) use (
+                            $candidateDate
+                        ) {
+
+                            return
+                                strtolower(
+                                    $day
+                                        ->day_name
+                                )
+                                ===
+                                strtolower(
+                                    $candidateDate
+                                        ->format(
+                                            'l'
+                                        )
+                                );
+                        }
+                    );
+
+
+            if ($isWorkingDay) {
+
+                $previousScheduleDate =
+                    $candidateDate;
+
+                break;
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Next Working Date
+        |--------------------------------------------------------------------------
+        */
+
+        $nextScheduleDate =
+            null;
+
+
+        for (
+            $i = 1;
+            $i <= 7;
+            $i++
+        ) {
+
+            $candidateDate =
+                $dashboardDate
+                    ->copy()
+                    ->addDays(
+                        $i
+                    );
+
+
+            $isWorkingDay =
+                $workingDays
+                    ->contains(
+                        function ($day) use (
+                            $candidateDate
+                        ) {
+
+                            return
+                                strtolower(
+                                    $day
+                                        ->day_name
+                                )
+                                ===
+                                strtolower(
+                                    $candidateDate
+                                        ->format(
+                                            'l'
+                                        )
+                                );
+                        }
+                    );
+
+
+            if ($isWorkingDay) {
+
+                $nextScheduleDate =
+                    $candidateDate;
+
+                break;
+            }
+        }
 
 
         /*
@@ -112,11 +307,11 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Today's Actual Absences
+        | Absences For Selected Date
         |--------------------------------------------------------------------------
         */
 
-        $todayAbsentAttendance =
+        $absentAttendance =
             Attendance::with([
                 'enrolment.student',
             ])
@@ -133,7 +328,7 @@ class DashboardController extends Controller
 
 
         $absentStudents =
-            $todayAbsentAttendance
+            $absentAttendance
                 ->map(
                     function ($attendance) {
 
@@ -157,14 +352,14 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Find Today's Day
+        | Find Selected Day
         |--------------------------------------------------------------------------
         */
 
-        $todayDay =
+        $selectedDay =
             Day::where(
                 'day_name',
-                $todayName
+                $selectedDayName
             )
                 ->where(
                     'is_active',
@@ -175,11 +370,11 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Today's Classes
+        | Classes For Selected Day
         |--------------------------------------------------------------------------
         */
 
-        if ($todayDay) {
+        if ($selectedDay) {
 
             $offerings =
                 SectionOffering::with([
@@ -201,7 +396,7 @@ class DashboardController extends Controller
                 ])
                     ->where(
                         'day_id',
-                        $todayDay->id
+                        $selectedDay->id
                     )
                     ->where(
                         'is_active',
@@ -215,7 +410,7 @@ class DashboardController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Students Today
+            | Students For Selected Day
             |--------------------------------------------------------------------------
             */
 
@@ -261,13 +456,14 @@ class DashboardController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Build Today's Class Table
+            | Build Class Table
             |--------------------------------------------------------------------------
             */
 
             foreach (
                 $groupedOfferings
-                as $startTime => $classOfferings
+                as $startTime =>
+                $classOfferings
             ) {
 
                 $startDateTime =
@@ -400,63 +596,85 @@ class DashboardController extends Controller
                 |--------------------------------------------------------------------------
                 */
 
-                if (
-                    $dashboardDate
-                        ->greaterThanOrEqualTo(
-                            $startDateTime
-                        )
-                    &&
-                    $dashboardDate
-                        ->lessThan(
-                            $endDateTime
-                        )
-                ) {
+                if (!$isToday) {
 
-                    $status =
-                        'In Progress';
+                    if (
+                        $dashboardDate
+                            ->isBefore(
+                                $now
+                                    ->copy()
+                                    ->startOfDay()
+                            )
+                    ) {
 
-                } elseif (
-                    $dashboardDate
-                        ->greaterThanOrEqualTo(
-                            $endDateTime
-                        )
-                ) {
+                        $status =
+                            'Completed';
 
-                    $status =
-                        'Completed';
+                    } else {
 
-                } elseif (
-                    $dashboardDate
-                        ->lessThan(
-                            $startDateTime
-                        )
-                    &&
-                    $dashboardDate
-                        ->diffInMinutes(
-                            $startDateTime
-                        )
-                    <=
-                    30
-                ) {
-
-                    $status =
-                        'Starting Soon';
+                        $status =
+                            'Scheduled';
+                    }
 
                 } else {
 
-                    $status =
-                        'Upcoming';
+                    if (
+                        $now
+                            ->greaterThanOrEqualTo(
+                                $startDateTime
+                            )
+                        &&
+                        $now
+                            ->lessThan(
+                                $endDateTime
+                            )
+                    ) {
+
+                        $status =
+                            'In Progress';
+
+                    } elseif (
+                        $now
+                            ->greaterThanOrEqualTo(
+                                $endDateTime
+                            )
+                    ) {
+
+                        $status =
+                            'Completed';
+
+                    } elseif (
+                        $now
+                            ->lessThan(
+                                $startDateTime
+                            )
+                        &&
+                        $now
+                            ->diffInMinutes(
+                                $startDateTime
+                            )
+                        <=
+                        30
+                    ) {
+
+                        $status =
+                            'Starting Soon';
+
+                    } else {
+
+                        $status =
+                            'Upcoming';
+                    }
                 }
 
 
                 /*
                 |--------------------------------------------------------------------------
-                | Add Dashboard Table Row
+                | Add Table Row
                 |--------------------------------------------------------------------------
                 */
 
                 $todayClasses->push([
-
                     'raw_time' =>
                         $startTime,
 
@@ -485,77 +703,83 @@ class DashboardController extends Controller
             |--------------------------------------------------------------------------
             | Current Class
             |--------------------------------------------------------------------------
-            */
-
-            $currentClass =
-                $todayClasses
-                    ->first(
-                        function ($class) {
-
-                            return
-                                $class[
-                                    'status'
-                                ]
-                                ===
-                                'In Progress';
-                        }
-                    );
-
-
-            if ($currentClass) {
-
-                $currentClassTime =
-                    $currentClass[
-                        'class_time'
-                    ];
-
-
-                $currentClassStudents =
-                    $currentClass[
-                        'total_students'
-                    ];
-
-
-                $currentlyAttending =
-                    $currentClassStudents;
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Next Class
+            |
+            | Only applies to actual today.
             |--------------------------------------------------------------------------
             */
 
-            $nextClass =
-                $todayClasses
-                    ->first(
-                        function ($class) use (
-                            $currentTime
-                        ) {
+            if ($isToday) {
 
-                            return
-                                $class[
-                                    'raw_time'
-                                ]
-                                >
-                                $currentTime;
-                        }
-                    );
+                $currentClass =
+                    $todayClasses
+                        ->first(
+                            function ($class) {
 
-
-            if ($nextClass) {
-
-                $nextClassTime =
-                    $nextClass[
-                        'class_time'
-                    ];
+                                return
+                                    $class[
+                                        'status'
+                                    ]
+                                    ===
+                                    'In Progress';
+                            }
+                        );
 
 
-                $nextClassStudents =
-                    $nextClass[
-                        'total_students'
-                    ];
+                if ($currentClass) {
+
+                    $currentClassTime =
+                        $currentClass[
+                            'class_time'
+                        ];
+
+
+                    $currentClassStudents =
+                        $currentClass[
+                            'total_students'
+                        ];
+
+
+                    $currentlyAttending =
+                        $currentClassStudents;
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Next Class
+                |--------------------------------------------------------------------------
+                */
+
+                $nextClass =
+                    $todayClasses
+                        ->first(
+                            function ($class) use (
+                                $currentTime
+                            ) {
+
+                                return
+                                    $class[
+                                        'raw_time'
+                                    ]
+                                    >
+                                    $currentTime;
+                            }
+                        );
+
+
+                if ($nextClass) {
+
+                    $nextClassTime =
+                        $nextClass[
+                            'class_time'
+                        ];
+
+
+                    $nextClassStudents =
+                        $nextClass[
+                            'total_students'
+                        ];
+                }
             }
         }
 
@@ -605,7 +829,6 @@ class DashboardController extends Controller
         ) {
 
             $adminReminders->push([
-
                 'type' =>
                     'trial',
 
@@ -690,7 +913,6 @@ class DashboardController extends Controller
         ) {
 
             $adminReminders->push([
-
                 'type' =>
                     'absence',
 
@@ -795,7 +1017,6 @@ class DashboardController extends Controller
         ) {
 
             $adminReminders->push([
-
                 'type' =>
                     'inactive-warning',
 
@@ -820,7 +1041,6 @@ class DashboardController extends Controller
         ) {
 
             $adminReminders->push([
-
                 'type' =>
                     'deletion',
 
@@ -845,13 +1065,6 @@ class DashboardController extends Controller
         | Admin Reminder 4
         | Parent Early Return
         |--------------------------------------------------------------------------
-        |
-        | A parent can record an early return from
-        | an approved leave.
-        |
-        | The dashboard will show early returns
-        | recorded within the last 7 days.
-        |
         */
 
         $recentEarlyReturns =
@@ -898,12 +1111,6 @@ class DashboardController extends Controller
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Student Name
-            |--------------------------------------------------------------------------
-            */
-
             $studentName =
                 trim(
                     $student
@@ -916,27 +1123,12 @@ class DashboardController extends Controller
                 );
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Manual Student ID
-            |--------------------------------------------------------------------------
-            |
-            | Do NOT use the database student ID.
-            |
-            */
-
             $manualStudentId =
                 $student
                     ->external_id
                 ??
                 'No Student ID';
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Expected Return
-            |--------------------------------------------------------------------------
-            */
 
             $expectedReturn =
                 $earlyReturn
@@ -948,12 +1140,6 @@ class DashboardController extends Controller
                 '—';
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Actual Return
-            |--------------------------------------------------------------------------
-            */
-
             $actualReturn =
                 $earlyReturn
                     ->actual_return_date
@@ -964,14 +1150,7 @@ class DashboardController extends Controller
                 '—';
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Push Dashboard Reminder
-            |--------------------------------------------------------------------------
-            */
-
             $adminReminders->push([
-
                 'type' =>
                     'early-return',
 
@@ -1014,6 +1193,9 @@ class DashboardController extends Controller
             'dashboard',
             compact(
                 'dashboardDate',
+                'isToday',
+                'previousScheduleDate',
+                'nextScheduleDate',
                 'studentsToday',
                 'currentlyAttending',
                 'absentToday',

@@ -17,6 +17,18 @@
         $dashboardDate
         ?? now();
 
+    $isToday =
+        $isToday
+        ?? true;
+
+    $previousScheduleDate =
+        $previousScheduleDate
+        ?? null;
+
+    $nextScheduleDate =
+        $nextScheduleDate
+        ?? null;
+
     $studentsToday =
         $studentsToday
         ?? 0;
@@ -112,13 +124,17 @@
 
                 {{ $dashboardDate->format('l, j F Y') }}
 
-                <span class="mx-1">
-                    ·
-                </span>
+                @if ($isToday)
 
-                <span id="dashboardHeaderTime">
-                    {{ $dashboardDate->format('g:i A') }}
-                </span>
+                    <span class="mx-1">
+                        ·
+                    </span>
+
+                    <span id="dashboardHeaderTime">
+                        {{ now()->format('g:i A') }}
+                    </span>
+
+                @endif
 
             </p>
 
@@ -134,35 +150,43 @@
         >
 
             {{-- Current Time --}}
-            <div
-                class="inline-flex
-                       h-11
-                       min-w-[140px]
-                       items-center
-                       justify-center
-                       rounded-full
-                       bg-cyan-500
-                       px-6
-                       text-sm
-                       font-semibold
-                       text-white
-                       shadow-sm"
-            >
+            @if ($isToday)
 
-                <span class="mr-1">
-                    Now ·
-                </span>
+                <div
+                    class="inline-flex
+                           h-11
+                           min-w-[140px]
+                           items-center
+                           justify-center
+                           rounded-full
+                           bg-cyan-500
+                           px-6
+                           text-sm
+                           font-semibold
+                           text-white
+                           shadow-sm"
+                >
 
-                <span id="dashboardCurrentTime">
-                    {{ $dashboardDate->format('g:i A') }}
-                </span>
+                    <span class="mr-1">
+                        Now ·
+                    </span>
 
-            </div>
+                    <span id="dashboardCurrentTime">
+                        {{ now()->format('g:i A') }}
+                    </span>
+
+                </div>
+
+            @endif
 
 
 
             {{-- Next Class --}}
-            @if ($nextClassTime)
+            @if (
+                $isToday
+                &&
+                $nextClassTime
+            )
 
                 <div
                     class="inline-flex
@@ -194,7 +218,7 @@
 
                 </div>
 
-            @else
+            @elseif ($isToday)
 
                 <div
                     class="inline-flex
@@ -236,7 +260,7 @@
     >
 
 
-        {{-- Students Today --}}
+        {{-- Students --}}
         <div
             class="rounded-[24px]
                    border
@@ -259,7 +283,11 @@
                                font-semibold
                                text-slate-600"
                     >
-                        Students today
+                        @if ($isToday)
+                            Students today
+                        @else
+                            Students scheduled
+                        @endif
                     </p>
 
 
@@ -376,14 +404,22 @@
                                text-slate-500"
                     >
 
-                        @if ($currentClassTime)
+                        @if (
+                            $isToday
+                            &&
+                            $currentClassTime
+                        )
 
                             {{ $currentClassTime }}
                             class
 
-                        @else
+                        @elseif ($isToday)
 
                             No class currently running
+
+                        @else
+
+                            Only available for today
 
                         @endif
 
@@ -443,7 +479,17 @@
                                font-bold
                                text-amber-600"
                     >
-                        {{ $nextClassTime ?? '—' }}
+
+                        @if ($isToday)
+
+                            {{ $nextClassTime ?? '—' }}
+
+                        @else
+
+                            —
+
+                        @endif
+
                     </p>
 
 
@@ -453,7 +499,11 @@
                                text-slate-500"
                     >
 
-                        @if ($nextClassTime)
+                        @if (
+                            $isToday
+                            &&
+                            $nextClassTime
+                        )
 
                             {{ number_format($nextClassStudents) }}
 
@@ -465,9 +515,13 @@
 
                             expected
 
-                        @else
+                        @elseif ($isToday)
 
                             No upcoming class today
+
+                        @else
+
+                            Only available for today
 
                         @endif
 
@@ -494,7 +548,7 @@
 
 
 
-        {{-- Absent Today --}}
+        {{-- Absent --}}
         <div
             class="rounded-[24px]
                    border
@@ -517,7 +571,11 @@
                                font-semibold
                                text-slate-600"
                     >
-                        Absent today
+                        @if ($isToday)
+                            Absent today
+                        @else
+                            Absent
+                        @endif
                     </p>
 
 
@@ -575,7 +633,7 @@
 
 
         {{-- =====================================================
-            TODAY'S CLASSES
+            CLASS SCHEDULE
         ====================================================== --}}
 
         <section
@@ -589,122 +647,290 @@
         >
 
             <div
-                class="flex
-                       flex-col
-                       gap-4
-                       border-b
+                class="border-b
                        border-slate-100
-                       p-6
-                       sm:flex-row
-                       sm:items-start
-                       sm:justify-between"
+                       p-6"
             >
-
-                <div>
-
-                    <h2
-                        class="text-2xl
-                               font-bold
-                               text-slate-900"
-                    >
-                        Today’s classes
-                    </h2>
-
-
-                    <p
-                        class="mt-1
-                               text-sm
-                               text-slate-500"
-                    >
-                        Confirmed student totals
-                        for today’s class times.
-                    </p>
-
-                </div>
-
-
 
                 <div
                     class="flex
-                           flex-wrap
-                           items-center
-                           gap-3"
+                           flex-col
+                           gap-5
+                           lg:flex-row
+                           lg:items-start
+                           lg:justify-between"
                 >
 
-                    {{-- Open Schedule --}}
-                    @if (
-                        Route::has(
-                            'admin.schedule.index'
-                        )
-                    )
+                    {{-- Day Navigation --}}
+                    <div>
 
-                        <a
-                            href="{{ route(
+                        <div
+                            class="flex
+                                   items-center
+                                   gap-3"
+                        >
+
+                            {{-- Previous --}}
+                            @if ($previousScheduleDate)
+
+                                <a
+                                    href="{{ route(
+                                        'dashboard',
+                                        [
+                                            'date' =>
+                                                $previousScheduleDate
+                                                    ->toDateString(),
+                                        ]
+                                    ) }}"
+                                    title="Previous working day"
+                                    class="inline-flex
+                                           h-10 w-10
+                                           shrink-0
+                                           items-center
+                                           justify-center
+                                           rounded-xl
+                                           border
+                                           border-cyan-200
+                                           bg-cyan-50
+                                           text-lg
+                                           font-bold
+                                           text-cyan-700
+                                           transition
+                                           hover:border-cyan-300
+                                           hover:bg-cyan-100"
+                                >
+                                    ←
+                                </a>
+
+                            @endif
+
+
+
+                            <div>
+
+                                <h2
+                                    class="text-2xl
+                                           font-bold
+                                           text-slate-900"
+                                >
+
+                                    @if ($isToday)
+
+                                        Today’s classes
+
+                                    @else
+
+                                        {{ $dashboardDate->format('l') }}
+                                        classes
+
+                                    @endif
+
+                                </h2>
+
+
+                                <p
+                                    class="mt-1
+                                           text-sm
+                                           text-slate-500"
+                                >
+
+                                    {{ $dashboardDate->format('j F Y') }}
+
+                                    <span class="mx-1">
+                                        ·
+                                    </span>
+
+                                    Confirmed student totals
+
+                                </p>
+
+                            </div>
+
+
+
+                            {{-- Next --}}
+                            @if ($nextScheduleDate)
+
+                                <a
+                                    href="{{ route(
+                                        'dashboard',
+                                        [
+                                            'date' =>
+                                                $nextScheduleDate
+                                                    ->toDateString(),
+                                        ]
+                                    ) }}"
+                                    title="Next working day"
+                                    class="inline-flex
+                                           h-10 w-10
+                                           shrink-0
+                                           items-center
+                                           justify-center
+                                           rounded-xl
+                                           border
+                                           border-cyan-200
+                                           bg-cyan-50
+                                           text-lg
+                                           font-bold
+                                           text-cyan-700
+                                           transition
+                                           hover:border-cyan-300
+                                           hover:bg-cyan-100"
+                                >
+                                    →
+                                </a>
+
+                            @endif
+
+                        </div>
+
+
+                        @if (!$isToday)
+
+                            <div class="mt-3">
+
+                                <a
+                                    href="{{ route(
+                                        'dashboard'
+                                    ) }}"
+                                    class="text-xs
+                                           font-semibold
+                                           text-cyan-700
+                                           hover:text-cyan-900"
+                                >
+                                    Return to today
+                                </a>
+
+                            </div>
+
+                        @endif
+
+                    </div>
+
+
+
+                    {{-- Actions --}}
+                    <div
+                        class="flex
+                               flex-wrap
+                               items-center
+                               gap-3"
+                    >
+
+                        {{-- Open Schedule --}}
+                        @if (
+                            Route::has(
                                 'admin.schedule.index'
-                            ) }}"
-                            class="inline-flex
-                                   h-11
-                                   items-center
-                                   justify-center
-                                   rounded-xl
-                                   bg-cyan-500
-                                   px-6
-                                   text-sm
-                                   font-semibold
-                                   text-white
-                                   transition
-                                   hover:bg-cyan-600"
-                        >
-                            Open Schedule
-                        </a>
-
-                    @endif
-
-
-
-                    {{-- Print / Export --}}
-                    @if (
-                        Route::has(
-                            'admin.schedule.export.form'
-                        )
-                        &&
-                        auth()
-                            ->user()
-                            ->hasPermission(
-                                'enrolments.print'
                             )
-                    )
+                        )
 
-                        <a
-                            href="{{ route(
+                            <a
+                                href="{{ route(
+                                    'admin.schedule.index',
+                                    [
+                                        'day_id' =>
+                                            optional(
+                                                \App\Models\Admin\Day::where(
+                                                    'day_name',
+                                                    $dashboardDate
+                                                        ->format(
+                                                            'l'
+                                                        )
+                                                )
+                                                    ->where(
+                                                        'is_active',
+                                                        true
+                                                    )
+                                                    ->first()
+                                            )->id,
+                                    ]
+                                ) }}"
+                                class="inline-flex
+                                       h-11
+                                       items-center
+                                       justify-center
+                                       rounded-xl
+                                       bg-cyan-500
+                                       px-6
+                                       text-sm
+                                       font-semibold
+                                       text-white
+                                       transition
+                                       hover:bg-cyan-600"
+                            >
+                                Open Schedule
+                            </a>
+
+                        @endif
+
+
+
+                        {{-- Print / Export --}}
+                        @if (
+                            Route::has(
                                 'admin.schedule.export.form'
-                            ) }}"
-                            class="inline-flex
-                                   h-11
-                                   items-center
-                                   justify-center
-                                   gap-2
-                                   rounded-xl
-                                   border
-                                   border-blue-300
-                                   bg-blue-50
-                                   px-6
-                                   text-sm
-                                   font-semibold
-                                   text-blue-700
-                                   transition
-                                   hover:bg-blue-100"
-                        >
-                            Print / Export
-                        </a>
+                            )
+                            &&
+                            auth()
+                                ->user()
+                                ->hasPermission(
+                                    'enrolments.print'
+                                )
+                        )
 
-                    @endif
+                            <a
+                                href="{{ route(
+                                    'admin.schedule.export.form',
+                                    [
+                                        'day_id' =>
+                                            optional(
+                                                \App\Models\Admin\Day::where(
+                                                    'day_name',
+                                                    $dashboardDate
+                                                        ->format(
+                                                            'l'
+                                                        )
+                                                )
+                                                    ->where(
+                                                        'is_active',
+                                                        true
+                                                    )
+                                                    ->first()
+                                            )->id,
+                                    ]
+                                ) }}"
+                                class="inline-flex
+                                       h-11
+                                       items-center
+                                       justify-center
+                                       gap-2
+                                       rounded-xl
+                                       border
+                                       border-blue-300
+                                       bg-blue-50
+                                       px-6
+                                       text-sm
+                                       font-semibold
+                                       text-blue-700
+                                       transition
+                                       hover:bg-blue-100"
+                            >
+                                Print / Export
+                            </a>
+
+                        @endif
+
+                    </div>
 
                 </div>
 
             </div>
 
 
+
+            {{-- =================================================
+                CLASS TABLE
+            ================================================== --}}
 
             <div class="overflow-x-auto">
 
@@ -806,7 +1032,6 @@
                                         '—'
                                     );
 
-
                                 $regularStudents =
                                     data_get(
                                         $class,
@@ -814,14 +1039,12 @@
                                         0
                                     );
 
-
                                 $interactiveStudents =
                                     data_get(
                                         $class,
                                         'interactive_students',
                                         0
                                     );
-
 
                                 $totalStudents =
                                     data_get(
@@ -832,14 +1055,12 @@
                                         $interactiveStudents
                                     );
 
-
                                 $classStatus =
                                     data_get(
                                         $class,
                                         'status',
-                                        'Upcoming'
+                                        'Scheduled'
                                     );
-
 
                                 $normalStatus =
                                     strtolower(
@@ -876,6 +1097,16 @@
 
                                     $statusStyle =
                                         'bg-slate-100 text-slate-600';
+
+                                } elseif (
+                                    str_contains(
+                                        $normalStatus,
+                                        'scheduled'
+                                    )
+                                ) {
+
+                                    $statusStyle =
+                                        'bg-blue-100 text-blue-700';
 
                                 } else {
 
@@ -968,7 +1199,7 @@
                                         class="font-semibold
                                                text-slate-700"
                                     >
-                                        No classes today
+                                        No classes scheduled
                                     </p>
 
 
@@ -977,8 +1208,8 @@
                                                text-sm
                                                text-slate-500"
                                     >
-                                        Today’s active classes
-                                        will appear here.
+                                        No active classes exist
+                                        for this day.
                                     </p>
 
                                 </td>
@@ -1022,7 +1253,13 @@
                            font-bold
                            text-slate-900"
                 >
-                    Absent today
+
+                    @if ($isToday)
+                        Absent today
+                    @else
+                        Absent on {{ $dashboardDate->format('j M') }}
+                    @endif
+
                 </h2>
 
 
@@ -1298,14 +1535,12 @@
                                     'review'
                                 );
 
-
                             $reminderTitle =
                                 data_get(
                                     $reminder,
                                     'title',
                                     'Notification'
                                 );
-
 
                             $reminderMessage =
                                 data_get(
@@ -1314,19 +1549,12 @@
                                     'An item requires attention.'
                                 );
 
-
                             $reminderUrl =
                                 data_get(
                                     $reminder,
                                     'url'
                                 );
 
-
-                            /*
-                            |--------------------------------------------------------------------------
-                            | Early Return
-                            |--------------------------------------------------------------------------
-                            */
 
                             if (
                                 $reminderType
@@ -1355,13 +1583,6 @@
                                 $reminderLabelStyle =
                                     'bg-blue-100 text-blue-700';
 
-
-                            /*
-                            |--------------------------------------------------------------------------
-                            | Absence
-                            |--------------------------------------------------------------------------
-                            */
-
                             } elseif (
                                 $reminderType
                                 ===
@@ -1388,13 +1609,6 @@
 
                                 $reminderLabelStyle =
                                     'bg-red-100 text-red-700';
-
-
-                            /*
-                            |--------------------------------------------------------------------------
-                            | Deletion
-                            |--------------------------------------------------------------------------
-                            */
 
                             } elseif (
                                 $reminderType
@@ -1423,13 +1637,6 @@
                                 $reminderLabelStyle =
                                     'bg-red-100 text-red-700';
 
-
-                            /*
-                            |--------------------------------------------------------------------------
-                            | Inactive Warning
-                            |--------------------------------------------------------------------------
-                            */
-
                             } elseif (
                                 $reminderType
                                 ===
@@ -1457,13 +1664,6 @@
                                 $reminderLabelStyle =
                                     'bg-amber-100 text-amber-700';
 
-
-                            /*
-                            |--------------------------------------------------------------------------
-                            | Trial
-                            |--------------------------------------------------------------------------
-                            */
-
                             } elseif (
                                 $reminderType
                                 ===
@@ -1490,13 +1690,6 @@
 
                                 $reminderLabelStyle =
                                     'bg-purple-100 text-purple-700';
-
-
-                            /*
-                            |--------------------------------------------------------------------------
-                            | Default
-                            |--------------------------------------------------------------------------
-                            */
 
                             } else {
 
@@ -1624,7 +1817,6 @@
                                         >
                                             {{ $reminderMessage }}
                                         </p>
-
 
 
                                         @if (
@@ -1783,7 +1975,6 @@
 
 
 
-                {{-- Student Reviews Button --}}
                 @if (
                     Route::has(
                         'admin.student-reviews.index'
@@ -1831,7 +2022,7 @@
 
 
             {{-- =================================================
-                WISHLIST NOTIFICATION CARD
+                WISHLIST
             ================================================== --}}
 
             @if (
