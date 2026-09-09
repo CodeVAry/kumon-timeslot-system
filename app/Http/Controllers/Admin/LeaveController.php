@@ -50,12 +50,24 @@ class LeaveController extends Controller
             );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Base Query
+        |--------------------------------------------------------------------------
+        |
+        | "approved" is kept internally for compatibility.
+        |
+        | There is NO admin approval workflow.
+        |--------------------------------------------------------------------------
+        */
+
         $query =
             StudentLeave::with([
                 'student.studentStatus',
 
                 'student.enrolments' =>
                     function ($query) {
+
                         $query
                             ->where(
                                 'is_active',
@@ -79,67 +91,98 @@ class LeaveController extends Controller
                 );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Search
+        |--------------------------------------------------------------------------
+        */
+
         if ($search !== '') {
+
             $query->whereHas(
                 'student',
-                function ($studentQuery) use ($search) {
-                    $studentQuery->where(
-                        function ($query) use ($search) {
-                            $query
-                                ->where(
-                                    'first_name',
-                                    'like',
-                                    '%' . $search . '%'
-                                )
-                                ->orWhere(
-                                    'last_name',
-                                    'like',
-                                    '%' . $search . '%'
-                                )
-                                ->orWhere(
-                                    'external_id',
-                                    'like',
-                                    '%' . $search . '%'
-                                )
-                                ->orWhereRaw(
-                                    "CONCAT(first_name, ' ', last_name) LIKE ?",
-                                    [
-                                        '%' .
-                                        $search .
-                                        '%',
-                                    ]
-                                );
-                        }
-                    );
+                function ($studentQuery) use (
+                    $search
+                ) {
+
+                    $studentQuery
+                        ->where(
+                            function ($query) use (
+                                $search
+                            ) {
+
+                                $query
+                                    ->where(
+                                        'first_name',
+                                        'like',
+                                        '%' . $search . '%'
+                                    )
+                                    ->orWhere(
+                                        'last_name',
+                                        'like',
+                                        '%' . $search . '%'
+                                    )
+                                    ->orWhere(
+                                        'external_id',
+                                        'like',
+                                        '%' . $search . '%'
+                                    )
+                                    ->orWhereRaw(
+                                        "CONCAT(first_name, ' ', last_name) LIKE ?",
+                                        [
+                                            '%' .
+                                            $search .
+                                            '%',
+                                        ]
+                                    );
+                            }
+                        );
                 }
             );
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Current Leave
+        |--------------------------------------------------------------------------
+        */
+
         if ($tab === 'current') {
+
             $query
                 ->whereDate(
                     'start_date',
                     '<=',
-                    now()->toDateString()
-                )
-                ->whereNull(
-                    'actual_return_date'
+                    today()
+                        ->toDateString()
                 )
                 ->whereDate(
                     'expected_return_date',
                     '>=',
-                    now()->toDateString()
+                    today()
+                        ->toDateString()
+                )
+                ->whereNull(
+                    'actual_return_date'
                 );
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Upcoming Leave
+        |--------------------------------------------------------------------------
+        */
+
         if ($tab === 'upcoming') {
+
             $query
                 ->whereDate(
                     'start_date',
                     '>',
-                    now()->toDateString()
+                    today()
+                        ->toDateString()
                 )
                 ->whereNull(
                     'actual_return_date'
@@ -156,25 +199,79 @@ class LeaveController extends Controller
                 ->withQueryString();
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Summary Counts
+        |--------------------------------------------------------------------------
+        */
+
         $currentCount =
-            StudentLeave::current()
+            StudentLeave::where(
+                'status',
+                'approved'
+            )
+                ->whereDate(
+                    'start_date',
+                    '<=',
+                    today()
+                        ->toDateString()
+                )
+                ->whereDate(
+                    'expected_return_date',
+                    '>=',
+                    today()
+                        ->toDateString()
+                )
+                ->whereNull(
+                    'actual_return_date'
+                )
                 ->count();
 
 
         $upcomingCount =
-            StudentLeave::upcoming()
+            StudentLeave::where(
+                'status',
+                'approved'
+            )
+                ->whereDate(
+                    'start_date',
+                    '>',
+                    today()
+                        ->toDateString()
+                )
+                ->whereNull(
+                    'actual_return_date'
+                )
                 ->count();
 
 
         $returningSoonCount =
-            StudentLeave::current()
+            StudentLeave::where(
+                'status',
+                'approved'
+            )
+                ->whereDate(
+                    'start_date',
+                    '<=',
+                    today()
+                        ->toDateString()
+                )
+                ->whereDate(
+                    'expected_return_date',
+                    '>=',
+                    today()
+                        ->toDateString()
+                )
                 ->whereDate(
                     'expected_return_date',
                     '<=',
-                    now()
+                    today()
                         ->copy()
                         ->addDays(7)
                         ->toDateString()
+                )
+                ->whereNull(
+                    'actual_return_date'
                 )
                 ->count();
 
@@ -182,6 +279,7 @@ class LeaveController extends Controller
         $historyCount =
             StudentLeave::where(
                 function ($query) {
+
                     $query
                         ->where(
                             'status',
@@ -189,6 +287,7 @@ class LeaveController extends Controller
                         )
                         ->orWhere(
                             function ($query) {
+
                                 $query
                                     ->where(
                                         'status',
@@ -196,6 +295,7 @@ class LeaveController extends Controller
                                     )
                                     ->where(
                                         function ($query) {
+
                                             $query
                                                 ->whereNotNull(
                                                     'actual_return_date'
@@ -203,7 +303,7 @@ class LeaveController extends Controller
                                                 ->orWhereDate(
                                                     'expected_return_date',
                                                     '<',
-                                                    now()
+                                                    today()
                                                         ->toDateString()
                                                 );
                                         }
@@ -252,13 +352,17 @@ class LeaveController extends Controller
 
 
         if ($search !== '') {
+
             $students =
                 Student::where(
                     'is_active',
                     true
                 )
                     ->where(
-                        function ($query) use ($search) {
+                        function ($query) use (
+                            $search
+                        ) {
+
                             $query
                                 ->where(
                                     'first_name',
@@ -310,6 +414,7 @@ class LeaveController extends Controller
                 'student_id'
             )
         ) {
+
             $selectedStudent =
                 Student::with([
                     'studentStatus',
@@ -317,6 +422,7 @@ class LeaveController extends Controller
 
                     'enrolments' =>
                         function ($query) {
+
                             $query
                                 ->where(
                                     'is_active',
@@ -403,10 +509,18 @@ class LeaveController extends Controller
             ]);
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Prevent Overlapping Leave
+        |--------------------------------------------------------------------------
+        */
+
         $overlap =
             StudentLeave::where(
                 'student_id',
-                $validated['student_id']
+                $validated[
+                    'student_id'
+                ]
             )
                 ->where(
                     'status',
@@ -433,6 +547,7 @@ class LeaveController extends Controller
 
 
         if ($overlap) {
+
             return back()
                 ->withInput()
                 ->withErrors([
@@ -441,6 +556,17 @@ class LeaveController extends Controller
                 ]);
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create Leave
+        |--------------------------------------------------------------------------
+        |
+        | No approval required.
+        |
+        | "approved" means recorded/active internally.
+        |--------------------------------------------------------------------------
+        */
 
         $leave =
             StudentLeave::create([
@@ -489,13 +615,15 @@ class LeaveController extends Controller
                     $validated[
                         'reason'
                     ]
-                    ?? null,
+                    ??
+                    null,
 
                 'notes' =>
                     $validated[
                         'notes'
                     ]
-                    ?? null,
+                    ??
+                    null,
 
                 'created_by_user_id' =>
                     auth()->id(),
@@ -529,6 +657,7 @@ class LeaveController extends Controller
 
             'student.enrolments' =>
                 function ($query) {
+
                     $query
                         ->where(
                             'is_active',
@@ -573,6 +702,7 @@ class LeaveController extends Controller
             ||
             $leave->actual_return_date
         ) {
+
             return redirect()
                 ->route(
                     'admin.leave.show',
@@ -590,6 +720,7 @@ class LeaveController extends Controller
 
             'student.enrolments' =>
                 function ($query) {
+
                     $query
                         ->where(
                             'is_active',
@@ -632,6 +763,7 @@ class LeaveController extends Controller
             ||
             $leave->actual_return_date
         ) {
+
             return redirect()
                 ->route(
                     'admin.leave.show',
@@ -723,6 +855,7 @@ class LeaveController extends Controller
 
 
         if ($overlap) {
+
             return back()
                 ->withInput()
                 ->withErrors([
@@ -752,13 +885,15 @@ class LeaveController extends Controller
                 $validated[
                     'reason'
                 ]
-                ?? null,
+                ??
+                null,
 
             'notes' =>
                 $validated[
                     'notes'
                 ]
-                ?? null,
+                ??
+                null,
 
             'review_note' =>
                 $validated[
@@ -796,6 +931,7 @@ class LeaveController extends Controller
             !==
             'approved'
         ) {
+
             return redirect()
                 ->route(
                     'admin.leave.show',
@@ -809,6 +945,7 @@ class LeaveController extends Controller
 
 
         if ($leave->actual_return_date) {
+
             return redirect()
                 ->route(
                     'admin.leave.show',
@@ -847,6 +984,7 @@ class LeaveController extends Controller
                     ->startOfDay()
             )
         ) {
+
             return back()
                 ->withInput()
                 ->withErrors([
@@ -858,9 +996,10 @@ class LeaveController extends Controller
 
         if (
             $actualReturnDate->gt(
-                now()->startOfDay()
+                today()
             )
         ) {
+
             return back()
                 ->withInput()
                 ->withErrors([
@@ -928,6 +1067,7 @@ class LeaveController extends Controller
             ])
                 ->where(
                     function ($query) {
+
                         $query
                             ->where(
                                 'status',
@@ -935,6 +1075,7 @@ class LeaveController extends Controller
                             )
                             ->orWhere(
                                 function ($query) {
+
                                     $query
                                         ->where(
                                             'status',
@@ -942,6 +1083,7 @@ class LeaveController extends Controller
                                         )
                                         ->where(
                                             function ($query) {
+
                                                 $query
                                                     ->whereNotNull(
                                                         'actual_return_date'
@@ -949,7 +1091,7 @@ class LeaveController extends Controller
                                                     ->orWhereDate(
                                                         'expected_return_date',
                                                         '<',
-                                                        now()
+                                                        today()
                                                             ->toDateString()
                                                     );
                                             }
@@ -961,35 +1103,37 @@ class LeaveController extends Controller
 
 
         if ($search !== '') {
+
             $query->whereHas(
                 'student',
-                function ($studentQuery) use ($search) {
-                    $studentQuery->where(
-                        function ($query) use ($search) {
-                            $query
-                                ->where(
-                                    'first_name',
-                                    'like',
-                                    '%' .
-                                    $search .
-                                    '%'
-                                )
-                                ->orWhere(
-                                    'last_name',
-                                    'like',
-                                    '%' .
-                                    $search .
-                                    '%'
-                                )
-                                ->orWhere(
-                                    'external_id',
-                                    'like',
-                                    '%' .
-                                    $search .
-                                    '%'
-                                );
-                        }
-                    );
+                function ($studentQuery) use (
+                    $search
+                ) {
+
+                    $studentQuery
+                        ->where(
+                            function ($query) use (
+                                $search
+                            ) {
+
+                                $query
+                                    ->where(
+                                        'first_name',
+                                        'like',
+                                        '%' . $search . '%'
+                                    )
+                                    ->orWhere(
+                                        'last_name',
+                                        'like',
+                                        '%' . $search . '%'
+                                    )
+                                    ->orWhere(
+                                        'external_id',
+                                        'like',
+                                        '%' . $search . '%'
+                                    );
+                            }
+                        );
                 }
             );
         }

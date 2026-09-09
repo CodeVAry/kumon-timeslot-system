@@ -28,7 +28,6 @@
 
         'decrease' =>
             'Decrease',
-
     ];
 
 @endphp
@@ -69,8 +68,8 @@
                        text-sm
                        text-slate-500"
             >
-                Manage parent leave requests,
-                student leave periods and return dates.
+                View student leave information,
+                upcoming leave and return dates.
             </p>
 
         </div>
@@ -185,55 +184,15 @@
 
 
     {{-- =========================================================
-        SUMMARY CARDS
+        SUMMARY
     ========================================================== --}}
 
     <div
         class="grid
                gap-4
                sm:grid-cols-2
-               xl:grid-cols-5"
+               xl:grid-cols-4"
     >
-
-
-        {{-- Pending --}}
-        <div
-            class="rounded-2xl
-                   border
-                   border-amber-100
-                   bg-amber-50
-                   p-5"
-        >
-
-            <p
-                class="text-sm
-                       font-semibold
-                       text-slate-600"
-            >
-                Pending Requests
-            </p>
-
-
-            <p
-                class="mt-2
-                       text-3xl
-                       font-bold
-                       text-amber-600"
-            >
-                {{ $pendingCount }}
-            </p>
-
-
-            <p
-                class="mt-1
-                       text-xs
-                       text-slate-500"
-            >
-                Waiting for approval
-            </p>
-
-        </div>
-
 
 
         {{-- Current --}}
@@ -309,7 +268,7 @@
                        text-xs
                        text-slate-500"
             >
-                Approved future leave
+                Future leave already recorded
             </p>
 
         </div>
@@ -389,7 +348,7 @@
                        text-xs
                        text-slate-500"
             >
-                Completed / closed records
+                Completed or cancelled records
             </p>
 
         </div>
@@ -412,10 +371,7 @@
     >
 
 
-        {{-- =====================================================
-            TABS
-        ====================================================== --}}
-
+        {{-- Tabs --}}
         <div
             class="flex
                    overflow-x-auto
@@ -423,54 +379,6 @@
                    border-slate-200"
         >
 
-
-            {{-- Pending Requests --}}
-            <a
-                href="{{ route(
-                    'admin.leave.index',
-                    [
-                        'tab' => 'pending',
-                    ]
-                ) }}"
-                class="whitespace-nowrap
-                       px-7 py-4
-                       text-sm
-                       font-semibold
-                       transition
-                       {{
-                           $tab === 'pending'
-                               ? 'border-b-2 border-amber-500 text-amber-700'
-                               : 'text-slate-500 hover:text-amber-600'
-                       }}"
-            >
-                Pending Requests
-
-
-                @if ($pendingCount > 0)
-
-                    <span
-                        class="ml-2
-                               inline-flex
-                               min-w-6
-                               items-center
-                               justify-center
-                               rounded-full
-                               bg-amber-100
-                               px-2 py-0.5
-                               text-xs
-                               font-bold
-                               text-amber-700"
-                    >
-                        {{ $pendingCount }}
-                    </span>
-
-                @endif
-
-            </a>
-
-
-
-            {{-- Current --}}
             <a
                 href="{{ route(
                     'admin.leave.index',
@@ -490,11 +398,26 @@
                        }}"
             >
                 Current Leave
+
+                @if ($currentCount > 0)
+
+                    <span
+                        class="ml-2
+                               rounded-full
+                               bg-blue-100
+                               px-2 py-0.5
+                               text-xs
+                               font-bold
+                               text-blue-700"
+                    >
+                        {{ $currentCount }}
+                    </span>
+
+                @endif
+
             </a>
 
 
-
-            {{-- Upcoming --}}
             <a
                 href="{{ route(
                     'admin.leave.index',
@@ -509,16 +432,31 @@
                        transition
                        {{
                            $tab === 'upcoming'
-                               ? 'border-b-2 border-blue-600 text-blue-700'
-                               : 'text-slate-500 hover:text-blue-600'
+                               ? 'border-b-2 border-purple-600 text-purple-700'
+                               : 'text-slate-500 hover:text-purple-600'
                        }}"
             >
                 Upcoming Leave
+
+                @if ($upcomingCount > 0)
+
+                    <span
+                        class="ml-2
+                               rounded-full
+                               bg-purple-100
+                               px-2 py-0.5
+                               text-xs
+                               font-bold
+                               text-purple-700"
+                    >
+                        {{ $upcomingCount }}
+                    </span>
+
+                @endif
+
             </a>
 
 
-
-            {{-- History --}}
             <a
                 href="{{ route(
                     'admin.leave.history'
@@ -538,10 +476,7 @@
 
 
 
-        {{-- =====================================================
-            SEARCH
-        ====================================================== --}}
-
+        {{-- Search --}}
         <div
             class="border-b
                    border-slate-100
@@ -624,115 +559,39 @@
 
 
 
-        {{-- =====================================================
-            TABLE
-        ====================================================== --}}
-
         <div class="overflow-x-auto">
 
             <table class="min-w-full">
-
 
                 <thead class="bg-slate-50">
 
                     <tr>
 
-                        <th
-                            class="px-6 py-4
-                                   text-left
-                                   text-xs
-                                   font-bold
-                                   uppercase
-                                   text-slate-500"
-                        >
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
                             Student
                         </th>
 
-
-                        <th
-                            class="px-6 py-4
-                                   text-left
-                                   text-xs
-                                   font-bold
-                                   uppercase
-                                   text-slate-500"
-                        >
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
                             Enrolled Classes
                         </th>
 
-
-                        <th
-                            class="px-6 py-4
-                                   text-left
-                                   text-xs
-                                   font-bold
-                                   uppercase
-                                   text-slate-500"
-                        >
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
                             Start Date
                         </th>
 
-
-                        <th
-                            class="px-6 py-4
-                                   text-left
-                                   text-xs
-                                   font-bold
-                                   uppercase
-                                   text-slate-500"
-                        >
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
                             Expected Return
                         </th>
 
-
-                        <th
-                            class="px-6 py-4
-                                   text-center
-                                   text-xs
-                                   font-bold
-                                   uppercase
-                                   text-slate-500"
-                        >
+                        <th class="px-6 py-4 text-center text-xs font-bold uppercase text-slate-500">
                             Duration
                         </th>
 
-
-                        <th
-                            class="px-6 py-4
-                                   text-left
-                                   text-xs
-                                   font-bold
-                                   uppercase
-                                   text-slate-500"
-                        >
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
                             Homework
                         </th>
 
-
-                        @if ($tab === 'pending')
-
-                            <th
-                                class="px-6 py-4
-                                       text-left
-                                       text-xs
-                                       font-bold
-                                       uppercase
-                                       text-slate-500"
-                            >
-                                Requested By
-                            </th>
-
-                        @endif
-
-
-                        <th
-                            class="px-6 py-4
-                                   text-center
-                                   text-xs
-                                   font-bold
-                                   uppercase
-                                   text-slate-500"
-                        >
+                        <th class="px-6 py-4 text-center text-xs font-bold uppercase text-slate-500">
                             Action
                         </th>
 
@@ -741,11 +600,7 @@
                 </thead>
 
 
-
-                <tbody
-                    class="divide-y
-                           divide-slate-100"
-                >
+                <tbody class="divide-y divide-slate-100">
 
                     @forelse ($leaves as $leave)
 
@@ -768,16 +623,13 @@
                                 $student
                                     ?->enrolments
                                     ?->map(
-                                        function (
-                                            $enrolment
-                                        ) {
+                                        function ($enrolment) {
 
                                             return
                                                 $enrolment
                                                     ->sectionOffering
                                                     ?->section
                                                     ?->section_name;
-
                                         }
                                     )
                                     ->filter()
@@ -786,61 +638,31 @@
                                 ??
                                 collect();
 
-
-                            $guardian =
-                                $leave
-                                    ->requestedByGuardian;
-
                         @endphp
 
 
-                        <tr
-                            class="transition
-                                   hover:bg-blue-50/30"
-                        >
+                        <tr class="transition hover:bg-blue-50/30">
 
-
-                            {{-- Student --}}
                             <td class="px-6 py-5">
 
-                                <p
-                                    class="font-bold
-                                           text-slate-900"
-                                >
+                                <p class="font-bold text-slate-900">
                                     {{ $student?->first_name }}
                                     {{ $student?->last_name }}
                                 </p>
 
 
-                                <p
-                                    class="mt-1
-                                           text-xs
-                                           text-slate-400"
-                                >
-                                    {{
-                                        $student
-                                            ?->external_id
-                                        ?? '—'
-                                    }}
+                                <p class="mt-1 text-xs text-slate-400">
+                                    {{ $student?->external_id ?? '—' }}
                                 </p>
 
                             </td>
 
 
-
-                            {{-- Classes --}}
-                            <td
-                                class="px-6 py-5
-                                       text-sm
-                                       text-slate-600"
-                            >
+                            <td class="px-6 py-5 text-sm text-slate-600">
 
                                 @if ($classNames->isNotEmpty())
 
-                                    {{
-                                        $classNames
-                                            ->implode(', ')
-                                    }}
+                                    {{ $classNames->implode(', ') }}
 
                                 @else
 
@@ -851,50 +673,18 @@
                             </td>
 
 
-
-                            {{-- Start --}}
-                            <td
-                                class="whitespace-nowrap
-                                       px-6 py-5
-                                       text-sm
-                                       text-slate-700"
-                            >
-                                {{
-                                    $leave
-                                        ->start_date
-                                        ->format(
-                                            'd M Y'
-                                        )
-                                }}
+                            <td class="whitespace-nowrap px-6 py-5 text-sm text-slate-700">
+                                {{ $leave->start_date->format('d M Y') }}
                             </td>
 
 
-
-                            {{-- Expected Return --}}
-                            <td
-                                class="whitespace-nowrap
-                                       px-6 py-5
-                                       text-sm
-                                       text-slate-700"
-                            >
-                                {{
-                                    $leave
-                                        ->expected_return_date
-                                        ->format(
-                                            'd M Y'
-                                        )
-                                }}
+                            <td class="whitespace-nowrap px-6 py-5 text-sm text-slate-700">
+                                {{ $leave->expected_return_date->format('d M Y') }}
                             </td>
 
 
+                            <td class="px-6 py-5 text-center text-sm text-slate-700">
 
-                            {{-- Duration --}}
-                            <td
-                                class="px-6 py-5
-                                       text-center
-                                       text-sm
-                                       text-slate-700"
-                            >
                                 {{ $duration }}
 
                                 {{
@@ -902,229 +692,32 @@
                                         ? 'day'
                                         : 'days'
                                 }}
+
                             </td>
 
 
+                            <td class="px-6 py-5 text-sm text-slate-600">
 
-                            {{-- Homework --}}
-                            <td
-                                class="px-6 py-5
-                                       text-sm
-                                       text-slate-600"
-                            >
                                 {{
                                     $homeworkLabels[
-                                        $leave
-                                            ->homework_requirement
+                                        $leave->homework_requirement
                                     ]
                                     ??
-                                    $leave
-                                        ->homework_requirement
+                                    $leave->homework_requirement
                                 }}
+
                             </td>
 
 
+                            <td class="px-6 py-5 text-center">
 
-                            {{-- Requested By --}}
-                            @if ($tab === 'pending')
-
-                                <td
-                                    class="px-6 py-5"
+                                <div
+                                    class="flex
+                                           flex-wrap
+                                           items-center
+                                           justify-center
+                                           gap-2"
                                 >
-
-                                    @if ($guardian)
-
-                                        <p
-                                            class="text-sm
-                                                   font-semibold
-                                                   text-slate-700"
-                                        >
-                                            {{
-                                                $guardian
-                                                    ->first_name
-                                            }}
-
-                                            {{
-                                                $guardian
-                                                    ->last_name
-                                            }}
-                                        </p>
-
-
-                                        <p
-                                            class="mt-1
-                                                   max-w-[220px]
-                                                   truncate
-                                                   text-xs
-                                                   text-slate-400"
-                                        >
-                                            {{
-                                                $guardian->email
-                                                ?? 'Parent'
-                                            }}
-                                        </p>
-
-                                    @else
-
-                                        <span
-                                            class="text-sm
-                                                   text-slate-400"
-                                        >
-                                            —
-                                        </span>
-
-                                    @endif
-
-                                </td>
-
-                            @endif
-
-
-
-                            {{-- =================================================
-                                ACTION
-                            ================================================== --}}
-
-                            <td
-                                class="px-6 py-5
-                                       text-center"
-                            >
-
-                                @if (
-                                    $leave->status
-                                    ===
-                                    'pending'
-                                )
-
-                                    <div
-                                        class="flex
-                                               flex-wrap
-                                               items-center
-                                               justify-center
-                                               gap-2"
-                                    >
-
-
-                                        {{-- View --}}
-                                        <a
-                                            href="{{ route(
-                                                'admin.leave.show',
-                                                $leave
-                                            ) }}"
-                                            class="inline-flex
-                                                   h-10
-                                                   items-center
-                                                   justify-center
-                                                   rounded-xl
-                                                   border
-                                                   border-blue-300
-                                                   bg-white
-                                                   px-4
-                                                   text-xs
-                                                   font-semibold
-                                                   text-blue-700
-                                                   transition
-                                                   hover:bg-blue-50"
-                                        >
-                                            View
-                                        </a>
-
-
-
-                                        {{-- Approve --}}
-                                        @if (
-                                            auth()
-                                                ->user()
-                                                ->hasPermission(
-                                                    'leave.edit'
-                                                )
-                                        )
-
-                                            <form
-                                                method="POST"
-                                                action="{{ route(
-                                                    'admin.leave.approve',
-                                                    $leave
-                                                ) }}"
-                                            >
-
-                                                @csrf
-                                                @method('PATCH')
-
-
-                                                <button
-                                                    type="submit"
-                                                    onclick="
-                                                        return confirm(
-                                                            'Approve this leave request?'
-                                                        );
-                                                    "
-                                                    class="inline-flex
-                                                           h-10
-                                                           items-center
-                                                           justify-center
-                                                           rounded-xl
-                                                           bg-green-600
-                                                           px-4
-                                                           text-xs
-                                                           font-semibold
-                                                           text-white
-                                                           transition
-                                                           hover:bg-green-700"
-                                                >
-                                                    Approve
-                                                </button>
-
-                                            </form>
-
-
-
-                                            {{-- Reject --}}
-                                            <form
-                                                method="POST"
-                                                action="{{ route(
-                                                    'admin.leave.reject',
-                                                    $leave
-                                                ) }}"
-                                            >
-
-                                                @csrf
-                                                @method('PATCH')
-
-
-                                                <button
-                                                    type="submit"
-                                                    onclick="
-                                                        return confirm(
-                                                            'Reject this leave request?'
-                                                        );
-                                                    "
-                                                    class="inline-flex
-                                                           h-10
-                                                           items-center
-                                                           justify-center
-                                                           rounded-xl
-                                                           border
-                                                           border-red-300
-                                                           bg-red-50
-                                                           px-4
-                                                           text-xs
-                                                           font-semibold
-                                                           text-red-700
-                                                           transition
-                                                           hover:bg-red-100"
-                                                >
-                                                    Reject
-                                                </button>
-
-                                            </form>
-
-                                        @endif
-
-                                    </div>
-
-
-                                @else
 
                                     <a
                                         href="{{ route(
@@ -1139,17 +732,49 @@
                                                border
                                                border-blue-300
                                                bg-white
-                                               px-5
+                                               px-4
                                                text-xs
                                                font-semibold
                                                text-blue-700
-                                               transition
                                                hover:bg-blue-50"
                                     >
                                         View
                                     </a>
 
-                                @endif
+
+                                    @if (
+                                        auth()
+                                            ->user()
+                                            ->hasPermission(
+                                                'leave.edit'
+                                            )
+                                    )
+
+                                        <a
+                                            href="{{ route(
+                                                'admin.leave.edit',
+                                                $leave
+                                            ) }}"
+                                            class="inline-flex
+                                                   h-10
+                                                   items-center
+                                                   justify-center
+                                                   rounded-xl
+                                                   border
+                                                   border-slate-300
+                                                   bg-white
+                                                   px-4
+                                                   text-xs
+                                                   font-semibold
+                                                   text-slate-700
+                                                   hover:bg-slate-50"
+                                        >
+                                            Edit
+                                        </a>
+
+                                    @endif
+
+                                </div>
 
                             </td>
 
@@ -1161,29 +786,15 @@
                         <tr>
 
                             <td
-                                colspan="{{
-                                    $tab === 'pending'
-                                        ? 8
-                                        : 7
-                                }}"
-                                class="px-6 py-16
-                                       text-center"
+                                colspan="7"
+                                class="px-6 py-16 text-center"
                             >
 
-                                <p
-                                    class="font-semibold
-                                           text-slate-700"
-                                >
+                                <p class="font-semibold text-slate-700">
 
-                                    @if ($tab === 'pending')
+                                    @if ($tab === 'current')
 
-                                        No pending leave requests
-
-                                    @elseif (
-                                        $tab === 'current'
-                                    )
-
-                                        No current leave records
+                                        No students are currently on leave
 
                                     @else
 
@@ -1194,25 +805,8 @@
                                 </p>
 
 
-                                <p
-                                    class="mt-1
-                                           text-sm
-                                           text-slate-500"
-                                >
-
-                                    @if ($tab === 'pending')
-
-                                        Parent leave requests
-                                        waiting for approval
-                                        will appear here.
-
-                                    @else
-
-                                        Student leave records
-                                        will appear here.
-
-                                    @endif
-
+                                <p class="mt-1 text-sm text-slate-500">
+                                    Student leave information will appear here.
                                 </p>
 
                             </td>
@@ -1227,11 +821,6 @@
 
         </div>
 
-
-
-        {{-- =====================================================
-            PAGINATION
-        ====================================================== --}}
 
         @if ($leaves->hasPages())
 

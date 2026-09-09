@@ -27,6 +27,7 @@ class ParentLeaveController extends Controller
 
 
         if (!$email) {
+
             return collect();
         }
 
@@ -39,7 +40,9 @@ class ParentLeaveController extends Controller
                 'normalized_email',
                 $email
             )
-            ->pluck('id');
+            ->pluck(
+                'id'
+            );
     }
 
 
@@ -58,6 +61,7 @@ class ParentLeaveController extends Controller
 
 
         if (!$studentId) {
+
             return null;
         }
 
@@ -66,7 +70,11 @@ class ParentLeaveController extends Controller
             $this->getParentGuardianIds();
 
 
-        if ($guardianIds->isEmpty()) {
+        if (
+            $guardianIds
+                ->isEmpty()
+        ) {
+
             return null;
         }
 
@@ -81,7 +89,10 @@ class ParentLeaveController extends Controller
             )
             ->whereHas(
                 'guardians',
-                function ($query) use ($guardianIds) {
+                function ($query) use (
+                    $guardianIds
+                ) {
+
                     $query->whereIn(
                         'guardians.id',
                         $guardianIds
@@ -94,7 +105,7 @@ class ParentLeaveController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Security Check
+    | Security
     |--------------------------------------------------------------------------
     */
 
@@ -106,11 +117,15 @@ class ParentLeaveController extends Controller
 
 
         if (
-            !$student ||
-            (int) $leave->student_id
+            !$student
+            ||
+            (int)
+            $leave->student_id
             !==
-            (int) $student->id
+            (int)
+            $student->id
         ) {
+
             abort(403);
         }
 
@@ -125,13 +140,14 @@ class ParentLeaveController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function index(Request $request)
+    public function index()
     {
         $student =
             $this->getSelectedStudent();
 
 
         if (!$student) {
+
             return redirect()
                 ->route(
                     'parent.welcome'
@@ -139,10 +155,41 @@ class ParentLeaveController extends Controller
         }
 
 
+        $today =
+            today();
+
+
         /*
-         * All valid leave records.
-         */
-        $approvedLeaves =
+        |--------------------------------------------------------------------------
+        | All Leave Records
+        |--------------------------------------------------------------------------
+        */
+
+        $leaves =
+            StudentLeave::where(
+                'student_id',
+                $student->id
+            )
+                ->whereIn(
+                    'status',
+                    [
+                        'approved',
+                        'cancelled',
+                    ]
+                )
+                ->orderByDesc(
+                    'start_date'
+                )
+                ->paginate(20);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Current Leave
+        |--------------------------------------------------------------------------
+        */
+
+        $currentLeaveCount =
             StudentLeave::where(
                 'student_id',
                 $student->id
@@ -151,108 +198,116 @@ class ParentLeaveController extends Controller
                     'status',
                     'approved'
                 )
-                ->orderByDesc(
-                    'start_date'
+                ->whereNull(
+                    'actual_return_date'
                 )
-                ->get();
+                ->whereDate(
+                    'start_date',
+                    '<=',
+                    $today
+                        ->toDateString()
+                )
+                ->whereDate(
+                    'expected_return_date',
+                    '>=',
+                    $today
+                        ->toDateString()
+                )
+                ->count();
 
 
         /*
-         * Cancelled records kept as history.
-         */
-        $leaves =
+        |--------------------------------------------------------------------------
+        | Upcoming Leave
+        |--------------------------------------------------------------------------
+        */
+
+        $upcomingLeaveCount =
             StudentLeave::where(
                 'student_id',
                 $student->id
             )
                 ->where(
                     'status',
-                    'cancelled'
+                    'approved'
                 )
-                ->orderByDesc(
-                    'created_at'
+                ->whereNull(
+                    'actual_return_date'
                 )
-                ->paginate(20);
-
-
-        $today =
-            now()->startOfDay();
-
-
-        $upcomingLeaveCount =
-            $approvedLeaves
-                ->filter(
-                    function ($leave) use ($today) {
-                        return
-                            !$leave->actual_return_date
-                            &&
-                            $leave
-                                ->start_date
-                                ->copy()
-                                ->startOfDay()
-                                ->gt($today);
-                    }
+                ->whereDate(
+                    'start_date',
+                    '>',
+                    $today
+                        ->toDateString()
                 )
                 ->count();
 
 
-        $currentLeaveCount =
-            $approvedLeaves
-                ->filter(
-                    function ($leave) use ($today) {
-                        return
-                            !$leave->actual_return_date
-                            &&
-                            $leave
-                                ->start_date
-                                ->copy()
-                                ->startOfDay()
-                                ->lte($today)
-                            &&
-                            $leave
-                                ->expected_return_date
-                                ->copy()
-                                ->startOfDay()
-                                ->gte($today);
-                    }
-                )
-                ->count();
-
+        /*
+        |--------------------------------------------------------------------------
+        | Returned Early
+        |--------------------------------------------------------------------------
+        */
 
         $returnedEarlyCount =
-            $approvedLeaves
-                ->filter(
-                    function ($leave) {
-                        return
-                            $leave->actual_return_date
-                            &&
-                            $leave->returned_early;
-                    }
+            StudentLeave::where(
+                'student_id',
+                $student->id
+            )
+                ->where(
+                    'status',
+                    'approved'
+                )
+                ->where(
+                    'returned_early',
+                    true
+                )
+                ->whereNotNull(
+                    'actual_return_date'
                 )
                 ->count();
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Completed
+        |--------------------------------------------------------------------------
+        */
 
         $completedLeaveCount =
-            $approvedLeaves
-                ->filter(
-                    function ($leave) use ($today) {
-                        if (
-                            $leave->actual_return_date
-                        ) {
-                            return true;
-                        }
+            StudentLeave::where(
+                'student_id',
+                $student->id
+            )
+                ->where(
+                    'status',
+                    'approved'
+                )
+                ->where(
+                    function ($query) use (
+                        $today
+                    ) {
 
-
-                        return
-                            $leave
-                                ->expected_return_date
-                                ->copy()
-                                ->startOfDay()
-                                ->lt($today);
+                        $query
+                            ->whereNotNull(
+                                'actual_return_date'
+                            )
+                            ->orWhereDate(
+                                'expected_return_date',
+                                '<',
+                                $today
+                                    ->toDateString()
+                            );
                     }
                 )
                 ->count();
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cancelled
+        |--------------------------------------------------------------------------
+        */
 
         $cancelledCount =
             StudentLeave::where(
@@ -270,10 +325,9 @@ class ParentLeaveController extends Controller
             'parent.leave.index',
             compact(
                 'student',
-                'approvedLeaves',
                 'leaves',
-                'upcomingLeaveCount',
                 'currentLeaveCount',
+                'upcomingLeaveCount',
                 'returnedEarlyCount',
                 'completedLeaveCount',
                 'cancelledCount'
@@ -295,6 +349,7 @@ class ParentLeaveController extends Controller
 
 
         if (!$student) {
+
             return redirect()
                 ->route(
                     'parent.welcome'
@@ -338,10 +393,9 @@ class ParentLeaveController extends Controller
     | Store
     |--------------------------------------------------------------------------
     |
-    | IMPORTANT:
+    | Parent informs the centre.
     |
-    | Parent leave is recorded immediately.
-    | There is NO pending approval stage.
+    | NO approval is required.
     |--------------------------------------------------------------------------
     */
 
@@ -352,6 +406,7 @@ class ParentLeaveController extends Controller
 
 
         if (!$student) {
+
             return redirect()
                 ->route(
                     'parent.welcome'
@@ -393,7 +448,7 @@ class ParentLeaveController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Prevent Overlapping Active Leave
+        | Prevent Overlap
         |--------------------------------------------------------------------------
         */
 
@@ -427,6 +482,7 @@ class ParentLeaveController extends Controller
 
 
         if ($overlap) {
+
             return back()
                 ->withInput()
                 ->withErrors([
@@ -438,7 +494,7 @@ class ParentLeaveController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Create Immediately Active Leave
+        | Record Leave Immediately
         |--------------------------------------------------------------------------
         */
 
@@ -448,9 +504,9 @@ class ParentLeaveController extends Controller
                     $student->id,
 
                 /*
-                 * Internally we keep "approved"
-                 * for compatibility with existing
-                 * attendance/vacation logic.
+                 * Internal compatibility status.
+                 *
+                 * This does NOT mean admin approval.
                  */
                 'status' =>
                     'approved',
@@ -460,9 +516,6 @@ class ParentLeaveController extends Controller
                         'parent'
                     )->id(),
 
-                /*
-                 * No admin review.
-                 */
                 'reviewed_by_user_id' =>
                     null,
 
@@ -497,13 +550,15 @@ class ParentLeaveController extends Controller
                     $validated[
                         'reason'
                     ]
-                    ?? null,
+                    ??
+                    null,
 
                 'notes' =>
                     $validated[
                         'notes'
                     ]
-                    ?? null,
+                    ??
+                    null,
 
                 'created_by_user_id' =>
                     null,
@@ -556,9 +611,6 @@ class ParentLeaveController extends Controller
     |--------------------------------------------------------------------------
     | Edit
     |--------------------------------------------------------------------------
-    |
-    | Parent can edit a leave before it starts.
-    |--------------------------------------------------------------------------
     */
 
     public function edit(
@@ -577,6 +629,7 @@ class ParentLeaveController extends Controller
             ||
             $leave->actual_return_date
         ) {
+
             return redirect()
                 ->route(
                     'parent.leave.show',
@@ -597,6 +650,7 @@ class ParentLeaveController extends Controller
                     ->startOfDay()
             )
         ) {
+
             return redirect()
                 ->route(
                     'parent.leave.show',
@@ -642,6 +696,7 @@ class ParentLeaveController extends Controller
             ||
             $leave->actual_return_date
         ) {
+
             return redirect()
                 ->route(
                     'parent.leave.show',
@@ -662,6 +717,7 @@ class ParentLeaveController extends Controller
                     ->startOfDay()
             )
         ) {
+
             return redirect()
                 ->route(
                     'parent.leave.show',
@@ -741,6 +797,7 @@ class ParentLeaveController extends Controller
 
 
         if ($overlap) {
+
             return back()
                 ->withInput()
                 ->withErrors([
@@ -770,13 +827,15 @@ class ParentLeaveController extends Controller
                 $validated[
                     'reason'
                 ]
-                ?? null,
+                ??
+                null,
 
             'notes' =>
                 $validated[
                     'notes'
                 ]
-                ?? null,
+                ??
+                null,
         ]);
 
 
@@ -794,10 +853,7 @@ class ParentLeaveController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Cancel
-    |--------------------------------------------------------------------------
-    |
-    | Parent may cancel an upcoming leave.
+    | Cancel Upcoming Leave
     |--------------------------------------------------------------------------
     */
 
@@ -816,6 +872,7 @@ class ParentLeaveController extends Controller
             ||
             $leave->actual_return_date
         ) {
+
             return redirect()
                 ->route(
                     'parent.leave.show',
@@ -836,6 +893,7 @@ class ParentLeaveController extends Controller
                     ->startOfDay()
             )
         ) {
+
             return redirect()
                 ->route(
                     'parent.leave.show',
@@ -867,7 +925,7 @@ class ParentLeaveController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Delete Cancelled Record
+    | Delete Cancelled Leave
     |--------------------------------------------------------------------------
     */
 
@@ -884,6 +942,7 @@ class ParentLeaveController extends Controller
             !==
             'cancelled'
         ) {
+
             return redirect()
                 ->route(
                     'parent.leave.show',
@@ -929,6 +988,7 @@ class ParentLeaveController extends Controller
             !==
             'approved'
         ) {
+
             return redirect()
                 ->route(
                     'parent.leave.show',
@@ -942,6 +1002,7 @@ class ParentLeaveController extends Controller
 
 
         if ($leave->actual_return_date) {
+
             return redirect()
                 ->route(
                     'parent.leave.show',
@@ -962,6 +1023,7 @@ class ParentLeaveController extends Controller
                     ->startOfDay()
             )
         ) {
+
             return redirect()
                 ->route(
                     'parent.leave.show',
@@ -985,7 +1047,8 @@ class ParentLeaveController extends Controller
 
         $leave->update([
             'actual_return_date' =>
-                today(),
+                today()
+                    ->toDateString(),
 
             'returned_early' =>
                 $returnedEarly,
