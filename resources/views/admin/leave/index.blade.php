@@ -619,6 +619,133 @@
                                     );
 
 
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Return Timing Display
+                            |--------------------------------------------------------------------------
+                            */
+
+                            $today =
+                                now()
+                                    ->startOfDay();
+
+
+                            $expectedReturn =
+                                $leave
+                                    ->expected_return_date
+                                    ->copy()
+                                    ->startOfDay();
+
+
+                            $daysUntilReturn =
+                                $today
+                                    ->diffInDays(
+                                        $expectedReturn,
+                                        false
+                                    );
+
+
+                            $returnBadge =
+                                null;
+
+
+                            $returnBadgeClass =
+                                null;
+
+
+                            $rowClass =
+                                'hover:bg-blue-50/30';
+
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Returned Early
+                            |--------------------------------------------------------------------------
+                            */
+
+                            if (
+                                $leave->returned_early
+                                &&
+                                $leave->actual_return_date
+                            ) {
+
+                                $returnBadge =
+                                    'Returned Early';
+
+
+                                $returnBadgeClass =
+                                    'bg-cyan-100 text-cyan-700';
+
+
+                                $rowClass =
+                                    'bg-cyan-50 hover:bg-cyan-100/60';
+                            }
+
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Returns Today
+                            |--------------------------------------------------------------------------
+                            */
+
+                            elseif (
+                                $daysUntilReturn
+                                ===
+                                0
+                            ) {
+
+                                $returnBadge =
+                                    'Returns Today';
+
+
+                                $returnBadgeClass =
+                                    'bg-green-100 text-green-700';
+
+
+                                $rowClass =
+                                    'bg-green-50 hover:bg-green-100/60';
+                            }
+
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Returning Within 7 Days
+                            |--------------------------------------------------------------------------
+                            */
+
+                            elseif (
+                                $daysUntilReturn > 0
+                                &&
+                                $daysUntilReturn <= 7
+                            ) {
+
+                                $returnBadge =
+                                    'Returns in '
+                                    .
+                                    $daysUntilReturn
+                                    .
+                                    (
+                                        $daysUntilReturn === 1
+                                            ? ' day'
+                                            : ' days'
+                                    );
+
+
+                                $returnBadgeClass =
+                                    'bg-emerald-100 text-emerald-700';
+
+
+                                $rowClass =
+                                    'bg-emerald-50/70 hover:bg-emerald-100/60';
+                            }
+
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Enrolled Classes
+                            |--------------------------------------------------------------------------
+                            */
+
                             $classNames =
                                 $student
                                     ?->enrolments
@@ -641,7 +768,7 @@
                         @endphp
 
 
-                        <tr class="transition hover:bg-blue-50/30">
+                        <tr class="transition {{ $rowClass }}">
 
                             <td class="px-6 py-5">
 
@@ -678,8 +805,40 @@
                             </td>
 
 
-                            <td class="whitespace-nowrap px-6 py-5 text-sm text-slate-700">
-                                {{ $leave->expected_return_date->format('d M Y') }}
+                            <td
+                                class="whitespace-nowrap
+                                       px-6 py-5
+                                       text-sm
+                                       text-slate-700"
+                            >
+
+                                <div>
+                                    {{
+                                        $leave
+                                            ->expected_return_date
+                                            ->format(
+                                                'd M Y'
+                                            )
+                                    }}
+                                </div>
+
+
+                                @if ($returnBadge)
+
+                                    <span
+                                        class="mt-2
+                                               inline-flex
+                                               rounded-full
+                                               px-3 py-1
+                                               text-xs
+                                               font-semibold
+                                               {{ $returnBadgeClass }}"
+                                    >
+                                        {{ $returnBadge }}
+                                    </span>
+
+                                @endif
+
                             </td>
 
 

@@ -978,10 +978,7 @@ class LeaveController extends Controller
 
         if (
             $actualReturnDate->lt(
-                $leave
-                    ->start_date
-                    ->copy()
-                    ->startOfDay()
+                today()
             )
         ) {
 
@@ -989,7 +986,7 @@ class LeaveController extends Controller
                 ->withInput()
                 ->withErrors([
                     'actual_return_date' =>
-                        'Return date cannot be before the leave start date.',
+                        'Return date cannot be before today.',
                 ]);
         }
 

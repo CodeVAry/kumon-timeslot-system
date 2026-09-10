@@ -1912,24 +1912,15 @@
                             value="{{
                                 old(
                                     'actual_return_date',
-                                    min(
-                                        now()->format(
-                                            'Y-m-d'
-                                        ),
-                                        $leave
-                                            ->expected_return_date
-                                            ->format(
-                                                'Y-m-d'
-                                            )
+                                    now()->format(
+                                        'Y-m-d'
                                     )
                                 )
                             }}"
                             min="{{
-                                $leave
-                                    ->start_date
-                                    ->format(
-                                        'Y-m-d'
-                                    )
+                                now()->format(
+                                    'Y-m-d'
+                                )
                             }}"
                             max="{{
                                 $leave
