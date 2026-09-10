@@ -1176,7 +1176,7 @@ class DashboardController extends Controller
 
                 'url' =>
                     route(
-                        'admin.student-leaves.show',
+                        'admin.student-leaves.index',
                         $earlyReturn
                     ),
             ]);
