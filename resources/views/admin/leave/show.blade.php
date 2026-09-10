@@ -1912,8 +1912,15 @@
                             value="{{
                                 old(
                                     'actual_return_date',
-                                    now()->format(
-                                        'Y-m-d'
+                                    min(
+                                        now()->format(
+                                            'Y-m-d'
+                                        ),
+                                        $leave
+                                            ->expected_return_date
+                                            ->format(
+                                                'Y-m-d'
+                                            )
                                     )
                                 )
                             }}"
@@ -1925,9 +1932,11 @@
                                     )
                             }}"
                             max="{{
-                                now()->format(
-                                    'Y-m-d'
-                                )
+                                $leave
+                                    ->expected_return_date
+                                    ->format(
+                                        'Y-m-d'
+                                    )
                             }}"
                             required
                             class="h-11
