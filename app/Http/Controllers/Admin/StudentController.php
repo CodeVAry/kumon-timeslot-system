@@ -519,7 +519,6 @@ class StudentController extends Controller
             'information',
             'guardian',
             'status',
-            'notes',
         ];
 
 
@@ -603,33 +602,10 @@ class StudentController extends Controller
                         'max:100',
                     ],
 
-                    'email' => [
-                        'required',
-                        'email',
-                        'max:150',
-                    ],
-
-                    'phone' => [
-                        'required',
-                        'string',
-                        'max:30',
-                    ],
-
                     'date_of_birth' => [
                         'required',
                         'date',
                         'before_or_equal:today',
-                    ],
-
-                    'address' => [
-                        'required',
-                        'string',
-                        'max:1000',
-                    ],
-
-                    'can_leave_alone' => [
-                        'required',
-                        'boolean',
                     ],
                 ]);
 
@@ -656,35 +632,9 @@ class StudentController extends Controller
                         ]
                     ),
 
-                'email' =>
-                    trim(
-                        $validated[
-                            'email'
-                        ]
-                    ),
-
-                'phone' =>
-                    trim(
-                        $validated[
-                            'phone'
-                        ]
-                    ),
-
                 'date_of_birth' =>
                     $validated[
                         'date_of_birth'
-                    ],
-
-                'address' =>
-                    trim(
-                        $validated[
-                            'address'
-                        ]
-                    ),
-
-                'can_leave_alone' =>
-                    $validated[
-                        'can_leave_alone'
                     ],
             ]);
 
@@ -740,7 +690,7 @@ class StudentController extends Controller
                     ],
 
                     'guardians.*.email' => [
-                        'nullable',
+                        'required',
                         'email',
                         'max:150',
                     ],
@@ -750,56 +700,7 @@ class StudentController extends Controller
                         'string',
                         'max:30',
                     ],
-
-                    'guardians.*.address' => [
-                        'nullable',
-                        'string',
-                        'max:1000',
-                    ],
-
-                    'guardians.*.relationship' => [
-                        'nullable',
-                        'string',
-                        'max:50',
-                    ],
-
-                    'guardians.*.is_emergency_contact' => [
-                        'required',
-                        'boolean',
-                    ],
-
-                    'primary_guardian_id' => [
-                        'nullable',
-                        'integer',
-                        'exists:guardians,id',
-                    ],
                 ]);
-
-
-            $primaryGuardianId =
-                $validated[
-                    'primary_guardian_id'
-                ]
-                ?? null;
-
-
-            if ($primaryGuardianId) {
-
-                $primaryGuardianExists =
-                    $student
-                        ->guardians()
-                        ->where(
-                            'guardians.id',
-                            $primaryGuardianId
-                        )
-                        ->exists();
-
-
-                if (!$primaryGuardianExists) {
-
-                    abort(403);
-                }
-            }
 
 
             foreach (
@@ -843,17 +744,11 @@ class StudentController extends Controller
                         ),
 
                     'email' =>
-                        !empty(
+                        trim(
                             $guardianData[
                                 'email'
                             ]
-                        )
-                            ? trim(
-                                $guardianData[
-                                    'email'
-                                ]
-                            )
-                            : null,
+                        ),
 
                     'phone' =>
                         trim(
@@ -861,56 +756,7 @@ class StudentController extends Controller
                                 'phone'
                             ]
                         ),
-
-                    'address' =>
-                        !empty(
-                            $guardianData[
-                                'address'
-                            ]
-                        )
-                            ? trim(
-                                $guardianData[
-                                    'address'
-                                ]
-                            )
-                            : null,
                 ]);
-
-
-                $student
-                    ->guardians()
-                    ->updateExistingPivot(
-                        $guardian->id,
-                        [
-                            'relationship' =>
-                                !empty(
-                                    $guardianData[
-                                        'relationship'
-                                    ]
-                                )
-                                    ? trim(
-                                        $guardianData[
-                                            'relationship'
-                                        ]
-                                    )
-                                    : null,
-
-                            'is_primary' =>
-                                $primaryGuardianId
-                                &&
-                                (int)
-                                $primaryGuardianId
-                                ===
-                                (int)
-                                $guardian->id,
-
-                            'is_emergency_contact' =>
-                                (bool)
-                                $guardianData[
-                                    'is_emergency_contact'
-                                ],
-                        ]
-                    );
             }
 
 
@@ -1009,56 +855,6 @@ class StudentController extends Controller
                 ->with(
                     'success',
                     'Student status updated successfully.'
-                );
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Notes
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            $section
-            ===
-            'notes'
-        ) {
-
-            $validated =
-                $request->validate([
-                    'notes' => [
-                        'nullable',
-                        'string',
-                        'max:2000',
-                    ],
-                ]);
-
-
-            $student->update([
-                'notes' =>
-                    !empty(
-                        $validated[
-                            'notes'
-                        ]
-                    )
-                        ? trim(
-                            $validated[
-                                'notes'
-                            ]
-                        )
-                        : null,
-            ]);
-
-
-            return redirect()
-                ->route(
-                    'admin.students.show',
-                    $student
-                )
-                ->with(
-                    'success',
-                    'Student notes updated successfully.'
                 );
         }
 

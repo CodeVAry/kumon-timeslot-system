@@ -16,10 +16,10 @@
     $homeworkLabels = [
 
         'none_required' =>
-            'None required',
+            'No Homework',
 
         'same_as_normal' =>
-            'Same as normal',
+            'Normal',
 
         'increase' =>
             'Increase',
@@ -617,41 +617,25 @@
                                     {{-- Return Early --}}
                                     @if ($canReturnEarly)
 
-                                        <form
-                                            method="POST"
-                                            action="{{ route(
-                                                'parent.leave.return-early',
+                                        <a
+                                            href="{{ route(
+                                                'parent.leave.show',
                                                 $leave
-                                            ) }}"
+                                            ) }}#early-return"
+                                            class="inline-flex
+                                                   h-10
+                                                   items-center
+                                                   justify-center
+                                                   rounded-xl
+                                                   bg-green-600
+                                                   px-4
+                                                   text-xs
+                                                   font-semibold
+                                                   text-white
+                                                   hover:bg-green-700"
                                         >
-
-                                            @csrf
-                                            @method('PATCH')
-
-
-                                            <button
-                                                type="submit"
-                                                onclick="
-                                                    return confirm(
-                                                        'Record the student return as today?'
-                                                    );
-                                                "
-                                                class="inline-flex
-                                                       h-10
-                                                       items-center
-                                                       justify-center
-                                                       rounded-xl
-                                                       bg-green-600
-                                                       px-4
-                                                       text-xs
-                                                       font-semibold
-                                                       text-white
-                                                       hover:bg-green-700"
-                                            >
-                                                Return Early
-                                            </button>
-
-                                        </form>
+                                            Return Early
+                                        </a>
 
                                     @endif
 

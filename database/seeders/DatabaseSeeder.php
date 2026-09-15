@@ -25,7 +25,13 @@ class DatabaseSeeder extends Seeder
 
             SuperAdminUserSeeder::class,
 
+            AdminPermissionSeeder::class,
+
             AdminUserSeeder::class,
+
+            InChargePermissionSeeder::class,
+
+            InChargeUserSeeder::class,
 
 
             /*

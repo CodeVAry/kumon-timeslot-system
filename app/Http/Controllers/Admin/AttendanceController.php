@@ -24,12 +24,40 @@ class AttendanceController extends Controller
 
     public function index(Request $request)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Working Days Only
+        |--------------------------------------------------------------------------
+        |
+        | Attendance should only display days that actually have
+        | at least one active class offering.
+        |
+        */
+
+        $activeDayIds =
+            SectionOffering::where(
+                'is_active',
+                true
+            )
+                ->pluck(
+                    'day_id'
+                )
+                ->unique()
+                ->values();
+
+
         $days =
             Day::where(
                 'is_active',
                 true
             )
-                ->orderBy('sort_order')
+                ->whereIn(
+                    'id',
+                    $activeDayIds
+                )
+                ->orderBy(
+                    'sort_order'
+                )
                 ->get();
 
 

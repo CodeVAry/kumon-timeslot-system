@@ -309,6 +309,25 @@
 
 
                     {{-- =============================================
+                        SUCCESS
+                    ============================================== --}}
+
+                    @if (session('success'))
+
+                        <div
+                            class="mt-6 rounded-xl
+                                   border border-green-200
+                                   bg-green-50
+                                   px-4 py-3
+                                   text-sm text-green-700"
+                        >
+                            {{ session('success') }}
+                        </div>
+
+                    @endif
+
+
+                    {{-- =============================================
                         ERRORS
                     ============================================== --}}
 
@@ -445,6 +464,50 @@
 
 
 
+                        {{-- Resend Code --}}
+                        <div
+                            class="mt-5
+                                   flex flex-col
+                                   items-center
+                                   gap-2
+                                   text-center"
+                        >
+
+                            <p class="text-sm text-slate-600">
+                                Didn't receive the code?
+                            </p>
+
+                            <button
+                                type="submit"
+                                id="resendOtpButton"
+                                formaction="{{ route('parent.otp.resend') }}"
+                                formmethod="POST"
+                                formnovalidate
+                                data-available-at="{{ $resendAvailableAt }}"
+                                class="text-sm
+                                       font-bold
+                                       text-violet-700
+                                       transition
+                                       hover:text-violet-900
+                                       disabled:cursor-not-allowed
+                                       disabled:text-slate-400"
+                            >
+                                <span id="resendOtpText">
+                                    Resend code
+                                </span>
+                            </button>
+
+                            @error('resend')
+
+                                <p class="text-xs text-red-600">
+                                    {{ $message }}
+                                </p>
+
+                            @enderror
+
+                        </div>
+
+
                         {{-- Verify --}}
                         <button
                             type="submit"
@@ -499,6 +562,42 @@
     </main>
 
 </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const button = document.getElementById('resendOtpButton');
+    const text = document.getElementById('resendOtpText');
+
+    if (!button || !text) {
+        return;
+    }
+
+    const availableAt = Number(button.dataset.availableAt) * 1000;
+
+    function updateResendButton() {
+        const remaining = Math.ceil((availableAt - Date.now()) / 1000);
+
+        if (remaining > 0) {
+            button.disabled = true;
+            text.textContent = 'Resend code in ' + remaining + 's';
+        } else {
+            button.disabled = false;
+            text.textContent = 'Resend code';
+        }
+    }
+
+    updateResendButton();
+
+    const timer = setInterval(function () {
+        updateResendButton();
+
+        if (Date.now() >= availableAt) {
+            clearInterval(timer);
+        }
+    }, 1000);
+});
+</script>
 
 </body>
 

@@ -82,5 +82,27 @@ class AdminUserSeeder extends Seeder
                     ),
             ]
         );
+
+        User::updateOrCreate(
+            [
+                'email' =>
+                    'kumonnorthhobart1@gmail.com',
+            ],
+            [
+                'name' =>
+                    'Carmel Davies',
+
+                'phone' =>
+                    '0478581311',
+
+                'role_id' =>
+                    $adminRole->id,
+
+                'password' =>
+                    Hash::make(
+                        'carmel12345'
+                    ),
+            ]
+        );
     }
 }

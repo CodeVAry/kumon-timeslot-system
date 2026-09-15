@@ -981,7 +981,7 @@
 
 
                 <span>
-                    Wishlist
+                    Waitlist
                 </span>
 
             </a>

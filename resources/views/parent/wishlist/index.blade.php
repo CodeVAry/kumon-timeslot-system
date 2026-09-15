@@ -1,8 +1,8 @@
 @extends('layouts.parent')
 
-@section('title', 'Wishlist')
+@section('title', 'Waitlist')
 
-@section('page-title', 'Wishlist')
+@section('page-title', 'Waitlist')
 
 
 @section('content')
@@ -78,7 +78,7 @@
                        font-bold
                        text-slate-900"
             >
-                Wishlist
+                Waitlist
             </h1>
 
 
@@ -115,7 +115,7 @@
                    shadow-sm
                    hover:bg-violet-700"
         >
-            + Create Wishlist Request
+            + Create Waitlist Request
         </a>
 
     </div>
@@ -710,7 +710,7 @@
                                                 type="submit"
                                                 onclick="
                                                     return confirm(
-                                                        'Cancel this wishlist request?'
+                                                        'Cancel this Waitlist request?'
                                                     );
                                                 "
                                                 class="h-10
@@ -758,7 +758,7 @@
                                                 type="submit"
                                                 onclick="
                                                     return confirm(
-                                                        'Delete this wishlist request permanently?'
+                                                        'Delete this Waitlist request permanently?'
                                                     );
                                                 "
                                                 class="h-10
@@ -799,7 +799,7 @@
                                     class="font-semibold
                                            text-slate-700"
                                 >
-                                    No wishlist requests found.
+                                    No Waitlist requests found.
                                 </p>
 
                                 <p

@@ -93,6 +93,14 @@
                     Edit Student Information
                 </h2>
 
+                <p
+                    class="mt-1
+                           text-sm
+                           text-slate-500"
+                >
+                    Update the same student details collected during registration.
+                </p>
+
             </div>
 
 
@@ -121,9 +129,8 @@
                            md:grid-cols-2"
                 >
 
-
                     {{-- Student ID --}}
-                    <div>
+                    <div class="md:col-span-2">
 
                         <label
                             class="mb-2 block
@@ -146,44 +153,6 @@
                         >
 
                         @error('external_id')
-
-                            <p class="mt-1 text-sm text-red-600">
-                                {{ $message }}
-                            </p>
-
-                        @enderror
-
-                    </div>
-
-
-                    {{-- Date of Birth --}}
-                    <div>
-
-                        <label
-                            class="mb-2 block
-                                   text-sm font-semibold"
-                        >
-                            Date of Birth
-                        </label>
-
-                        <input
-                            type="date"
-                            name="date_of_birth"
-                            value="{{
-                                old(
-                                    'date_of_birth',
-                                    $student
-                                        ->date_of_birth
-                                        ?->format('Y-m-d')
-                                )
-                            }}"
-                            class="w-full
-                                   rounded-xl
-                                   border-slate-300"
-                            required
-                        >
-
-                        @error('date_of_birth')
 
                             <p class="mt-1 text-sm text-red-600">
                                 {{ $message }}
@@ -262,138 +231,41 @@
                     </div>
 
 
-                    {{-- Email --}}
-                    <div>
-
-                        <label
-                            class="mb-2 block
-                                   text-sm font-semibold"
-                        >
-                            Email
-                        </label>
-
-                        <input
-                            type="email"
-                            name="email"
-                            value="{{ old(
-                                'email',
-                                $student->email
-                            ) }}"
-                            class="w-full
-                                   rounded-xl
-                                   border-slate-300"
-                            required
-                        >
-
-                        @error('email')
-
-                            <p class="mt-1 text-sm text-red-600">
-                                {{ $message }}
-                            </p>
-
-                        @enderror
-
-                    </div>
-
-
-                    {{-- Phone --}}
-                    <div>
-
-                        <label
-                            class="mb-2 block
-                                   text-sm font-semibold"
-                        >
-                            Phone
-                        </label>
-
-                        <input
-                            type="text"
-                            name="phone"
-                            value="{{ old(
-                                'phone',
-                                $student->phone
-                            ) }}"
-                            class="w-full
-                                   rounded-xl
-                                   border-slate-300"
-                            required
-                        >
-
-                        @error('phone')
-
-                            <p class="mt-1 text-sm text-red-600">
-                                {{ $message }}
-                            </p>
-
-                        @enderror
-
-                    </div>
-
-
-                    {{-- Address --}}
+                    {{-- Date of Birth --}}
                     <div class="md:col-span-2">
 
                         <label
                             class="mb-2 block
                                    text-sm font-semibold"
                         >
-                            Address
+                            Date of Birth
                         </label>
 
-                        <textarea
-                            name="address"
-                            rows="3"
-                            class="w-full
-                                   rounded-xl
-                                   border-slate-300"
-                            required
-                        >{{ old(
-                            'address',
-                            $student->address
-                        ) }}</textarea>
-
-                        @error('address')
-
-                            <p class="mt-1 text-sm text-red-600">
-                                {{ $message }}
-                            </p>
-
-                        @enderror
-
-                    </div>
-
-
-                    {{-- Can Leave Alone --}}
-                    <div class="md:col-span-2">
-
                         <input
-                            type="hidden"
-                            name="can_leave_alone"
-                            value="0"
-                        >
-
-                        <label
-                            class="inline-flex
-                                   items-center gap-2"
-                        >
-
-                            <input
-                                type="checkbox"
-                                name="can_leave_alone"
-                                value="1"
-                                class="rounded
-                                       border-slate-300"
-                                @checked(
-                                    old(
-                                        'can_leave_alone',
-                                        $student->can_leave_alone
-                                    )
+                            type="date"
+                            name="date_of_birth"
+                            value="{{
+                                old(
+                                    'date_of_birth',
+                                    $student
+                                        ->date_of_birth
+                                        ?->format('Y-m-d')
                                 )
-                            >
+                            }}"
+                            max="{{ now()->toDateString() }}"
+                            class="w-full
+                                   rounded-xl
+                                   border-slate-300"
+                            required
+                        >
 
-                            Student can leave alone
+                        @error('date_of_birth')
 
-                        </label>
+                            <p class="mt-1 text-sm text-red-600">
+                                {{ $message }}
+                            </p>
+
+                        @enderror
 
                     </div>
 
@@ -435,9 +307,7 @@
                            text-sm
                            text-slate-500"
                 >
-                    Edit all guardians linked to
-                    {{ $student->first_name }}
-                    {{ $student->last_name }}.
+                    Update the guardian contact details collected during registration.
                 </p>
 
             </div>
@@ -482,152 +352,38 @@
                                        bg-slate-50"
                             >
 
-
-                                {{-- Guardian Header --}}
                                 <div
-                                    class="flex flex-col
-                                           gap-3
-                                           border-b
+                                    class="border-b
                                            border-slate-200
                                            bg-white
-                                           px-5 py-4
-                                           sm:flex-row
-                                           sm:items-center
-                                           sm:justify-between"
+                                           px-5 py-4"
                                 >
 
-                                    <div>
-
-                                        <div
-                                            class="flex flex-wrap
-                                                   items-center
-                                                   gap-2"
-                                        >
-
-                                            <h3
-                                                class="text-lg
-                                                       font-bold
-                                                       text-slate-900"
-                                            >
-                                                Guardian
-                                                {{ $loop->iteration }}
-                                            </h3>
-
-
-                                            @if (
-                                                $guardian
-                                                    ->pivot
-                                                    ->is_primary
-                                            )
-
-                                                <span
-                                                    class="rounded-full
-                                                           bg-blue-100
-                                                           px-2.5 py-1
-                                                           text-xs
-                                                           font-semibold
-                                                           text-blue-700"
-                                                >
-                                                    Primary
-                                                </span>
-
-                                            @endif
-
-
-                                            @if (
-                                                $guardian
-                                                    ->pivot
-                                                    ->is_emergency_contact
-                                            )
-
-                                                <span
-                                                    class="rounded-full
-                                                           bg-red-100
-                                                           px-2.5 py-1
-                                                           text-xs
-                                                           font-semibold
-                                                           text-red-700"
-                                                >
-                                                    Emergency Contact
-                                                </span>
-
-                                            @endif
-
-                                        </div>
-
-
-                                        <p
-                                            class="mt-1
-                                                   text-sm
-                                                   text-slate-500"
-                                        >
-                                            {{ $guardian->first_name }}
-                                            {{ $guardian->last_name }}
-                                        </p>
-
-                                    </div>
-
-
-                                    {{-- Primary Guardian --}}
-                                    <label
-                                        class="inline-flex
-                                               cursor-pointer
-                                               items-center
-                                               gap-2
-                                               rounded-xl
-                                               border
-                                               border-blue-200
-                                               bg-blue-50
-                                               px-4 py-2"
+                                    <h3
+                                        class="text-lg
+                                               font-bold
+                                               text-slate-900"
                                     >
+                                        Guardian {{ $loop->iteration }}
+                                    </h3>
 
-                                        <input
-                                            type="radio"
-                                            name="primary_guardian_id"
-                                            value="{{ $guardian->id }}"
-                                            class="border-slate-300
-                                                   text-blue-600
-                                                   focus:ring-blue-500"
-                                            @checked(
-                                                old(
-                                                    'primary_guardian_id',
-                                                    $guardians
-                                                        ->first(
-                                                            function ($item) {
-                                                                return
-                                                                    (bool)
-                                                                    $item
-                                                                        ->pivot
-                                                                        ->is_primary;
-                                                            }
-                                                        )
-                                                        ?->id
-                                                )
-                                                ==
-                                                $guardian->id
-                                            )
-                                        >
-
-                                        <span
-                                            class="text-sm
-                                                   font-semibold
-                                                   text-blue-700"
-                                        >
-                                            Primary Guardian
-                                        </span>
-
-                                    </label>
+                                    <p
+                                        class="mt-1
+                                               text-sm
+                                               text-slate-500"
+                                    >
+                                        {{ $guardian->first_name }}
+                                        {{ $guardian->last_name }}
+                                    </p>
 
                                 </div>
 
 
-                                {{-- Guardian Fields --}}
                                 <div
                                     class="grid gap-5
                                            p-5
                                            md:grid-cols-2"
                                 >
-
 
                                     {{-- First Name --}}
                                     <div>
@@ -719,6 +475,51 @@
                                     </div>
 
 
+                                    {{-- Email --}}
+                                    <div>
+
+                                        <label
+                                            class="mb-2 block
+                                                   text-sm font-semibold"
+                                        >
+                                            Email
+                                        </label>
+
+                                        <input
+                                            type="email"
+                                            name="guardians[{{ $guardian->id }}][email]"
+                                            value="{{ old(
+                                                'guardians.'
+                                                . $guardian->id
+                                                . '.email',
+                                                $guardian->email
+                                            ) }}"
+                                            class="w-full
+                                                   rounded-xl
+                                                   border-slate-300
+                                                   bg-white"
+                                            required
+                                        >
+
+                                        @error(
+                                            'guardians.'
+                                            . $guardian->id
+                                            . '.email'
+                                        )
+
+                                            <p
+                                                class="mt-1
+                                                       text-sm
+                                                       text-red-600"
+                                            >
+                                                {{ $message }}
+                                            </p>
+
+                                        @enderror
+
+                                    </div>
+
+
                                     {{-- Phone --}}
                                     <div>
 
@@ -763,180 +564,6 @@
 
                                     </div>
 
-
-                                    {{-- Email --}}
-                                    <div>
-
-                                        <label
-                                            class="mb-2 block
-                                                   text-sm font-semibold"
-                                        >
-                                            Email
-                                        </label>
-
-                                        <input
-                                            type="email"
-                                            name="guardians[{{ $guardian->id }}][email]"
-                                            value="{{ old(
-                                                'guardians.'
-                                                . $guardian->id
-                                                . '.email',
-                                                $guardian->email
-                                            ) }}"
-                                            class="w-full
-                                                   rounded-xl
-                                                   border-slate-300
-                                                   bg-white"
-                                        >
-
-                                        @error(
-                                            'guardians.'
-                                            . $guardian->id
-                                            . '.email'
-                                        )
-
-                                            <p
-                                                class="mt-1
-                                                       text-sm
-                                                       text-red-600"
-                                            >
-                                                {{ $message }}
-                                            </p>
-
-                                        @enderror
-
-                                    </div>
-
-
-                                    {{-- Relationship --}}
-                                    <div>
-
-                                        <label
-                                            class="mb-2 block
-                                                   text-sm font-semibold"
-                                        >
-                                            Relationship
-                                        </label>
-
-                                        <input
-                                            type="text"
-                                            name="guardians[{{ $guardian->id }}][relationship]"
-                                            value="{{ old(
-                                                'guardians.'
-                                                . $guardian->id
-                                                . '.relationship',
-                                                $guardian
-                                                    ->pivot
-                                                    ->relationship
-                                            ) }}"
-                                            placeholder="e.g. Mother, Father, Carer"
-                                            class="w-full
-                                                   rounded-xl
-                                                   border-slate-300
-                                                   bg-white"
-                                        >
-
-                                        @error(
-                                            'guardians.'
-                                            . $guardian->id
-                                            . '.relationship'
-                                        )
-
-                                            <p
-                                                class="mt-1
-                                                       text-sm
-                                                       text-red-600"
-                                            >
-                                                {{ $message }}
-                                            </p>
-
-                                        @enderror
-
-                                    </div>
-
-
-                                    {{-- Address --}}
-                                    <div>
-
-                                        <label
-                                            class="mb-2 block
-                                                   text-sm font-semibold"
-                                        >
-                                            Address
-                                        </label>
-
-                                        <textarea
-                                            name="guardians[{{ $guardian->id }}][address]"
-                                            rows="2"
-                                            class="w-full
-                                                   rounded-xl
-                                                   border-slate-300
-                                                   bg-white"
-                                        >{{ old(
-                                            'guardians.'
-                                            . $guardian->id
-                                            . '.address',
-                                            $guardian->address
-                                        ) }}</textarea>
-
-                                        @error(
-                                            'guardians.'
-                                            . $guardian->id
-                                            . '.address'
-                                        )
-
-                                            <p
-                                                class="mt-1
-                                                       text-sm
-                                                       text-red-600"
-                                            >
-                                                {{ $message }}
-                                            </p>
-
-                                        @enderror
-
-                                    </div>
-
-
-                                    {{-- Emergency Contact --}}
-                                    <div class="md:col-span-2">
-
-                                        <input
-                                            type="hidden"
-                                            name="guardians[{{ $guardian->id }}][is_emergency_contact]"
-                                            value="0"
-                                        >
-
-                                        <label
-                                            class="inline-flex
-                                                   items-center
-                                                   gap-2"
-                                        >
-
-                                            <input
-                                                type="checkbox"
-                                                name="guardians[{{ $guardian->id }}][is_emergency_contact]"
-                                                value="1"
-                                                class="rounded
-                                                       border-slate-300"
-                                                @checked(
-                                                    old(
-                                                        'guardians.'
-                                                        . $guardian->id
-                                                        . '.is_emergency_contact',
-                                                        $guardian
-                                                            ->pivot
-                                                            ->is_emergency_contact
-                                                    )
-                                                )
-                                            >
-
-                                            Emergency Contact
-
-                                        </label>
-
-                                    </div>
-
                                 </div>
 
                             </div>
@@ -946,7 +573,6 @@
                     </div>
 
 
-                    {{-- Guardian Buttons --}}
                     <div
                         class="flex items-center
                                justify-end
@@ -1005,8 +631,7 @@
                 <div class="p-6">
 
                     <p class="text-slate-500">
-                        No guardian is linked
-                        to this student.
+                        No guardian is linked to this student.
                     </p>
 
                 </div>
@@ -1162,87 +787,6 @@
         @endif
 
 
-
-        {{-- =================================================
-            NOTES
-        ================================================== --}}
-
-        @if ($section === 'notes')
-
-            <div
-                class="border-b
-                       border-slate-200
-                       px-6 py-5"
-            >
-
-                <h2
-                    class="text-xl
-                           font-bold"
-                >
-                    Edit Student Notes
-                </h2>
-
-            </div>
-
-
-            <form
-                method="POST"
-                action="{{ route(
-                    'admin.students.update',
-                    $student
-                ) }}"
-            >
-
-                @csrf
-                @method('PATCH')
-
-
-                <input
-                    type="hidden"
-                    name="section"
-                    value="notes"
-                >
-
-
-                <div class="p-6">
-
-                    <label
-                        class="mb-2 block
-                               text-sm font-semibold"
-                    >
-                        Notes
-                    </label>
-
-                    <textarea
-                        name="notes"
-                        rows="6"
-                        maxlength="2000"
-                        class="w-full
-                               rounded-xl
-                               border-slate-300"
-                    >{{ old(
-                        'notes',
-                        $student->notes
-                    ) }}</textarea>
-
-                    @error('notes')
-
-                        <p class="mt-1 text-sm text-red-600">
-                            {{ $message }}
-                        </p>
-
-                    @enderror
-
-                </div>
-
-
-                @include(
-                    'admin.students.partials.edit-buttons'
-                )
-
-            </form>
-
-        @endif
 
     </div>
 

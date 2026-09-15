@@ -26,9 +26,11 @@ class RoleSeeder extends Seeder
                 'description' =>
                     'Protected system role with complete access.',
 
-                'is_active' => true,
+                'is_active' =>
+                    true,
 
-                'superAdmin' => true,
+                'superAdmin' =>
+                    true,
             ]
         );
 
@@ -45,11 +47,36 @@ class RoleSeeder extends Seeder
             ],
             [
                 'description' =>
-                    'Centre administrator with administrative access.',
+                    'Centre administrator with operational access.',
 
-                'is_active' => true,
+                'is_active' =>
+                    true,
 
-                'superAdmin' => false,
+                'superAdmin' =>
+                    false,
+            ]
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | In Charge
+        |--------------------------------------------------------------------------
+        */
+
+        Role::updateOrCreate(
+            [
+                'role_name' => 'In Charge',
+            ],
+            [
+                'description' =>
+                    'Centre in-charge user with the same operational access as Admin.',
+
+                'is_active' =>
+                    true,
+
+                'superAdmin' =>
+                    false,
             ]
         );
     }

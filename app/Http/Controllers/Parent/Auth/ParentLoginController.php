@@ -263,6 +263,9 @@ class ParentLoginController extends Controller
              */
             'parent_login_otp_destination' =>
                 $normalizedEmail,
+
+            'parent_login_otp_last_sent_at' =>
+                now()->timestamp,
         ]);
 
 
@@ -342,12 +345,160 @@ class ParentLoginController extends Controller
             );
 
 
+        $lastSentAt =
+            session(
+                'parent_login_otp_last_sent_at'
+            );
+
+        $resendAvailableAt =
+            $lastSentAt
+                ? $lastSentAt + 60
+                : now()->timestamp;
+
         return view(
             'parent.auth.otp',
             compact(
-                'maskedDestination'
+                'maskedDestination',
+                'resendAvailableAt'
             )
         );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resend OTP
+    |--------------------------------------------------------------------------
+    */
+
+    public function resendOtp(
+        Request $request
+    ) {
+        $guardianId =
+            session(
+                'parent_login_guardian_id'
+            );
+
+        $parentEmail =
+            session(
+                'parent_login_email'
+            );
+
+        if (
+            !$guardianId
+            ||
+            !$parentEmail
+        ) {
+            return redirect()
+                ->route(
+                    'parent.login'
+                )
+                ->withErrors([
+                    'login' =>
+                        'Your verification session has expired. Please sign in again.',
+                ]);
+        }
+
+        $guardianExists =
+            Guardian::where(
+                'id',
+                $guardianId
+            )
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->exists();
+
+        if (!$guardianExists) {
+            $this->clearOtpSession();
+
+            return redirect()
+                ->route(
+                    'parent.login'
+                )
+                ->withErrors([
+                    'login' =>
+                        'The guardian account is not available.',
+                ]);
+        }
+
+        $lastSentAt =
+            session(
+                'parent_login_otp_last_sent_at'
+            );
+
+        if (
+            $lastSentAt
+            &&
+            now()->timestamp
+            <
+            ($lastSentAt + 60)
+        ) {
+            $secondsRemaining =
+                ($lastSentAt + 60)
+                -
+                now()->timestamp;
+
+            return back()
+                ->withErrors([
+                    'resend' =>
+                        'Please wait '
+                        .
+                        $secondsRemaining
+                        .
+                        ' seconds before requesting another code.',
+                ]);
+        }
+
+        $otp =
+            random_int(
+                100000,
+                999999
+            );
+
+        session([
+            'parent_login_otp_hash' =>
+                Hash::make(
+                    (string) $otp
+                ),
+
+            'parent_login_otp_expires_at' =>
+                now()
+                    ->addMinutes(5)
+                    ->timestamp,
+
+            'parent_login_otp_attempts' =>
+                0,
+
+            'parent_login_otp_destination' =>
+                $parentEmail,
+
+            'parent_login_otp_last_sent_at' =>
+                now()->timestamp,
+        ]);
+
+        Mail::raw(
+            "Your Kumon Parent Portal verification code is {$otp}. This code will expire in 5 minutes.",
+            function ($message) use ($parentEmail) {
+                $message
+                    ->to(
+                        $parentEmail
+                    )
+                    ->subject(
+                        'Kumon Parent Portal Verification Code'
+                    );
+            }
+        );
+
+        return redirect()
+            ->route(
+                'parent.otp'
+            )
+            ->with(
+                'success',
+                'A new verification code has been sent to your email.'
+            );
     }
 
 
@@ -656,6 +807,7 @@ class ParentLoginController extends Controller
             'parent_login_otp_expires_at',
             'parent_login_otp_attempts',
             'parent_login_otp_destination',
+            'parent_login_otp_last_sent_at',
         ]);
     }
 

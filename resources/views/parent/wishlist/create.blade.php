@@ -1,8 +1,8 @@
 @extends('layouts.parent')
 
-@section('title', 'Create Wishlist Request')
+@section('title', 'Create Waitlist Request')
 
-@section('page-title', 'Create Wishlist Request')
+@section('page-title', 'Create Waitlist Request')
 
 
 @section('content')
@@ -24,7 +24,7 @@
                font-semibold
                text-violet-700"
     >
-        ← Back to Wishlist
+        ← Back to Waitlist Requests
     </a>
 
 
@@ -47,7 +47,7 @@
                    font-bold
                    text-slate-900"
         >
-            Create Wishlist Request
+            Create Waitlist Request
         </h1>
 
 
@@ -451,7 +451,7 @@
                            text-white
                            hover:bg-violet-700"
                 >
-                    Submit Wishlist Request
+                    Submit Waitlist Request
                 </button>
 
             </div>

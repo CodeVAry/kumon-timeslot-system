@@ -74,13 +74,43 @@ class AuditLogController extends Controller
                 ->startOfDay();
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Visible Audit Users
+        |--------------------------------------------------------------------------
+        |
+        | Only changes made by Admin and In Charge users
+        | should be displayed in Audit Logs.
+        |
+        */
+
+        $visibleRoleNames = [
+            'Admin',
+            'In Charge',
+        ];
+
+
         $query =
             AuditLog::query()
-                ->with('user')
+                ->with([
+                    'user.role',
+                ])
                 ->where(
                     'created_at',
                     '>=',
                     $retentionStart
+                )
+                ->whereHas(
+                    'user.role',
+                    function ($query) use (
+                        $visibleRoleNames
+                    ) {
+
+                        $query->whereIn(
+                            'role_name',
+                            $visibleRoleNames
+                        );
+                    }
                 );
 
 
@@ -301,6 +331,18 @@ class AuditLogController extends Controller
                         'created_at',
                         '>=',
                         $retentionStart
+                    )
+                    ->whereHas(
+                        'user.role',
+                        function ($query) use (
+                            $visibleRoleNames
+                        ) {
+
+                            $query->whereIn(
+                                'role_name',
+                                $visibleRoleNames
+                            );
+                        }
                     );
 
 
@@ -487,6 +529,18 @@ class AuditLogController extends Controller
                     '>=',
                     $retentionStart
                 )
+                ->whereHas(
+                    'user.role',
+                    function ($query) use (
+                        $visibleRoleNames
+                    ) {
+
+                        $query->whereIn(
+                            'role_name',
+                            $visibleRoleNames
+                        );
+                    }
+                )
                 ->select('entity_type')
                 ->distinct()
                 ->orderBy('entity_type')
@@ -545,7 +599,31 @@ class AuditLogController extends Controller
         }
 
 
-        $auditLog->load('user');
+        $auditLog->load([
+            'user.role',
+        ]);
+
+
+        if (
+            !$auditLog->user
+            ||
+            !$auditLog->user->role
+            ||
+            !in_array(
+                $auditLog
+                    ->user
+                    ->role
+                    ->role_name,
+                [
+                    'Admin',
+                    'In Charge',
+                ],
+                true
+            )
+        ) {
+
+            abort(404);
+        }
 
 
         return view(

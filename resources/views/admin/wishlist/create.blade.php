@@ -1,8 +1,8 @@
 @extends('layouts.admin')
 
-@section('title', 'Add Wishlist')
+@section('title', 'Add Waitlist')
 
-@section('page-title', 'Add Wishlist')
+@section('page-title', 'Add Waitlist')
 
 
 @php
@@ -262,8 +262,8 @@
                            text-slate-600"
                 >
                     The student's current class will remain
-                    unchanged while this wishlist request is active.
-                    A seat is only used after the wishlist is approved.
+                    unchanged while this Waitlist request is active.
+                    A seat is only used after the Waitlist is approved.
                 </p>
 
             </div>
@@ -321,7 +321,7 @@
                         class="font-semibold
                                text-purple-800"
                     >
-                        Active wishlist already exists
+                        Active Waitlist already exists
                     </p>
 
 
@@ -352,7 +352,7 @@
                                        uppercase
                                        text-purple-500"
                             >
-                                Current Wishlist
+                                Current Waitlist
                             </p>
 
 
@@ -621,7 +621,7 @@
                                                font-semibold
                                                text-yellow-700"
                                     >
-                                        Full — Wishlist
+                                        Full — Waitlist
                                     </span>
 
                                 @endif
@@ -722,11 +722,11 @@
 
                             @if ($existingWishlist)
 
-                                Update Wishlist
+                                Update Waitlist
 
                             @else
 
-                                Add to Wishlist
+                                Add to Waitlist
 
                             @endif
 

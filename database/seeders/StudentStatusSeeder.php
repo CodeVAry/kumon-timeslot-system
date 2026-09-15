@@ -60,7 +60,8 @@ class StudentStatusSeeder extends Seeder
             ],
             [
                 'color_code' => '#f97316',
-                'description' => 'Student currently attending a free trial.',
+                'description' =>
+                    'Student currently attending a free trial.',
                 'is_active' => true,
             ]
         );
@@ -68,7 +69,11 @@ class StudentStatusSeeder extends Seeder
 
         /*
         |--------------------------------------------------------------------------
-        | Vacation
+        | Vacation / Away
+        |--------------------------------------------------------------------------
+        |
+        | The client uses grey to indicate
+        | students who are currently away.
         |--------------------------------------------------------------------------
         */
 
@@ -77,8 +82,9 @@ class StudentStatusSeeder extends Seeder
                 'status_name' => 'Vacation',
             ],
             [
-                'color_code' => '#0891b2',
-                'description' => 'Student temporarily on leave or vacation.',
+                'color_code' => '#9ca3af',
+                'description' =>
+                    'Student temporarily away, on leave or vacation.',
                 'is_active' => true,
             ]
         );

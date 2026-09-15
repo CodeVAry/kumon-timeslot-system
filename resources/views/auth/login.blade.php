@@ -303,26 +303,86 @@
                                     Password
                                 </label>
 
-                                <input
-                                    id="password"
-                                    type="password"
-                                    name="password"
-                                    placeholder="Enter your password"
-                                    autocomplete="current-password"
-                                    required
-                                    class="block h-16 w-full
-                                           rounded-2xl
-                                           border border-cyan-300
-                                           bg-white/55
-                                           px-5 text-base
-                                           text-slate-800
-                                           shadow-sm
-                                           outline-none
-                                           placeholder:text-slate-400
-                                           focus:border-cyan-500
-                                           focus:ring-4
-                                           focus:ring-cyan-200/60"
-                                >
+                                <div class="relative">
+
+                                    <input
+                                        id="password"
+                                        type="password"
+                                        name="password"
+                                        placeholder="Enter your password"
+                                        autocomplete="current-password"
+                                        required
+                                        class="block h-16 w-full
+                                               rounded-2xl
+                                               border border-cyan-300
+                                               bg-white/55
+                                               px-5 pr-28 text-base
+                                               text-slate-800
+                                               shadow-sm
+                                               outline-none
+                                               placeholder:text-slate-400
+                                               focus:border-cyan-500
+                                               focus:ring-4
+                                               focus:ring-cyan-200/60"
+                                    >
+
+                                    <button
+                                        type="button"
+                                        id="togglePassword"
+                                        class="absolute right-4 top-1/2
+                                               -translate-y-1/2
+                                               inline-flex h-10 w-10
+                                               items-center justify-center
+                                               rounded-full
+                                               text-slate-500
+                                               transition
+                                               hover:bg-cyan-50
+                                               hover:text-cyan-700
+                                               focus:outline-none
+                                               focus:ring-2
+                                               focus:ring-cyan-300"
+                                        aria-label="Show password"
+                                        aria-pressed="false"
+                                    >
+                                        <svg
+                                            id="eyeOpenIcon"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="1.8"
+                                            class="h-5 w-5"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M2.25 12s3.75-6 9.75-6 9.75 6 9.75 6-3.75 6-9.75 6S2.25 12 2.25 12Z"
+                                            />
+                                            <circle
+                                                cx="12"
+                                                cy="12"
+                                                r="3"
+                                            />
+                                        </svg>
+
+                                        <svg
+                                            id="eyeClosedIcon"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="1.8"
+                                            class="hidden h-5 w-5"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M3 3l18 18M10.6 10.6A2 2 0 0 0 13.4 13.4M9.9 4.24A10.7 10.7 0 0 1 12 4c6 0 9.75 8 9.75 8a17.7 17.7 0 0 1-2.03 2.8M6.61 6.61C3.88 8.46 2.25 12 2.25 12s3.75 8 9.75 8c1.56 0 2.94-.41 4.12-1.04"
+                                            />
+                                        </svg>
+                                    </button>
+
+                                </div>
 
                                 @error('password')
 
@@ -469,6 +529,80 @@
         </main>
 
     </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const passwordInput =
+                document.getElementById('password');
+
+            const toggleButton =
+                document.getElementById('togglePassword');
+
+            const eyeOpenIcon =
+                document.getElementById('eyeOpenIcon');
+
+            const eyeClosedIcon =
+                document.getElementById('eyeClosedIcon');
+
+
+            if (
+                !passwordInput
+                ||
+                !toggleButton
+                ||
+                !eyeOpenIcon
+                ||
+                !eyeClosedIcon
+            ) {
+                return;
+            }
+
+
+            toggleButton.addEventListener(
+                'click',
+                function () {
+
+                    const showPassword =
+                        passwordInput.type === 'password';
+
+
+                    passwordInput.type =
+                        showPassword
+                            ? 'text'
+                            : 'password';
+
+
+                    eyeOpenIcon.classList.toggle(
+                        'hidden',
+                        showPassword
+                    );
+
+
+                    eyeClosedIcon.classList.toggle(
+                        'hidden',
+                        !showPassword
+                    );
+
+
+                    toggleButton.setAttribute(
+                        'aria-label',
+                        showPassword
+                            ? 'Hide password'
+                            : 'Show password'
+                    );
+
+
+                    toggleButton.setAttribute(
+                        'aria-pressed',
+                        showPassword
+                            ? 'true'
+                            : 'false'
+                    );
+                }
+            );
+        });
+    </script>
 
 </body>
 

@@ -288,7 +288,6 @@
                                bg-blue-100
                                text-blue-600"
                     >
-
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -309,7 +308,6 @@
                                    14.998 0"
                             />
                         </svg>
-
                     </div>
 
 
@@ -361,6 +359,26 @@
 
             <dl class="mt-6 space-y-5">
 
+                <div
+                    class="grid
+                           grid-cols-[120px_1fr]
+                           gap-4"
+                >
+
+                    <dt class="text-sm text-slate-500">
+                        Student ID
+                    </dt>
+
+                    <dd
+                        class="text-sm
+                               font-medium
+                               text-slate-800"
+                    >
+                        {{ $student->external_id }}
+                    </dd>
+
+                </div>
+
 
                 <div
                     class="grid
@@ -383,74 +401,6 @@
                                 ?->format('d M Y')
                             ?? '—'
                         }}
-                    </dd>
-
-                </div>
-
-
-
-                <div
-                    class="grid
-                           grid-cols-[120px_1fr]
-                           gap-4"
-                >
-
-                    <dt class="text-sm text-slate-500">
-                        Phone
-                    </dt>
-
-                    <dd
-                        class="text-sm
-                               font-medium
-                               text-slate-800"
-                    >
-                        {{ $student->phone ?: '—' }}
-                    </dd>
-
-                </div>
-
-
-
-                <div
-                    class="grid
-                           grid-cols-[120px_1fr]
-                           gap-4"
-                >
-
-                    <dt class="text-sm text-slate-500">
-                        Email
-                    </dt>
-
-                    <dd
-                        class="break-all
-                               text-sm
-                               font-medium
-                               text-blue-600"
-                    >
-                        {{ $student->email ?: '—' }}
-                    </dd>
-
-                </div>
-
-
-
-                <div
-                    class="grid
-                           grid-cols-[120px_1fr]
-                           gap-4"
-                >
-
-                    <dt class="text-sm text-slate-500">
-                        Address
-                    </dt>
-
-                    <dd
-                        class="text-sm
-                               font-medium
-                               leading-relaxed
-                               text-slate-800"
-                    >
-                        {{ $student->address ?: '—' }}
                     </dd>
 
                 </div>
@@ -512,7 +462,7 @@
 
 
                 @if (
-                    $primaryGuardian
+                    $student->guardians->isNotEmpty()
                     &&
                     auth()
                         ->user()
@@ -534,7 +484,8 @@
                         ) }}"
                         class="text-sm
                                font-semibold
-                               text-blue-600"
+                               text-blue-600
+                               hover:text-blue-800"
                     >
                         Edit
                     </a>
@@ -544,133 +495,76 @@
             </div>
 
 
-            @if ($primaryGuardian)
+            @if ($student->guardians->isNotEmpty())
 
-                <dl class="mt-6 space-y-5">
+                <div class="mt-6 space-y-4">
 
+                    @foreach ($student->guardians as $guardian)
 
-                    <div
-                        class="grid
-                               grid-cols-[110px_1fr]
-                               gap-4"
-                    >
-
-                        <dt class="text-sm text-slate-500">
-                            Name
-                        </dt>
-
-                        <dd
-                            class="text-sm
-                                   font-medium
-                                   text-slate-800"
+                        <div
+                            class="rounded-xl
+                                   border
+                                   border-slate-200
+                                   bg-slate-50
+                                   p-4"
                         >
-                            {{ $primaryGuardian->first_name }}
-                            {{ $primaryGuardian->last_name }}
-                        </dd>
 
-                    </div>
-
-
-
-                    <div
-                        class="grid
-                               grid-cols-[110px_1fr]
-                               gap-4"
-                    >
-
-                        <dt class="text-sm text-slate-500">
-                            Relationship
-                        </dt>
-
-                        <dd
-                            class="text-sm
-                                   font-medium
-                                   text-slate-800"
-                        >
-                            {{
-                                $primaryGuardian
-                                    ->pivot
-                                    ->relationship
-                                ?: '—'
-                            }}
-                        </dd>
-
-                    </div>
+                            <p
+                                class="font-semibold
+                                       text-slate-900"
+                            >
+                                {{ $guardian->first_name }}
+                                {{ $guardian->last_name }}
+                            </p>
 
 
+                            <dl class="mt-3 space-y-3">
 
-                    <div
-                        class="grid
-                               grid-cols-[110px_1fr]
-                               gap-4"
-                    >
+                                <div
+                                    class="grid
+                                           grid-cols-[80px_1fr]
+                                           gap-3"
+                                >
+                                    <dt class="text-sm text-slate-500">
+                                        Phone
+                                    </dt>
 
-                        <dt class="text-sm text-slate-500">
-                            Phone
-                        </dt>
-
-                        <dd
-                            class="text-sm
-                                   font-medium
-                                   text-slate-800"
-                        >
-                            {{ $primaryGuardian->phone ?: '—' }}
-                        </dd>
-
-                    </div>
-
+                                    <dd
+                                        class="text-sm
+                                               font-medium
+                                               text-slate-800"
+                                    >
+                                        {{ $guardian->phone ?: '—' }}
+                                    </dd>
+                                </div>
 
 
-                    <div
-                        class="grid
-                               grid-cols-[110px_1fr]
-                               gap-4"
-                    >
+                                <div
+                                    class="grid
+                                           grid-cols-[80px_1fr]
+                                           gap-3"
+                                >
+                                    <dt class="text-sm text-slate-500">
+                                        Email
+                                    </dt>
 
-                        <dt class="text-sm text-slate-500">
-                            Email
-                        </dt>
+                                    <dd
+                                        class="break-all
+                                               text-sm
+                                               font-medium
+                                               text-blue-600"
+                                    >
+                                        {{ $guardian->email ?: '—' }}
+                                    </dd>
+                                </div>
 
-                        <dd
-                            class="break-all
-                                   text-sm
-                                   font-medium
-                                   text-blue-600"
-                        >
-                            {{ $primaryGuardian->email ?: '—' }}
-                        </dd>
+                            </dl>
 
-                    </div>
+                        </div>
 
-                </dl>
+                    @endforeach
 
-
-                @if ($guardianCount > 1)
-
-                    <div
-                        class="mt-5
-                               rounded-xl
-                               bg-indigo-50
-                               px-4 py-3"
-                    >
-
-                        <p
-                            class="text-xs
-                                   font-semibold
-                                   text-indigo-700"
-                        >
-                            + {{ $guardianCount - 1 }}
-
-                            {{
-                                $guardianCount - 1 === 1
-                                    ? 'additional guardian'
-                                    : 'additional guardians'
-                            }}
-                        </p>
-
-                    </div>
-
-                @endif
+                </div>
 
             @else
 
@@ -857,32 +751,6 @@
                                 ->join_date
                                 ?->format('d M Y')
                             ?? '—'
-                        }}
-                    </dd>
-
-                </div>
-
-
-
-                <div
-                    class="grid
-                           grid-cols-[110px_1fr]
-                           gap-4"
-                >
-
-                    <dt class="text-sm text-slate-500">
-                        Leave Alone
-                    </dt>
-
-                    <dd
-                        class="text-sm
-                               font-medium
-                               text-slate-800"
-                    >
-                        {{
-                            $student->can_leave_alone
-                                ? 'Yes'
-                                : 'No'
                         }}
                     </dd>
 
@@ -2134,92 +2002,6 @@
 
 
 
-    {{-- =====================================================
-        STUDENT NOTES
-    ====================================================== --}}
-
-    <section
-        class="rounded-2xl
-               border
-               border-slate-200
-               bg-white
-               p-6
-               shadow-sm"
-    >
-
-        <div
-            class="flex
-                   items-center
-                   justify-between
-                   gap-4"
-        >
-
-            <h2
-                class="text-lg
-                       font-bold
-                       text-slate-900"
-            >
-                Student Notes
-            </h2>
-
-
-            @if (
-                auth()
-                    ->user()
-                    ->hasPermission(
-                        'students.edit'
-                    )
-            )
-
-                <a
-                    href="{{ route(
-                        'admin.students.edit',
-                        [
-                            'student' =>
-                                $student,
-
-                            'section' =>
-                                'notes',
-                        ]
-                    ) }}"
-                    class="text-sm
-                           font-semibold
-                           text-blue-600
-                           hover:text-blue-800"
-                >
-                    ✎ Edit
-                </a>
-
-            @endif
-
-        </div>
-
-
-        @if ($student->notes)
-
-            <p
-                class="mt-4
-                       text-sm
-                       leading-relaxed
-                       text-slate-700"
-            >
-                {{ $student->notes }}
-            </p>
-
-        @else
-
-            <p
-                class="mt-4
-                       text-sm
-                       text-slate-400"
-            >
-                No notes have been recorded
-                for this student.
-            </p>
-
-        @endif
-
-    </section>
 
 </div>
 

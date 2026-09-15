@@ -7,6 +7,7 @@ use App\Models\Admin\Enrolment;
 use App\Models\Admin\Guardian;
 use App\Models\Admin\Student;
 use App\Models\Admin\StudentLeave;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -419,12 +420,14 @@ class ParentLeaveController extends Controller
                 'start_date' => [
                     'required',
                     'date',
+                    'after_or_equal:today',
                 ],
 
                 'expected_return_date' => [
                     'required',
                     'date',
                     'after:start_date',
+                    'after_or_equal:today',
                 ],
 
                 'homework_requirement' => [
@@ -626,8 +629,6 @@ class ParentLeaveController extends Controller
             $leave->status
             !==
             'approved'
-            ||
-            $leave->actual_return_date
         ) {
 
             return redirect()
@@ -642,25 +643,6 @@ class ParentLeaveController extends Controller
         }
 
 
-        if (
-            today()->gte(
-                $leave
-                    ->start_date
-                    ->copy()
-                    ->startOfDay()
-            )
-        ) {
-
-            return redirect()
-                ->route(
-                    'parent.leave.show',
-                    $leave
-                )
-                ->with(
-                    'error',
-                    'Leave cannot be edited after it has started.'
-                );
-        }
 
 
         return view(
@@ -693,8 +675,6 @@ class ParentLeaveController extends Controller
             $leave->status
             !==
             'approved'
-            ||
-            $leave->actual_return_date
         ) {
 
             return redirect()
@@ -709,25 +689,6 @@ class ParentLeaveController extends Controller
         }
 
 
-        if (
-            today()->gte(
-                $leave
-                    ->start_date
-                    ->copy()
-                    ->startOfDay()
-            )
-        ) {
-
-            return redirect()
-                ->route(
-                    'parent.leave.show',
-                    $leave
-                )
-                ->with(
-                    'error',
-                    'Leave cannot be edited after it has started.'
-                );
-        }
 
 
         $validated =
@@ -976,6 +937,7 @@ class ParentLeaveController extends Controller
     */
 
     public function returnEarly(
+        Request $request,
         StudentLeave $leave
     ) {
         $this->checkLeaveAccess(
@@ -1001,20 +963,6 @@ class ParentLeaveController extends Controller
         }
 
 
-        if ($leave->actual_return_date) {
-
-            return redirect()
-                ->route(
-                    'parent.leave.show',
-                    $leave
-                )
-                ->with(
-                    'error',
-                    'This leave has already ended.'
-                );
-        }
-
-
         if (
             today()->lt(
                 $leave
@@ -1036,8 +984,61 @@ class ParentLeaveController extends Controller
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Selected Return Date
+        |--------------------------------------------------------------------------
+        |
+        | Parent cannot record an old/past date.
+        | The selected date must be from today up to the expected return date.
+        |
+        */
+
+        $validated =
+            $request->validate([
+                'actual_return_date' => [
+                    'required',
+                    'date',
+                    'after_or_equal:today',
+                ],
+            ]);
+
+
+        $actualReturnDate =
+            \Carbon\Carbon::parse(
+                $validated[
+                    'actual_return_date'
+                ]
+            )
+                ->startOfDay();
+
+
+        if (
+            $actualReturnDate->gt(
+                $leave
+                    ->expected_return_date
+                    ->copy()
+                    ->startOfDay()
+            )
+        ) {
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'actual_return_date' =>
+                        'Return date cannot be after the expected return date.',
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Save Return
+        |--------------------------------------------------------------------------
+        */
+
         $returnedEarly =
-            today()->lt(
+            $actualReturnDate->lt(
                 $leave
                     ->expected_return_date
                     ->copy()
@@ -1047,7 +1048,7 @@ class ParentLeaveController extends Controller
 
         $leave->update([
             'actual_return_date' =>
-                today()
+                $actualReturnDate
                     ->toDateString(),
 
             'returned_early' =>

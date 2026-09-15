@@ -1,8 +1,8 @@
 @extends('layouts.admin')
 
-@section('title', 'Wishlist')
+@section('title', 'Waitlist')
 
-@section('page-title', 'Wishlist')
+@section('page-title', 'Waitlist')
 
 
 @php
@@ -49,7 +49,7 @@
                    font-bold
                    text-slate-900"
         >
-            Wishlist
+            Waitlist
         </h1>
 
 
@@ -184,7 +184,7 @@
                        font-semibold
                        text-slate-600"
             >
-                Active Wishlist
+                Active Waitlist
             </p>
 
 
@@ -844,7 +844,7 @@
                                                 ) }}"
                                                 onsubmit="
                                                     return confirm(
-                                                        'Approve this wishlist request and move the student to the requested class?'
+                                                        'Approve this waitlist request and move the student to the requested class?'
                                                     );
                                                 "
                                             >
@@ -958,7 +958,7 @@
                                                     onclick="
                                                         const reason =
                                                             prompt(
-                                                                'Enter the reason for rejecting this wishlist request:'
+                                                                'Enter the reason for rejecting this waitlist request:'
                                                             );
 
                                                         if (
@@ -1021,7 +1021,7 @@
                                                 ) }}"
                                                 onsubmit="
                                                     return confirm(
-                                                        'Cancel this wishlist request?'
+                                                        'Cancel this waitlist request?'
                                                     );
                                                 "
                                             >
@@ -1094,7 +1094,7 @@
                                     class="font-semibold
                                            text-slate-700"
                                 >
-                                    No wishlist requests
+                                    No waitlist requests
                                 </p>
 
 
@@ -1103,7 +1103,7 @@
                                            text-sm
                                            text-slate-500"
                                 >
-                                    Parent wishlist requests
+                                    Parent waitlist requests
                                     will appear here.
                                 </p>
 

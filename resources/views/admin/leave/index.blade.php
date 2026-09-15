@@ -649,12 +649,12 @@
                                 null;
 
 
-                            $returnBadgeClass =
-                                null;
+                            $returnBadgeStyle =
+                                '';
 
 
-                            $rowClass =
-                                'hover:bg-blue-50/30';
+                            $rowStyle =
+                                '';
 
 
                             /*
@@ -673,12 +673,12 @@
                                     'Returned Early';
 
 
-                                $returnBadgeClass =
-                                    'bg-cyan-100 text-cyan-700';
+                                $returnBadgeStyle =
+                                    'background-color: #cffafe; color: #0e7490;';
 
 
-                                $rowClass =
-                                    'bg-cyan-50 hover:bg-cyan-100/60';
+                                $rowStyle =
+                                    'background-color: #ecfeff;';
                             }
 
 
@@ -698,12 +698,12 @@
                                     'Returns Today';
 
 
-                                $returnBadgeClass =
-                                    'bg-green-100 text-green-700';
+                                $returnBadgeStyle =
+                                    'background-color: #dcfce7; color: #15803d;';
 
 
-                                $rowClass =
-                                    'bg-green-50 hover:bg-green-100/60';
+                                $rowStyle =
+                                    'background-color: #f0fdf4;';
                             }
 
 
@@ -731,12 +731,12 @@
                                     );
 
 
-                                $returnBadgeClass =
-                                    'bg-emerald-100 text-emerald-700';
+                                $returnBadgeStyle =
+                                    'background-color: #d1fae5; color: #047857;';
 
 
-                                $rowClass =
-                                    'bg-emerald-50/70 hover:bg-emerald-100/60';
+                                $rowStyle =
+                                    'background-color: #ecfdf5;';
                             }
 
 
@@ -768,18 +768,16 @@
                         @endphp
 
 
-                        <tr class="transition {{ $rowClass }}">
+                        <tr
+                            class="transition hover:opacity-95"
+                            style="{{ $rowStyle }}"
+                        >
 
                             <td class="px-6 py-5">
 
                                 <p class="font-bold text-slate-900">
                                     {{ $student?->first_name }}
                                     {{ $student?->last_name }}
-                                </p>
-
-
-                                <p class="mt-1 text-xs text-slate-400">
-                                    {{ $student?->external_id ?? '—' }}
                                 </p>
 
                             </td>
@@ -831,8 +829,8 @@
                                                rounded-full
                                                px-3 py-1
                                                text-xs
-                                               font-semibold
-                                               {{ $returnBadgeClass }}"
+                                               font-semibold"
+                                        style="{{ $returnBadgeStyle }}"
                                     >
                                         {{ $returnBadge }}
                                     </span>

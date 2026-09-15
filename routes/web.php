@@ -1270,6 +1270,15 @@ Route::prefix('parent')
         )
             ->name('otp');
 
+        Route::post(
+            '/otp/resend',
+            [
+                ParentLoginController::class,
+                'resendOtp',
+            ]
+        )
+            ->name('otp.resend');
+
 
         Route::post(
             '/verify-otp',

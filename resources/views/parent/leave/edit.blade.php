@@ -7,6 +7,18 @@
 
 @section('content')
 
+@php
+    $leaveStarted =
+        $leave
+            ->start_date
+            ->copy()
+            ->startOfDay()
+            ->lte(
+                now()->startOfDay()
+            );
+@endphp
+
+
 <div
     class="min-h-full
            rounded-[28px]
@@ -46,11 +58,11 @@
                    font-bold
                    text-slate-900"
         >
-            Edit Leave
+            Edit / Extend Leave
         </h1>
 
         <p class="mt-2 text-sm text-slate-500">
-            Update the upcoming leave information for
+            Update the leave information for
 
             <strong>
                 {{ $student->first_name }}
@@ -122,24 +134,65 @@
                         Start Date *
                     </label>
 
-                    <input
-                        type="date"
-                        id="start_date"
-                        name="start_date"
-                        value="{{
-                            old(
-                                'start_date',
+                    @if ($leaveStarted)
+
+                        <input
+                            type="date"
+                            value="{{
                                 $leave
                                     ->start_date
                                     ->format('Y-m-d')
-                            )
-                        }}"
-                        required
-                        class="h-12
-                               w-full
-                               rounded-xl
-                               border-slate-300"
-                    >
+                            }}"
+                            disabled
+                            class="h-12
+                                   w-full
+                                   rounded-xl
+                                   border-slate-300
+                                   bg-slate-100
+                                   text-slate-500"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="start_date"
+                            value="{{
+                                $leave
+                                    ->start_date
+                                    ->format('Y-m-d')
+                            }}"
+                        >
+
+                        <p
+                            class="mt-2
+                                   text-xs
+                                   text-slate-500"
+                        >
+                            Start Date is locked because the leave has already started.
+                        </p>
+
+                    @else
+
+                        <input
+                            type="date"
+                            id="start_date"
+                            name="start_date"
+                            value="{{
+                                old(
+                                    'start_date',
+                                    $leave
+                                        ->start_date
+                                        ->format('Y-m-d')
+                                )
+                            }}"
+                            min="{{ now()->toDateString() }}"
+                            required
+                            class="h-12
+                                   w-full
+                                   rounded-xl
+                                   border-slate-300"
+                        >
+
+                    @endif
 
                 </div>
 
@@ -167,12 +220,21 @@
                                     ->format('Y-m-d')
                             )
                         }}"
+                        min="{{ now()->toDateString() }}"
                         required
                         class="h-12
                                w-full
                                rounded-xl
                                border-slate-300"
                     >
+
+                    <p
+                        class="mt-2
+                               text-xs
+                               text-slate-500"
+                    >
+                        Change this date to extend or shorten the leave.
+                    </p>
 
                 </div>
 
@@ -200,10 +262,10 @@
 
                         @foreach ([
                             'none_required'
-                                => 'None Required',
+                                => 'No Homework',
 
                             'same_as_normal'
-                                => 'Same as Normal',
+                                => 'Normal',
 
                             'increase'
                                 => 'Increase',

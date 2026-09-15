@@ -9,18 +9,29 @@ class StudentLeave extends Model
 {
     /*
     |--------------------------------------------------------------------------
-    | Dynamic Vacation Display
+    | Dynamic Vacation / Away Display
     |--------------------------------------------------------------------------
     |
     | Vacation is NOT a permanent StudentStatus.
-    | It temporarily overrides the student's normal status.
+    |
+    | When a student has an active leave record,
+    | Vacation temporarily overrides the student's
+    | normal status for schedule and export display.
+    |
+    | The client uses GREY for students who are away.
     |--------------------------------------------------------------------------
     */
 
     public const VACATION_LABEL = 'Vacation';
 
-    public const VACATION_COLOR = '#0891b2';
+    public const VACATION_COLOR = '#9ca3af';
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Fillable
+    |--------------------------------------------------------------------------
+    */
 
     protected $fillable = [
         'student_id',
@@ -39,6 +50,12 @@ class StudentLeave extends Model
         'created_by_user_id',
     ];
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Casts
+    |--------------------------------------------------------------------------
+    */
 
     protected $casts = [
         'start_date' => 'date',
@@ -96,8 +113,9 @@ class StudentLeave extends Model
     |--------------------------------------------------------------------------
     */
 
-    public function scopeApproved($query)
-    {
+    public function scopeApproved(
+        $query
+    ) {
         return $query->where(
             'status',
             'approved'
@@ -105,8 +123,15 @@ class StudentLeave extends Model
     }
 
 
-    public function scopeCancelled($query)
-    {
+    /*
+    |--------------------------------------------------------------------------
+    | Cancelled Leave
+    |--------------------------------------------------------------------------
+    */
+
+    public function scopeCancelled(
+        $query
+    ) {
         return $query->where(
             'status',
             'cancelled'
@@ -117,6 +142,19 @@ class StudentLeave extends Model
     /*
     |--------------------------------------------------------------------------
     | Leave Active On A Specific Date
+    |--------------------------------------------------------------------------
+    |
+    | A leave is active when:
+    |
+    | - status is approved
+    | - leave has already started
+    | - expected return date has not passed
+    | - student has not already returned
+    |
+    | If actual_return_date is the same as the
+    | selected date, the student is considered
+    | returned on that date and therefore is
+    | no longer shown as Vacation.
     |--------------------------------------------------------------------------
     */
 
@@ -146,10 +184,12 @@ class StudentLeave extends Model
                 $date
             )
             ->where(
-                function ($query) use ($date) {
+                function ($query) use (
+                    $date
+                ) {
 
                     /*
-                     * Not returned yet.
+                     * Student has not returned yet.
                      */
                     $query
                         ->whereNull(
@@ -157,8 +197,8 @@ class StudentLeave extends Model
                         )
 
                         /*
-                         * Or returned later than
-                         * the date being checked.
+                         * Or the student returned
+                         * after the date being checked.
                          */
                         ->orWhereDate(
                             'actual_return_date',
@@ -176,8 +216,9 @@ class StudentLeave extends Model
     |--------------------------------------------------------------------------
     */
 
-    public function scopeCurrent($query)
-    {
+    public function scopeCurrent(
+        $query
+    ) {
         return $query->activeOnDate(
             now()->toDateString()
         );
@@ -190,8 +231,9 @@ class StudentLeave extends Model
     |--------------------------------------------------------------------------
     */
 
-    public function scopeUpcoming($query)
-    {
+    public function scopeUpcoming(
+        $query
+    ) {
         return $query
             ->where(
                 'status',
@@ -214,8 +256,9 @@ class StudentLeave extends Model
     |--------------------------------------------------------------------------
     */
 
-    public function scopeCompleted($query)
-    {
+    public function scopeCompleted(
+        $query
+    ) {
         return $query
             ->where(
                 'status',

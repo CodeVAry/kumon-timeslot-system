@@ -338,6 +338,7 @@
                         name="start_date"
                         id="start_date"
                         value="{{ old('start_date') }}"
+                        min="{{ now()->toDateString() }}"
                         required
                         class="h-12
                                w-full

@@ -1,8 +1,8 @@
 @extends('layouts.parent')
 
-@section('title', 'Wishlist Details')
+@section('title', 'Waitlist Details')
 
-@section('page-title', 'Wishlist Details')
+@section('page-title', 'Waitlist Details')
 
 
 @section('content')
@@ -69,7 +69,7 @@
                font-semibold
                text-violet-700"
     >
-        ← Back to Wishlist
+        ← Back to Waitlist
     </a>
 
 
@@ -136,7 +136,7 @@
                            uppercase
                            text-violet-600"
                 >
-                    Wishlist Details
+                    Waitlist Details
                 </p>
 
 
@@ -505,7 +505,7 @@
                     type="submit"
                     onclick="
                         return confirm(
-                            'Cancel this wishlist request?'
+                            'Cancel this Waitlist request?'
                         );
                     "
                     class="h-11
@@ -553,7 +553,7 @@
                     type="submit"
                     onclick="
                         return confirm(
-                            'Delete this wishlist request permanently?'
+                            'Delete this Waitlist request permanently?'
                         );
                     "
                     class="h-11
