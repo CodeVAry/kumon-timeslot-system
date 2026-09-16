@@ -4,15 +4,25 @@ namespace App\Services;
 
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ScheduleExcelExporter
 {
+    private const MAX_DETAIL_ROWS_PER_CHUNK = 20;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Single Day
+    |--------------------------------------------------------------------------
+    */
+
     public function download(
         Collection $rows,
         Carbon $date,
@@ -27,33 +37,152 @@ class ScheduleExcelExporter
                 ->getActiveSheet();
 
 
+        $this->buildDaySheet(
+            $sheet,
+            $rows,
+            $date
+        );
+
+
+        return $this->stream(
+            $spreadsheet,
+            $fileName
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | All Days
+    |--------------------------------------------------------------------------
+    |
+    | One worksheet is created for each working day.
+    |--------------------------------------------------------------------------
+    */
+
+    public function downloadMultiDay(
+        Collection $daySchedules,
+        string $fileName
+    ) {
+        $spreadsheet =
+            new Spreadsheet();
+
+
+        if (
+            $daySchedules
+                ->isEmpty()
+        ) {
+
+            $sheet =
+                $spreadsheet
+                    ->getActiveSheet();
+
+
+            $sheet->setTitle(
+                'No Data'
+            );
+
+
+            $sheet->setCellValue(
+                'A1',
+                'No students matched the selected filters.'
+            );
+
+
+            return $this->stream(
+                $spreadsheet,
+                $fileName
+            );
+        }
+
+
+        foreach (
+            $daySchedules
+            as $index =>
+                $schedule
+        ) {
+
+            if (
+                $index
+                ===
+                0
+            ) {
+
+                $sheet =
+                    $spreadsheet
+                        ->getActiveSheet();
+
+            } else {
+
+                $sheet =
+                    $spreadsheet
+                        ->createSheet();
+            }
+
+
+            $this->buildDaySheet(
+                $sheet,
+                $schedule[
+                    'rows'
+                ],
+                $schedule[
+                    'date'
+                ]
+            );
+        }
+
+
+        $spreadsheet->setActiveSheetIndex(
+            0
+        );
+
+
+        return $this->stream(
+            $spreadsheet,
+            $fileName
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Build One Day Worksheet
+    |--------------------------------------------------------------------------
+    */
+
+    private function buildDaySheet(
+        Worksheet $sheet,
+        Collection $rows,
+        Carbon $date
+    ): void {
+
         $sheet->setTitle(
             substr(
-                $date->format('l'),
+                $date->format(
+                    'l'
+                ),
                 0,
                 31
             )
         );
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Columns
-        |--------------------------------------------------------------------------
-        |
-        | A = Time
-        | B = Subject / Student
-        |--------------------------------------------------------------------------
-        */
-
         $sheet
-            ->getColumnDimension('A')
-            ->setWidth(12);
+            ->getColumnDimension(
+                'A'
+            )
+            ->setWidth(
+                12
+            );
 
 
         $sheet
-            ->getColumnDimension('B')
-            ->setWidth(42);
+            ->getColumnDimension(
+                'B'
+            )
+            ->setWidth(
+                42
+            );
 
 
         /*
@@ -74,14 +203,22 @@ class ScheduleExcelExporter
 
 
         $sheet
-            ->getStyle('A1:B1')
+            ->getStyle(
+                'A1:B1'
+            )
             ->getFont()
-            ->setBold(true)
-            ->setSize(16);
+            ->setBold(
+                true
+            )
+            ->setSize(
+                16
+            );
 
 
         $sheet
-            ->getStyle('A1:B1')
+            ->getStyle(
+                'A1:B1'
+            )
             ->getAlignment()
             ->setHorizontal(
                 Alignment::HORIZONTAL_CENTER
@@ -92,7 +229,9 @@ class ScheduleExcelExporter
 
 
         $sheet
-            ->getStyle('A1:B1')
+            ->getStyle(
+                'A1:B1'
+            )
             ->getFill()
             ->setFillType(
                 Fill::FILL_SOLID
@@ -104,8 +243,12 @@ class ScheduleExcelExporter
 
 
         $sheet
-            ->getRowDimension(1)
-            ->setRowHeight(30);
+            ->getRowDimension(
+                1
+            )
+            ->setRowHeight(
+                30
+            );
 
 
         /*
@@ -128,14 +271,22 @@ class ScheduleExcelExporter
 
 
         $sheet
-            ->getStyle('A3:B3')
+            ->getStyle(
+                'A3:B3'
+            )
             ->getFont()
-            ->setBold(true)
-            ->setSize(13);
+            ->setBold(
+                true
+            )
+            ->setSize(
+                13
+            );
 
 
         $sheet
-            ->getStyle('A3:B3')
+            ->getStyle(
+                'A3:B3'
+            )
             ->getAlignment()
             ->setHorizontal(
                 Alignment::HORIZONTAL_CENTER
@@ -146,7 +297,9 @@ class ScheduleExcelExporter
 
 
         $sheet
-            ->getStyle('A3:B3')
+            ->getStyle(
+                'A3:B3'
+            )
             ->getFill()
             ->setFillType(
                 Fill::FILL_SOLID
@@ -158,8 +311,12 @@ class ScheduleExcelExporter
 
 
         $sheet
-            ->getRowDimension(3)
-            ->setRowHeight(25);
+            ->getRowDimension(
+                3
+            )
+            ->setRowHeight(
+                25
+            );
 
 
         /*
@@ -181,14 +338,22 @@ class ScheduleExcelExporter
 
 
         $sheet
-            ->getStyle('A4:B4')
+            ->getStyle(
+                'A4:B4'
+            )
             ->getFont()
-            ->setBold(true)
-            ->setSize(11);
+            ->setBold(
+                true
+            )
+            ->setSize(
+                11
+            );
 
 
         $sheet
-            ->getStyle('A4:B4')
+            ->getStyle(
+                'A4:B4'
+            )
             ->getAlignment()
             ->setHorizontal(
                 Alignment::HORIZONTAL_CENTER
@@ -199,7 +364,9 @@ class ScheduleExcelExporter
 
 
         $sheet
-            ->getStyle('A4:B4')
+            ->getStyle(
+                'A4:B4'
+            )
             ->getFill()
             ->setFillType(
                 Fill::FILL_SOLID
@@ -212,7 +379,7 @@ class ScheduleExcelExporter
 
         /*
         |--------------------------------------------------------------------------
-        | Group Data
+        | Data
         |--------------------------------------------------------------------------
         */
 
@@ -223,63 +390,84 @@ class ScheduleExcelExporter
                 );
 
 
+        $chunks =
+            $this->buildPrintableChunks(
+                $timeGroups
+            );
+
+
         $currentRow =
             5;
 
 
         foreach (
-            $timeGroups
-            as $time =>
-                $timeRows
+            $chunks
+            as $chunkIndex =>
+                $chunk
         ) {
+
+            if (
+                $chunkIndex
+                >
+                0
+            ) {
+
+                $sheet->setBreak(
+                    'A'
+                    .
+                    $currentRow,
+                    Worksheet::BREAK_ROW
+                );
+            }
+
 
             $timeStartRow =
                 $currentRow;
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Subject Groups Under This Time
-            |--------------------------------------------------------------------------
-            */
-
-            $subjectGroups =
-                $timeRows
-                    ->groupBy(
-                        'class_display'
-                    );
-
-
             foreach (
-                $subjectGroups
-                as $subject =>
-                    $subjectRows
+                $chunk[
+                    'subjects'
+                ]
+                as $subjectBlock
             ) {
 
                 /*
                 |--------------------------------------------------------------------------
-                | Subject Heading
+                | Subject
                 |--------------------------------------------------------------------------
                 */
 
                 $sheet->setCellValue(
-                    'B' . $currentRow,
-                    $subject
+                    'B'
+                    .
+                    $currentRow,
+                    $subjectBlock[
+                        'subject_name'
+                    ]
                 );
 
 
                 $sheet
                     ->getStyle(
-                        'B' . $currentRow
+                        'B'
+                        .
+                        $currentRow
                     )
                     ->getFont()
-                    ->setBold(true)
-                    ->setSize(13);
+                    ->setBold(
+                        true
+                    )
+                    ->setSize(
+                        13
+                    );
 
 
                 $sheet
                     ->getStyle(
-                        'B' . $currentRow
+                        'B'
+                        .
+                        $currentRow
                     )
                     ->getAlignment()
                     ->setHorizontal(
@@ -292,7 +480,9 @@ class ScheduleExcelExporter
 
                 $sheet
                     ->getStyle(
-                        'B' . $currentRow
+                        'B'
+                        .
+                        $currentRow
                     )
                     ->getFill()
                     ->setFillType(
@@ -315,7 +505,9 @@ class ScheduleExcelExporter
 
                 $this->applyBorders(
                     $sheet,
-                    'A' . $currentRow
+                    'A'
+                    .
+                    $currentRow
                     .
                     ':B'
                     .
@@ -328,17 +520,21 @@ class ScheduleExcelExporter
 
                 /*
                 |--------------------------------------------------------------------------
-                | Students Under Subject
+                | Students
                 |--------------------------------------------------------------------------
                 */
 
                 foreach (
-                    $subjectRows
+                    $subjectBlock[
+                        'rows'
+                    ]
                     as $row
                 ) {
 
                     $sheet->setCellValue(
-                        'B' . $currentRow,
+                        'B'
+                        .
+                        $currentRow,
                         $row[
                             'student_name'
                         ]
@@ -352,7 +548,9 @@ class ScheduleExcelExporter
                             $currentRow
                         )
                         ->getFont()
-                        ->setSize(11);
+                        ->setSize(
+                            11
+                        );
 
 
                     $sheet
@@ -369,20 +567,6 @@ class ScheduleExcelExporter
                             Alignment::VERTICAL_CENTER
                         );
 
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Student Status Colour
-                    |--------------------------------------------------------------------------
-                    |
-                    | Active = NO colour.
-                    |
-                    | Other statuses use their configured
-                    | StudentStatus colour.
-                    |
-                    | Vacation uses the dynamic leave colour.
-                    |--------------------------------------------------------------------------
-                    */
 
                     if (
                         !empty(
@@ -401,36 +585,9 @@ class ScheduleExcelExporter
                             );
 
 
-                        $sheet
-                            ->getStyle(
-                                'B'
-                                .
-                                $currentRow
-                            )
-                            ->getFill()
-                            ->setFillType(
-                                Fill::FILL_SOLID
-                            )
-                            ->getStartColor()
-                            ->setRGB(
-                                strtoupper(
-                                    $colour
-                                )
-                            );
-
-
-                        $sheet
-                            ->getStyle(
-                                'B'
-                                .
-                                $currentRow
-                            )
-                            ->getFont()
-                            ->setBold(true);
-
-
                         if (
-                            $this->useWhiteText(
+                            preg_match(
+                                '/^[0-9A-Fa-f]{6}$/',
                                 $colour
                             )
                         ) {
@@ -441,11 +598,48 @@ class ScheduleExcelExporter
                                     .
                                     $currentRow
                                 )
-                                ->getFont()
-                                ->getColor()
+                                ->getFill()
+                                ->setFillType(
+                                    Fill::FILL_SOLID
+                                )
+                                ->getStartColor()
                                 ->setRGB(
-                                    'FFFFFF'
+                                    strtoupper(
+                                        $colour
+                                    )
                                 );
+
+
+                            $sheet
+                                ->getStyle(
+                                    'B'
+                                    .
+                                    $currentRow
+                                )
+                                ->getFont()
+                                ->setBold(
+                                    true
+                                );
+
+
+                            if (
+                                $this->useWhiteText(
+                                    $colour
+                                )
+                            ) {
+
+                                $sheet
+                                    ->getStyle(
+                                        'B'
+                                        .
+                                        $currentRow
+                                    )
+                                    ->getFont()
+                                    ->getColor()
+                                    ->setRGB(
+                                        'FFFFFF'
+                                    );
+                            }
                         }
                     }
 
@@ -480,10 +674,6 @@ class ScheduleExcelExporter
             |--------------------------------------------------------------------------
             | Time
             |--------------------------------------------------------------------------
-            |
-            | Time appears ONCE and spans the complete
-            | set of subjects/students for the time.
-            |--------------------------------------------------------------------------
             */
 
             $timeEndRow =
@@ -516,19 +706,32 @@ class ScheduleExcelExporter
                 }
 
 
+                $timeLabel =
+                    $chunk[
+                        'time'
+                    ];
+
+
+                if (
+                    $chunk[
+                        'chunk_number'
+                    ]
+                    >
+                    1
+                ) {
+
+                    $timeLabel .=
+                        ' cont.';
+                }
+
+
                 $sheet->setCellValue(
                     'A'
                     .
                     $timeStartRow,
-                    $time
+                    $timeLabel
                 );
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | Rotate Time 90 Degrees
-                |--------------------------------------------------------------------------
-                */
 
                 $sheet
                     ->getStyle(
@@ -555,8 +758,12 @@ class ScheduleExcelExporter
                         $timeStartRow
                     )
                     ->getFont()
-                    ->setBold(true)
-                    ->setSize(11);
+                    ->setBold(
+                        true
+                    )
+                    ->setSize(
+                        11
+                    );
 
 
                 $this->applyBorders(
@@ -573,16 +780,12 @@ class ScheduleExcelExporter
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | General Formatting
-        |--------------------------------------------------------------------------
-        */
-
         $lastRow =
             max(
                 4,
-                $currentRow - 1
+                $currentRow
+                -
+                1
             );
 
 
@@ -615,10 +818,10 @@ class ScheduleExcelExporter
         $sheet
             ->getPageSetup()
             ->setOrientation(
-                \PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE
+                PageSetup::ORIENTATION_LANDSCAPE
             )
             ->setPaperSize(
-                \PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4
+                PageSetup::PAPERSIZE_A4
             )
             ->setFitToWidth(
                 1
@@ -647,16 +850,197 @@ class ScheduleExcelExporter
         $sheet
             ->getPageSetup()
             ->setRowsToRepeatAtTopByStartAndEnd(
-                1,
+                4,
                 4
             );
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Download XLSX
-        |--------------------------------------------------------------------------
-        */
+        $sheet
+            ->getPageSetup()
+            ->setPrintArea(
+                'A1:B'
+                .
+                $lastRow
+            );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Printable Chunks
+    |--------------------------------------------------------------------------
+    */
+
+    private function buildPrintableChunks(
+        Collection $timeGroups
+    ): Collection {
+
+        $chunks =
+            collect();
+
+
+        foreach (
+            $timeGroups
+            as $time =>
+                $timeRows
+        ) {
+
+            $subjectGroups =
+                $timeRows
+                    ->groupBy(
+                        'class_display'
+                    );
+
+
+            $currentSubjects = [];
+            $currentRowCount = 0;
+            $chunkNumber = 1;
+
+
+            foreach (
+                $subjectGroups
+                as $subjectName =>
+                    $subjectRows
+            ) {
+
+                $subjectRows =
+                    $subjectRows
+                        ->values();
+
+
+                $studentsPerPart =
+                    max(
+                        1,
+                        self::MAX_DETAIL_ROWS_PER_CHUNK
+                        -
+                        1
+                    );
+
+
+                foreach (
+                    $subjectRows
+                        ->chunk(
+                            $studentsPerPart
+                        )
+                    as $partIndex =>
+                        $subjectPartRows
+                ) {
+
+                    $partSubjectName =
+                        $subjectName;
+
+
+                    if (
+                        $partIndex
+                        >
+                        0
+                    ) {
+
+                        $partSubjectName .=
+                            ' (continued)';
+                    }
+
+
+                    $neededRows =
+                        1
+                        +
+                        $subjectPartRows
+                            ->count();
+
+
+                    if (
+                        $currentRowCount
+                        >
+                        0
+                        &&
+                        (
+                            $currentRowCount
+                            +
+                            $neededRows
+                        )
+                        >
+                        self::MAX_DETAIL_ROWS_PER_CHUNK
+                    ) {
+
+                        $chunks->push([
+                            'time' =>
+                                $time,
+
+                            'chunk_number' =>
+                                $chunkNumber,
+
+                            'subjects' =>
+                                collect(
+                                    $currentSubjects
+                                ),
+
+                            'row_count' =>
+                                $currentRowCount,
+                        ]);
+
+
+                        $chunkNumber++;
+
+                        $currentSubjects = [];
+
+                        $currentRowCount = 0;
+                    }
+
+
+                    $currentSubjects[] = [
+                        'subject_name' =>
+                            $partSubjectName,
+
+                        'rows' =>
+                            $subjectPartRows,
+                    ];
+
+
+                    $currentRowCount +=
+                        $neededRows;
+                }
+            }
+
+
+            if (
+                $currentRowCount
+                >
+                0
+            ) {
+
+                $chunks->push([
+                    'time' =>
+                        $time,
+
+                    'chunk_number' =>
+                        $chunkNumber,
+
+                    'subjects' =>
+                        collect(
+                            $currentSubjects
+                        ),
+
+                    'row_count' =>
+                        $currentRowCount,
+                ]);
+            }
+        }
+
+
+        return $chunks;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Stream XLSX
+    |--------------------------------------------------------------------------
+    */
+
+    private function stream(
+        Spreadsheet $spreadsheet,
+        string $fileName
+    ) {
 
         return response()
             ->streamDownload(

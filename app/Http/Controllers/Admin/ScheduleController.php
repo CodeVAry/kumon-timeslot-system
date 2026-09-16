@@ -49,8 +49,8 @@ class ScheduleController extends Controller
 
         $selectedDate =
             $selectedDay
-                ? $dayDates[$selectedDay->id]
-                : null;
+            ? $dayDates[$selectedDay->id]
+            : null;
 
 
         /*
@@ -248,8 +248,8 @@ class ScheduleController extends Controller
                                 $offering
                                     ->start_time
                             )->format(
-                                'H:i:s'
-                            );
+                                    'H:i:s'
+                                );
                     }
                 );
 
@@ -257,7 +257,7 @@ class ScheduleController extends Controller
         foreach (
             $groupedOfferings
             as $rawTime =>
-                $group
+            $group
         ) {
 
             $scheduleRows->push([
@@ -268,8 +268,8 @@ class ScheduleController extends Controller
                     Carbon::parse(
                         $rawTime
                     )->format(
-                        'g:i A'
-                    ),
+                            'g:i A'
+                        ),
 
                 'class_count' =>
                     $group
@@ -337,19 +337,15 @@ class ScheduleController extends Controller
         $timeOfferings =
             $offerings
                 ->filter(
-                    function (
-                        $offering
-                    ) use (
-                        $selectedTime
-                    ) {
+                    function ($offering) use ($selectedTime) {
 
                         return
                             Carbon::parse(
                                 $offering
                                     ->start_time
                             )->format(
-                                'H:i:s'
-                            )
+                                    'H:i:s'
+                                )
                             ===
                             $selectedTime;
                     }
@@ -462,7 +458,7 @@ class ScheduleController extends Controller
                             'student_id'
                         )
                         ->map(
-                            fn ($id) =>
+                            fn($id) =>
                                 (int)
                                 $id
                         )
@@ -564,7 +560,7 @@ class ScheduleController extends Controller
         $dayName =
             $sectionOffering
                 ->day
-                ?->day_name;
+                    ?->day_name;
 
 
         if (
@@ -637,7 +633,7 @@ class ScheduleController extends Controller
                         'student_id'
                     )
                     ->map(
-                        fn ($id) =>
+                        fn($id) =>
                             (int)
                             $id
                     )
@@ -668,11 +664,23 @@ class ScheduleController extends Controller
     public function exportForm(
         Request $request
     ) {
+        $requestedDayId =
+            $request->input(
+                'day_id'
+            );
+
+
+        $allDaysSelected =
+            $requestedDayId
+            ===
+            'all';
+
+
         $context =
             $this->getDayContext(
-                $request->input(
-                    'day_id'
-                )
+                $allDaysSelected
+                ? null
+                : $requestedDayId
             );
 
 
@@ -683,19 +691,21 @@ class ScheduleController extends Controller
 
 
         $selectedDay =
-            $context[
+            $allDaysSelected
+            ? null
+            : $context[
                 'selectedDay'
             ];
 
 
         $selectedDate =
             $selectedDay
-                ? $context[
-                    'dayDates'
-                ][
-                    $selectedDay->id
-                ]
-                : null;
+            ? $context[
+                'dayDates'
+            ][
+                $selectedDay->id
+            ]
+            : null;
 
 
         /*
@@ -755,34 +765,49 @@ class ScheduleController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $offerings =
-            collect();
+        $offeringQuery =
+            SectionOffering::with([
+                'section',
+                'day',
+                'subSections',
+            ])
+                ->where(
+                    'is_active',
+                    true
+                );
 
 
-        if ($selectedDay) {
+        if ($allDaysSelected) {
 
-            $offerings =
-                SectionOffering::with([
-                    'section',
-                    'day',
-                    'subSections',
-                ])
-                    ->where(
-                        'day_id',
-                        $selectedDay->id
+            $offeringQuery->whereIn(
+                'day_id',
+                $days
+                    ->pluck(
+                        'id'
                     )
-                    ->where(
-                        'is_active',
-                        true
-                    )
-                    ->orderBy(
-                        'start_time'
-                    )
-                    ->orderBy(
-                        'section_id'
-                    )
-                    ->get();
+            );
+
+        } elseif ($selectedDay) {
+
+            $offeringQuery->where(
+                'day_id',
+                $selectedDay->id
+            );
         }
+
+
+        $offerings =
+            $offeringQuery
+                ->orderBy(
+                    'day_id'
+                )
+                ->orderBy(
+                    'start_time'
+                )
+                ->orderBy(
+                    'section_id'
+                )
+                ->get();
 
 
         /*
@@ -801,16 +826,19 @@ class ScheduleController extends Controller
                                 $offering
                                     ->start_time
                             )->format(
-                                'H:i:s'
-                            );
+                                    'H:i:s'
+                                );
                     }
                 )
                 ->unique()
+                ->sort()
                 ->values();
 
 
         $selectedOfferingId =
-            $request->input(
+            $allDaysSelected
+            ? null
+            : $request->input(
                 'offering_id'
             );
 
@@ -821,6 +849,7 @@ class ScheduleController extends Controller
                 'days',
                 'selectedDay',
                 'selectedDate',
+                'allDaysSelected',
                 'sections',
                 'subSections',
                 'offerings',
@@ -841,22 +870,34 @@ class ScheduleController extends Controller
         Request $request,
         ScheduleExcelExporter $excelExporter
     ) {
-        /*
-        |--------------------------------------------------------------------------
-        | IMPORTANT
-        |--------------------------------------------------------------------------
-        |
-        | There is NO date field here.
-        |
-        | Date is calculated automatically from selected Day.
-        |--------------------------------------------------------------------------
-        */
-
         $validated =
             $request->validate([
                 'day_id' => [
                     'required',
-                    'exists:days,id',
+
+                    function ($attribute, $value, $fail) {
+
+                        if (
+                            $value
+                            ===
+                            'all'
+                        ) {
+
+                            return;
+                        }
+
+
+                        if (
+                            !Day::whereKey(
+                                $value
+                            )->exists()
+                        ) {
+
+                            $fail(
+                                'The selected day is invalid.'
+                            );
+                        }
+                    },
                 ],
 
                 'section_id' => [
@@ -899,16 +940,16 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-                $validated[
-                    'sub_section_id'
-                ]
-            )
+            $validated[
+                'sub_section_id'
+            ]
+        )
             &&
             !empty(
-                $validated[
-                    'section_id'
-                ]
-            )
+            $validated[
+                'section_id'
+            ]
+        )
         ) {
 
             $validSubSection =
@@ -941,7 +982,187 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Determine Date Automatically
+        | All Days Export
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $validated[
+                'day_id'
+            ]
+            ===
+            'all'
+        ) {
+
+            /*
+             * A Specific Class belongs to one day only,
+             * so it is ignored for an All Days export.
+             */
+            $validated[
+                'offering_id'
+            ] =
+                null;
+
+
+            $workingDays =
+                Day::where(
+                    'is_active',
+                    true
+                )
+                    ->whereIn(
+                        'id',
+                        SectionOffering::query()
+                            ->where(
+                                'is_active',
+                                true
+                            )
+                            ->select(
+                                'day_id'
+                            )
+                            ->distinct()
+                    )
+                    ->orderBy(
+                        'sort_order'
+                    )
+                    ->get();
+
+
+            $daySchedules =
+                collect();
+
+
+            foreach (
+                $workingDays
+                as $day
+            ) {
+
+                $date =
+                    $this->resolveDateForDay(
+                        $day
+                    );
+
+
+                $dayFilters =
+                    $validated;
+
+
+                $dayFilters[
+                    'day_id'
+                ] =
+                    $day->id;
+
+
+                $dayFilters[
+                    'date'
+                ] =
+                    $date
+                        ->toDateString();
+
+
+                $dayRows =
+                    $this->buildExportRows(
+                        $dayFilters
+                    );
+
+
+                /*
+                 * Do not add a completely empty day.
+                 */
+                if (
+                    $dayRows
+                        ->isEmpty()
+                ) {
+
+                    continue;
+                }
+
+
+                $daySchedules->push([
+                    'day' =>
+                        $day,
+
+                    'date' =>
+                        $date,
+
+                    'rows' =>
+                        $dayRows,
+
+                    'timeGroups' =>
+                        $dayRows
+                            ->groupBy(
+                                'start_time'
+                            ),
+                ]);
+            }
+
+
+            $fileName =
+                'kumon-class-list-all-days-'
+                .
+                now()->format(
+                    'Y-m-d'
+                );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Excel - one worksheet per day
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $validated[
+                    'format'
+                ]
+                ===
+                'excel'
+            ) {
+
+                return $excelExporter
+                    ->downloadMultiDay(
+                        $daySchedules,
+                        $fileName
+                    );
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | PDF - each day starts on a new page
+            |--------------------------------------------------------------------------
+            */
+
+            $pdf =
+                Pdf::loadView(
+                    'admin.schedule.export-pdf',
+                    [
+                        'multiDay' =>
+                            true,
+
+                        'daySchedules' =>
+                            $daySchedules,
+
+                        'filters' =>
+                            $validated,
+                    ]
+                )
+                    ->setPaper(
+                        'a4',
+                        'landscape'
+                    );
+
+
+            return $pdf->download(
+                $fileName
+                .
+                '.pdf'
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Single Day Export
         |--------------------------------------------------------------------------
         */
 
@@ -953,45 +1174,11 @@ class ScheduleController extends Controller
             );
 
 
-        $today =
-            now()
-                ->startOfDay();
-
-
-        if (
-            strtolower(
+        $date =
+            $this->resolveDateForDay(
                 $selectedDay
-                    ->day_name
-            )
-            ===
-            strtolower(
-                $today->format(
-                    'l'
-                )
-            )
-        ) {
+            );
 
-            $date =
-                $today
-                    ->copy();
-
-        } else {
-
-            $date =
-                $today
-                    ->copy()
-                    ->next(
-                        $selectedDay
-                            ->day_name
-                    );
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Add Internal Date
-        |--------------------------------------------------------------------------
-        */
 
         $validated[
             'date'
@@ -999,12 +1186,6 @@ class ScheduleController extends Controller
             $date
                 ->toDateString();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Build Export Rows
-        |--------------------------------------------------------------------------
-        */
 
         $rows =
             $this->buildExportRows(
@@ -1019,12 +1200,6 @@ class ScheduleController extends Controller
                 'Y-m-d'
             );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Excel
-        |--------------------------------------------------------------------------
-        */
 
         if (
             $validated[
@@ -1043,12 +1218,6 @@ class ScheduleController extends Controller
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | PDF
-        |--------------------------------------------------------------------------
-        */
-
         $timeGroups =
             $rows
                 ->groupBy(
@@ -1060,6 +1229,9 @@ class ScheduleController extends Controller
             Pdf::loadView(
                 'admin.schedule.export-pdf',
                 [
+                    'multiDay' =>
+                        false,
+
                     'rows' =>
                         $rows,
 
@@ -1137,10 +1309,10 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-                $filters[
-                    'section_id'
-                ]
-            )
+            $filters[
+                'section_id'
+            ]
+        )
         ) {
 
             $offeringQuery->where(
@@ -1160,10 +1332,10 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-                $filters[
-                    'time'
-                ]
-            )
+            $filters[
+                'time'
+            ]
+        )
         ) {
 
             $offeringQuery
@@ -1184,10 +1356,10 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-                $filters[
-                    'offering_id'
-                ]
-            )
+            $filters[
+                'offering_id'
+            ]
+        )
         ) {
 
             $offeringQuery->where(
@@ -1207,18 +1379,16 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-                $filters[
-                    'sub_section_id'
-                ]
-            )
+            $filters[
+                'sub_section_id'
+            ]
+        )
         ) {
 
             $offeringQuery
                 ->whereHas(
                     'subSections',
-                    function ($query) use (
-                        $filters
-                    ) {
+                    function ($query) use ($filters) {
 
                         $query->where(
                             'sub_sections.id',
@@ -1287,10 +1457,10 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-                $filters[
-                    'sub_section_id'
-                ]
-            )
+            $filters[
+                'sub_section_id'
+            ]
+        )
         ) {
 
             $enrolmentsQuery->where(
@@ -1368,7 +1538,7 @@ class ScheduleController extends Controller
                         'student_id'
                     )
                     ->map(
-                        fn ($id) =>
+                        fn($id) =>
                             (int)
                             $id
                     )
@@ -1450,7 +1620,7 @@ class ScheduleController extends Controller
 
                 $attendanceStatus =
                     $attendance
-                        ?->status
+                            ?->status
                     ??
                     'not_marked';
 
@@ -1458,7 +1628,7 @@ class ScheduleController extends Controller
                 $displayStudentStatus =
                     $student
                         ->studentStatus
-                        ?->status_name
+                            ?->status_name
                     ??
                     'Active';
 
@@ -1466,7 +1636,7 @@ class ScheduleController extends Controller
                 $statusColour =
                     $student
                         ->studentStatus
-                        ?->color_code
+                            ?->color_code
                     ??
                     null;
             }
@@ -1548,7 +1718,7 @@ class ScheduleController extends Controller
             $sectionName =
                 $offering
                     ->section
-                    ?->section_name
+                        ?->section_name
                 ??
                 'Class';
 
@@ -1556,7 +1726,7 @@ class ScheduleController extends Controller
             $subSectionName =
                 $enrolment
                     ->subSection
-                    ?->sub_section_name;
+                        ?->sub_section_name;
 
 
             $classDisplay =
@@ -1593,7 +1763,7 @@ class ScheduleController extends Controller
                 'day' =>
                     $offering
                         ->day
-                        ?->day_name
+                            ?->day_name
                     ??
                     $date->format(
                         'l'
@@ -1604,16 +1774,16 @@ class ScheduleController extends Controller
                         $offering
                             ->start_time
                     )->format(
-                        'g:i A'
-                    ),
+                            'g:i A'
+                        ),
 
                 'start_time_sort' =>
                     Carbon::parse(
                         $offering
                             ->start_time
                     )->format(
-                        'H:i:s'
-                    ),
+                            'H:i:s'
+                        ),
 
                 'section' =>
                     $sectionName,
@@ -1674,6 +1844,50 @@ class ScheduleController extends Controller
                 }
             )
             ->values();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resolve Next Date For A Working Day
+    |--------------------------------------------------------------------------
+    */
+
+    private function resolveDateForDay(
+        Day $day
+    ): Carbon {
+
+        $today =
+            now()
+                ->startOfDay();
+
+
+        if (
+            strtolower(
+                $day
+                    ->day_name
+            )
+            ===
+            strtolower(
+                $today->format(
+                    'l'
+                )
+            )
+        ) {
+
+            return
+                $today
+                    ->copy();
+        }
+
+
+        return
+            $today
+                ->copy()
+                ->next(
+                    $day
+                        ->day_name
+                );
     }
 
 
@@ -1832,9 +2046,7 @@ class ScheduleController extends Controller
         $defaultDay =
             $days
                 ->first(
-                    function ($day) use (
-                        $todayName
-                    ) {
+                    function ($day) use ($todayName) {
 
                         return
                             strtolower(
@@ -1859,11 +2071,7 @@ class ScheduleController extends Controller
             $defaultDay =
                 $days
                     ->sortBy(
-                        function (
-                            $day
-                        ) use (
-                            $dayDates
-                        ) {
+                        function ($day) use ($dayDates) {
 
                             return
                                 $dayDates[

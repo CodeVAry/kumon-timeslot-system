@@ -236,6 +236,23 @@
                            border-slate-300"
                 >
 
+                    <option
+                        value="all"
+                        @selected(
+                            old(
+                                'day_id',
+                                $allDaysSelected
+                                    ? 'all'
+                                    : $selectedDay?->id
+                            )
+                            ===
+                            'all'
+                        )
+                    >
+                        All Days
+                    </option>
+
+
                     @foreach (
                         $days
                         as $day
@@ -246,12 +263,16 @@
                                 $day->id
                             }}"
                             @selected(
-                                old(
-                                    'day_id',
-                                    $selectedDay?->id
-                                )
-                                ==
-                                $day->id
+                                (string)
+                                    old(
+                                        'day_id',
+                                        $allDaysSelected
+                                            ? 'all'
+                                            : $selectedDay?->id
+                                    )
+                                ===
+                                (string)
+                                    $day->id
                             )
                         >
 
@@ -265,6 +286,16 @@
                     @endforeach
 
                 </select>
+
+
+                <p
+                    class="mt-2
+                           text-xs
+                           text-slate-500"
+                >
+                    Choose <strong>All Days</strong> to export the selected
+                    class/subject across every active teaching day.
+                </p>
 
             </div>
 
@@ -495,14 +526,21 @@
                 <select
                     id="offering_id"
                     name="offering_id"
+                    @disabled($allDaysSelected)
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300"
+                           border-slate-300
+                           disabled:bg-slate-100
+                           disabled:text-slate-400"
                 >
 
                     <option value="">
-                        All Matching Classes
+                        {{
+                            $allDaysSelected
+                                ? 'Not available for All Days'
+                                : 'All Matching Classes'
+                        }}
                     </option>
 
 

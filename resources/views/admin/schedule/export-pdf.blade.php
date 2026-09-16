@@ -54,10 +54,31 @@
         }
 
 
+        .schedule-block {
+            width: 100%;
+            margin-top: 8px;
+        }
+
+
+        .page-break {
+            page-break-before: always;
+        }
+
+
         table {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
+        }
+
+
+        thead {
+            display: table-header-group;
+        }
+
+
+        tr {
+            page-break-inside: avoid;
         }
 
 
@@ -68,7 +89,7 @@
 
 
         th {
-            padding: 7px;
+            padding: 6px;
             background: #f3f4f6;
             font-size: 11px;
             font-weight: bold;
@@ -87,7 +108,6 @@
 
 
         .time-cell {
-            position: relative;
             padding: 0;
             text-align: center;
             vertical-align: middle;
@@ -95,52 +115,29 @@
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Vertical Time
-        |--------------------------------------------------------------------------
-        */
-
         .time-text {
             display: inline-block;
             white-space: nowrap;
             font-size: 12px;
             font-weight: bold;
-
             transform: rotate(-90deg);
             transform-origin: center center;
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Subject
-        |--------------------------------------------------------------------------
-        */
-
         .subject-row {
-            padding: 7px 8px;
+            padding: 6px 8px;
             background: #eaf2f8;
-
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
-
             text-align: center;
             vertical-align: middle;
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Student
-        |--------------------------------------------------------------------------
-        */
-
         .student-row {
-            padding: 7px 12px;
-
-            font-size: 12px;
-
+            padding: 5px 10px;
+            font-size: 11px;
             text-align: left;
             vertical-align: middle;
         }
@@ -165,280 +162,376 @@
 
 <body>
 
+@php
 
-    <h1 class="title">
-        Kumon North Hobart Centre Schedule
-    </h1>
+    /*
+    |--------------------------------------------------------------------------
+    | Normalise Single-Day + All-Days Into One Collection
+    |--------------------------------------------------------------------------
+    */
 
+    if (
+        isset(
+            $multiDay
+        )
+        &&
+        $multiDay
+    ) {
 
-    <div class="day-title">
+        $schedules =
+            $daySchedules;
 
-        {{
-            $date->format(
-                'l, d F Y'
-            )
-        }}
+    } else {
 
-    </div>
+        $schedules =
+            collect([
+                [
+                    'date' =>
+                        $date,
 
+                    'rows' =>
+                        $rows,
 
-
-    @if ($rows->isEmpty())
-
-        <div class="empty">
-
-            No students matched the selected filters.
-
-        </div>
-
-    @else
-
-
-        <table>
-
-            <thead>
-
-                <tr>
-
-                    <th class="time-column">
-                        Time
-                    </th>
-
-                    <th class="detail-column">
-                        Subject / Student
-                    </th>
-
-                </tr>
-
-            </thead>
+                    'timeGroups' =>
+                        $timeGroups,
+                ],
+            ]);
+    }
 
 
-            <tbody>
+    $maxDetailRowsPerChunk =
+        20;
 
 
-                @foreach (
-                    $timeGroups
-                    as $time =>
-                        $timeRows
+    $documentChunkIndex =
+        0;
+
+@endphp
+
+
+@foreach (
+    $schedules
+    as $schedule
+)
+
+    @php
+
+        $scheduleRows =
+            $schedule[
+                'rows'
+            ];
+
+
+        $scheduleDate =
+            $schedule[
+                'date'
+            ];
+
+
+        $scheduleTimeGroups =
+            $schedule[
+                'timeGroups'
+            ];
+
+
+        $printChunks =
+            collect();
+
+
+        foreach (
+            $scheduleTimeGroups
+            as $time =>
+                $timeRows
+        ) {
+
+            $subjectGroups =
+                $timeRows
+                    ->groupBy(
+                        'class_display'
+                    );
+
+
+            $currentChunk = [];
+            $currentChunkRows = 0;
+            $chunkNumber = 1;
+
+
+            foreach (
+                $subjectGroups
+                as $subjectName =>
+                    $subjectRows
+            ) {
+
+                $subjectRows =
+                    $subjectRows
+                        ->values();
+
+
+                $studentsPerSubjectPart =
+                    max(
+                        1,
+                        $maxDetailRowsPerChunk
+                        -
+                        1
+                    );
+
+
+                foreach (
+                    $subjectRows
+                        ->chunk(
+                            $studentsPerSubjectPart
+                        )
+                    as $partIndex =>
+                        $subjectPartRows
+                ) {
+
+                    $partSubjectName =
+                        $subjectName;
+
+
+                    if (
+                        $partIndex
+                        >
+                        0
+                    ) {
+
+                        $partSubjectName .=
+                            ' (continued)';
+                    }
+
+
+                    $neededRows =
+                        1
+                        +
+                        $subjectPartRows
+                            ->count();
+
+
+                    if (
+                        $currentChunkRows
+                        >
+                        0
+                        &&
+                        (
+                            $currentChunkRows
+                            +
+                            $neededRows
+                        )
+                        >
+                        $maxDetailRowsPerChunk
+                    ) {
+
+                        $printChunks->push([
+                            'time' =>
+                                $time,
+
+                            'chunk_number' =>
+                                $chunkNumber,
+
+                            'subjects' =>
+                                collect(
+                                    $currentChunk
+                                ),
+
+                            'row_count' =>
+                                $currentChunkRows,
+                        ]);
+
+
+                        $chunkNumber++;
+
+                        $currentChunk = [];
+
+                        $currentChunkRows = 0;
+                    }
+
+
+                    $currentChunk[] = [
+                        'subject_name' =>
+                            $partSubjectName,
+
+                        'rows' =>
+                            $subjectPartRows,
+                    ];
+
+
+                    $currentChunkRows +=
+                        $neededRows;
+                }
+            }
+
+
+            if (
+                $currentChunkRows
+                >
+                0
+            ) {
+
+                $printChunks->push([
+                    'time' =>
+                        $time,
+
+                    'chunk_number' =>
+                        $chunkNumber,
+
+                    'subjects' =>
+                        collect(
+                            $currentChunk
+                        ),
+
+                    'row_count' =>
+                        $currentChunkRows,
+                ]);
+            }
+        }
+
+    @endphp
+
+
+    @if (
+        $scheduleRows
+            ->isEmpty()
+    )
+
+        @continue
+
+    @endif
+
+
+    @foreach (
+        $printChunks
+        as $chunk
+    )
+
+        <div
+            class="{{
+                $documentChunkIndex
+                >
+                0
+                    ? 'page-break'
+                    : ''
+            }}"
+        >
+
+            <h1 class="title">
+                Kumon North Hobart Centre Schedule
+            </h1>
+
+
+            <div class="day-title">
+
+                {{
+                    $scheduleDate->format(
+                        'l, d F Y'
+                    )
+                }}
+
+                @if (
+                    $chunk[
+                        'chunk_number'
+                    ]
+                    >
+                    1
                 )
 
-                    @php
+                    — continued
 
-                        $subjectGroups =
-                            $timeRows
-                                ->groupBy(
-                                    'class_display'
-                                );
+                @endif
+
+            </div>
 
 
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Calculate Complete Time Block Rows
-                        |--------------------------------------------------------------------------
-                        |
-                        | Each subject has:
-                        |
-                        | 1 subject heading
-                        | + student count
-                        |--------------------------------------------------------------------------
-                        */
+            <div class="schedule-block">
 
-                        $timeRowspan =
-                            $subjectGroups
-                                ->sum(
-                                    function (
-                                        $subjectRows
-                                    ) {
+                <table>
 
-                                        return
-                                            1
-                                            +
-                                            $subjectRows
-                                                ->count();
-                                    }
-                                );
-
-
-                        $firstOutputRow =
-                            true;
-
-                    @endphp
-
-
-
-                    @foreach (
-                        $subjectGroups
-                        as $subjectName =>
-                            $subjectRows
-                    )
-
-
-                        {{-- Subject --}}
+                    <thead>
 
                         <tr>
 
+                            <th class="time-column">
+                                Time
+                            </th>
 
-                            @if ($firstOutputRow)
-
-                                <td
-                                    class="time-cell"
-                                    rowspan="{{
-                                        $timeRowspan
-                                    }}"
-                                >
-
-                                    <div class="time-text">
-                                        {{ $time }}
-                                    </div>
-
-                                </td>
-
-
-                                @php
-                                    $firstOutputRow = false;
-                                @endphp
-
-                            @endif
-
-
-                            <td class="subject-row">
-
-                                {{ $subjectName }}
-
-                            </td>
+                            <th class="detail-column">
+                                Subject / Student
+                            </th>
 
                         </tr>
 
+                    </thead>
 
 
-                        {{-- Students --}}
+                    <tbody>
+
+                        @php
+
+                            $firstOutputRow =
+                                true;
+
+
+                            $timeLabel =
+                                $chunk[
+                                    'time'
+                                ];
+
+
+                            if (
+                                $chunk[
+                                    'chunk_number'
+                                ]
+                                >
+                                1
+                            ) {
+
+                                $timeLabel .=
+                                    ' cont.';
+                            }
+
+                        @endphp
+
 
                         @foreach (
-                            $subjectRows
-                            as $row
+                            $chunk[
+                                'subjects'
+                            ]
+                            as $subjectBlock
                         )
-
-                            @php
-
-                                $fill =
-                                    $row[
-                                        'status_fill'
-                                    ];
-
-
-                                /*
-                                |--------------------------------------------------------------------------
-                                | Choose readable text colour
-                                |--------------------------------------------------------------------------
-                                */
-
-                                $textColour =
-                                    '#111827';
-
-
-                                if ($fill) {
-
-                                    $hex =
-                                        ltrim(
-                                            $fill,
-                                            '#'
-                                        );
-
-
-                                    if (
-                                        strlen(
-                                            $hex
-                                        )
-                                        ===
-                                        6
-                                    ) {
-
-                                        $r =
-                                            hexdec(
-                                                substr(
-                                                    $hex,
-                                                    0,
-                                                    2
-                                                )
-                                            );
-
-
-                                        $g =
-                                            hexdec(
-                                                substr(
-                                                    $hex,
-                                                    2,
-                                                    2
-                                                )
-                                            );
-
-
-                                        $b =
-                                            hexdec(
-                                                substr(
-                                                    $hex,
-                                                    4,
-                                                    2
-                                                )
-                                            );
-
-
-                                        $brightness =
-                                            (
-                                                $r * 299
-                                                +
-                                                $g * 587
-                                                +
-                                                $b * 114
-                                            )
-                                            /
-                                            1000;
-
-
-                                        if (
-                                            $brightness
-                                            <
-                                            150
-                                        ) {
-
-                                            $textColour =
-                                                '#ffffff';
-                                        }
-                                    }
-                                }
-
-                            @endphp
-
 
                             <tr>
 
-                                <td
-                                    class="
-                                        student-row
+                                @if (
+                                    $firstOutputRow
+                                )
 
-                                        {{
-                                            $fill
-                                                ? 'student-highlight'
-                                                : ''
-                                        }}
-                                    "
+                                    <td
+                                        class="time-cell"
+                                        rowspan="{{
+                                            $chunk[
+                                                'row_count'
+                                            ]
+                                        }}"
+                                    >
 
-                                    @if ($fill)
+                                        <div class="time-text">
+                                            {{ $timeLabel }}
+                                        </div>
 
-                                        style="
-                                            background-color:
-                                            {{ $fill }};
+                                    </td>
 
-                                            color:
-                                            {{ $textColour }};
-                                        "
 
-                                    @endif
-                                >
+                                    @php
+                                        $firstOutputRow = false;
+                                    @endphp
+
+                                @endif
+
+
+                                <td class="subject-row">
 
                                     {{
-                                        $row[
-                                            'student_name'
+                                        $subjectBlock[
+                                            'subject_name'
                                         ]
                                     }}
 
@@ -446,21 +539,174 @@
 
                             </tr>
 
+
+                            @foreach (
+                                $subjectBlock[
+                                    'rows'
+                                ]
+                                as $row
+                            )
+
+                                @php
+
+                                    $fill =
+                                        $row[
+                                            'status_fill'
+                                        ];
+
+
+                                    $textColour =
+                                        '#111827';
+
+
+                                    if ($fill) {
+
+                                        $hex =
+                                            ltrim(
+                                                $fill,
+                                                '#'
+                                            );
+
+
+                                        if (
+                                            strlen(
+                                                $hex
+                                            )
+                                            ===
+                                            6
+                                        ) {
+
+                                            $r =
+                                                hexdec(
+                                                    substr(
+                                                        $hex,
+                                                        0,
+                                                        2
+                                                    )
+                                                );
+
+
+                                            $g =
+                                                hexdec(
+                                                    substr(
+                                                        $hex,
+                                                        2,
+                                                        2
+                                                    )
+                                                );
+
+
+                                            $b =
+                                                hexdec(
+                                                    substr(
+                                                        $hex,
+                                                        4,
+                                                        2
+                                                    )
+                                                );
+
+
+                                            $brightness =
+                                                (
+                                                    $r * 299
+                                                    +
+                                                    $g * 587
+                                                    +
+                                                    $b * 114
+                                                )
+                                                /
+                                                1000;
+
+
+                                            if (
+                                                $brightness
+                                                <
+                                                150
+                                            ) {
+
+                                                $textColour =
+                                                    '#ffffff';
+                                            }
+                                        }
+                                    }
+
+                                @endphp
+
+
+                                <tr>
+
+                                    <td
+                                        class="
+                                            student-row
+
+                                            {{
+                                                $fill
+                                                    ? 'student-highlight'
+                                                    : ''
+                                            }}
+                                        "
+
+                                        @if ($fill)
+
+                                            style="
+                                                background-color:
+                                                {{ $fill }};
+
+                                                color:
+                                                {{ $textColour }};
+                                            "
+
+                                        @endif
+                                    >
+
+                                        {{
+                                            $row[
+                                                'student_name'
+                                            ]
+                                        }}
+
+                                    </td>
+
+                                </tr>
+
+                            @endforeach
+
                         @endforeach
 
+                    </tbody>
 
-                    @endforeach
+                </table>
 
+            </div>
 
-                @endforeach
-
-
-            </tbody>
-
-        </table>
+        </div>
 
 
-    @endif
+        @php
+            $documentChunkIndex++;
+        @endphp
+
+    @endforeach
+
+@endforeach
+
+
+@if (
+    $documentChunkIndex
+    ===
+    0
+)
+
+    <h1 class="title">
+        Kumon North Hobart Centre Schedule
+    </h1>
+
+
+    <div class="empty">
+        No students matched the selected filters.
+    </div>
+
+@endif
 
 
 </body>
