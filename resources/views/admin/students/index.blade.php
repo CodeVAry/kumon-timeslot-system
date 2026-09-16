@@ -4,23 +4,28 @@
 
 @section('page-title', 'Students')
 
+
 @php
+
     $breadcrumbs = [
         [
             'label' => 'Student Setup',
             'url' => null,
         ],
+
         [
             'label' => 'Student List',
             'url' => null,
         ],
     ];
+
 @endphp
 
 
 @section('content')
 
 <div class="space-y-6">
+
 
     {{-- =====================================================
         MESSAGES
@@ -83,6 +88,7 @@
                 Students
             </h1>
 
+
             <p
                 class="mt-1
                        text-sm
@@ -97,12 +103,23 @@
 
         <div class="flex flex-wrap gap-3">
 
-            @if (Route::has('admin.guardians.index'))
+
+            {{-- =================================================
+                GUARDIANS
+            ================================================== --}}
+
+            @if (
+                Route::has(
+                    'admin.guardians.index'
+                )
+            )
 
                 <a
-                    href="{{ route(
-                        'admin.guardians.index'
-                    ) }}"
+                    href="{{
+                        route(
+                            'admin.guardians.index'
+                        )
+                    }}"
                     class="inline-flex
                            h-11
                            items-center
@@ -123,17 +140,71 @@
             @endif
 
 
+
+            {{-- =================================================
+                IMPORT STUDENTS
+            ================================================== --}}
+
             @if (
-                auth()->user()
+                auth()
+                    ->user()
+                    ->hasPermission(
+                        'students.create'
+                    )
+                &&
+                auth()
+                    ->user()
+                    ->hasPermission(
+                        'enrolments.create'
+                    )
+            )
+
+                <a
+                    href="{{
+                        route(
+                            'admin.student-import.index'
+                        )
+                    }}"
+                    class="inline-flex
+                           h-11
+                           items-center
+                           justify-center
+                           gap-2
+                           rounded-xl
+                           border
+                           border-violet-200
+                           bg-violet-50
+                           px-6
+                           text-sm
+                           font-semibold
+                           text-violet-700
+                           hover:bg-violet-100"
+                >
+                    Import Students
+                </a>
+
+            @endif
+
+
+
+            {{-- =================================================
+                ADD STUDENT
+            ================================================== --}}
+
+            @if (
+                auth()
+                    ->user()
                     ->hasPermission(
                         'students.create'
                     )
             )
 
                 <a
-                    href="{{ route(
-                        'admin.student-registration.student'
-                    ) }}"
+                    href="{{
+                        route(
+                            'admin.student-registration.student'
+                        )
+                    }}"
                     class="inline-flex
                            h-11
                            items-center
@@ -173,9 +244,11 @@
 
         <form
             method="GET"
-            action="{{ route(
-                'admin.students.index'
-            ) }}"
+            action="{{
+                route(
+                    'admin.students.index'
+                )
+            }}"
         >
 
             <div
@@ -185,17 +258,22 @@
                        xl:grid-cols-3"
             >
 
+
+                {{-- Student Search --}}
+
                 <div>
 
                     <label
                         for="search"
-                        class="mb-2 block
+                        class="mb-2
+                               block
                                text-xs
                                font-semibold
                                text-slate-600"
                     >
                         Student
                     </label>
+
 
                     <input
                         id="search"
@@ -212,17 +290,22 @@
                 </div>
 
 
+
+                {{-- Status --}}
+
                 <div>
 
                     <label
                         for="student_status_id"
-                        class="mb-2 block
+                        class="mb-2
+                               block
                                text-xs
                                font-semibold
                                text-slate-600"
                     >
                         Status
                     </label>
+
 
                     <select
                         id="student_status_id"
@@ -268,17 +351,22 @@
                 </div>
 
 
+
+                {{-- Guardian --}}
+
                 <div>
 
                     <label
                         for="guardian"
-                        class="mb-2 block
+                        class="mb-2
+                               block
                                text-xs
                                font-semibold
                                text-slate-600"
                     >
                         Guardian
                     </label>
+
 
                     <input
                         id="guardian"
@@ -295,17 +383,22 @@
                 </div>
 
 
+
+                {{-- Day --}}
+
                 <div>
 
                     <label
                         for="day_id"
-                        class="mb-2 block
+                        class="mb-2
+                               block
                                text-xs
                                font-semibold
                                text-slate-600"
                     >
                         Day
                     </label>
+
 
                     <select
                         id="day_id"
@@ -321,12 +414,17 @@
                         </option>
 
 
-                        @foreach ($days as $day)
+                        @foreach (
+                            $days
+                            as $day
+                        )
 
                             <option
                                 value="{{ $day->id }}"
                                 @selected(
-                                    request('day_id')
+                                    request(
+                                        'day_id'
+                                    )
                                     ==
                                     $day->id
                                 )
@@ -341,17 +439,22 @@
                 </div>
 
 
+
+                {{-- Time --}}
+
                 <div>
 
                     <label
                         for="timeslot"
-                        class="mb-2 block
+                        class="mb-2
+                               block
                                text-xs
                                font-semibold
                                text-slate-600"
                     >
                         Class Time
                     </label>
+
 
                     <select
                         id="timeslot"
@@ -375,7 +478,9 @@
                             <option
                                 value="{{ $timeslot }}"
                                 @selected(
-                                    request('timeslot')
+                                    request(
+                                        'timeslot'
+                                    )
                                     ==
                                     $timeslot
                                 )
@@ -396,17 +501,22 @@
                 </div>
 
 
+
+                {{-- Class --}}
+
                 <div>
 
                     <label
                         for="section_id"
-                        class="mb-2 block
+                        class="mb-2
+                               block
                                text-xs
                                font-semibold
                                text-slate-600"
                     >
                         Class
                     </label>
+
 
                     <select
                         id="section_id"
@@ -430,12 +540,17 @@
                             <option
                                 value="{{ $section->id }}"
                                 @selected(
-                                    request('section_id')
+                                    request(
+                                        'section_id'
+                                    )
                                     ==
                                     $section->id
                                 )
                             >
-                                {{ $section->section_name }}
+                                {{
+                                    $section
+                                        ->section_name
+                                }}
                             </option>
 
                         @endforeach
@@ -457,9 +572,11 @@
             >
 
                 <a
-                    href="{{ route(
-                        'admin.students.index'
-                    ) }}"
+                    href="{{
+                        route(
+                            'admin.students.index'
+                        )
+                    }}"
                     class="inline-flex
                            h-11
                            items-center
@@ -510,7 +627,8 @@
 
             {{
                 $students->total()
-                === 1
+                ===
+                1
                     ? 'result'
                     : 'results'
             }}
@@ -546,39 +664,110 @@
 
                     <tr>
 
-                        <th class="px-5 py-4 text-left text-xs font-semibold uppercase text-slate-500">
+                        <th
+                            class="px-5 py-4
+                                   text-left
+                                   text-xs
+                                   font-semibold
+                                   uppercase
+                                   text-slate-500"
+                        >
                             Student
                         </th>
 
-                        <th class="px-5 py-4 text-left text-xs font-semibold uppercase text-slate-500">
+
+                        <th
+                            class="px-5 py-4
+                                   text-left
+                                   text-xs
+                                   font-semibold
+                                   uppercase
+                                   text-slate-500"
+                        >
                             Guardian
                         </th>
 
-                        <th class="px-5 py-4 text-left text-xs font-semibold uppercase text-slate-500">
+
+                        <th
+                            class="px-5 py-4
+                                   text-left
+                                   text-xs
+                                   font-semibold
+                                   uppercase
+                                   text-slate-500"
+                        >
                             Student ID
                         </th>
 
-                        <th class="px-5 py-4 text-left text-xs font-semibold uppercase text-slate-500">
+
+                        <th
+                            class="px-5 py-4
+                                   text-left
+                                   text-xs
+                                   font-semibold
+                                   uppercase
+                                   text-slate-500"
+                        >
                             DOB
                         </th>
 
-                        <th class="px-5 py-4 text-left text-xs font-semibold uppercase text-slate-500">
+
+                        <th
+                            class="px-5 py-4
+                                   text-left
+                                   text-xs
+                                   font-semibold
+                                   uppercase
+                                   text-slate-500"
+                        >
                             Status
                         </th>
 
-                        <th class="px-5 py-4 text-left text-xs font-semibold uppercase text-slate-500">
+
+                        <th
+                            class="px-5 py-4
+                                   text-left
+                                   text-xs
+                                   font-semibold
+                                   uppercase
+                                   text-slate-500"
+                        >
                             Class
                         </th>
 
-                        <th class="px-5 py-4 text-left text-xs font-semibold uppercase text-slate-500">
+
+                        <th
+                            class="px-5 py-4
+                                   text-left
+                                   text-xs
+                                   font-semibold
+                                   uppercase
+                                   text-slate-500"
+                        >
                             Day & Time
                         </th>
 
-                        <th class="px-5 py-4 text-left text-xs font-semibold uppercase text-slate-500">
+
+                        <th
+                            class="px-5 py-4
+                                   text-left
+                                   text-xs
+                                   font-semibold
+                                   uppercase
+                                   text-slate-500"
+                        >
                             Notes
                         </th>
 
-                        <th class="px-5 py-4 text-center text-xs font-semibold uppercase text-slate-500">
+
+                        <th
+                            class="px-5 py-4
+                                   text-center
+                                   text-xs
+                                   font-semibold
+                                   uppercase
+                                   text-slate-500"
+                        >
                             Actions
                         </th>
 
@@ -606,7 +795,9 @@
                                 $student
                                     ->guardians
                                     ->first(
-                                        function ($guardian) {
+                                        function (
+                                            $guardian
+                                        ) {
 
                                             return
                                                 (bool)
@@ -617,7 +808,9 @@
                                     );
 
 
-                            if (!$primaryGuardian) {
+                            if (
+                                !$primaryGuardian
+                            ) {
 
                                 $primaryGuardian =
                                     $student
@@ -636,7 +829,9 @@
                                 $student
                                     ->enrolments
                                     ->filter(
-                                        function ($enrolment) {
+                                        function (
+                                            $enrolment
+                                        ) {
 
                                             return
                                                 $enrolment
@@ -652,7 +847,9 @@
                                 $student
                                     ->enrolments
                                     ->filter(
-                                        function ($enrolment) {
+                                        function (
+                                            $enrolment
+                                        ) {
 
                                             return
                                                 $enrolment
@@ -667,7 +864,9 @@
                             $classNames =
                                 $confirmedEnrolments
                                     ->map(
-                                        function ($enrolment) {
+                                        function (
+                                            $enrolment
+                                        ) {
 
                                             $class =
                                                 $enrolment
@@ -719,14 +918,18 @@
                                     );
 
 
-                            if ($isVacation) {
+                            if (
+                                $isVacation
+                            ) {
 
                                 $displayStatus =
-                                    \App\Models\Admin\StudentLeave::VACATION_LABEL;
+                                    \App\Models\Admin\StudentLeave
+                                        ::VACATION_LABEL;
 
 
                                 $statusColour =
-                                    \App\Models\Admin\StudentLeave::VACATION_COLOR;
+                                    \App\Models\Admin\StudentLeave
+                                        ::VACATION_COLOR;
 
                             } else {
 
@@ -765,9 +968,10 @@
                             class="
                                 transition
                                 hover:bg-cyan-50/50
+
                                 {{
                                     $isVacation
-                                        ? 'bg-cyan-50/30'
+                                        ? 'bg-slate-100/70'
                                         : ''
                                 }}
                             "
@@ -804,6 +1008,7 @@
                             </td>
 
 
+
                             {{-- Guardian --}}
 
                             <td
@@ -812,7 +1017,9 @@
                                        text-slate-700"
                             >
 
-                                @if ($primaryGuardian)
+                                @if (
+                                    $primaryGuardian
+                                )
 
                                     <p>
                                         {{
@@ -853,7 +1060,6 @@
 
                                     @endif
 
-
                                 @else
 
                                     —
@@ -861,6 +1067,7 @@
                                 @endif
 
                             </td>
+
 
 
                             {{-- Student ID --}}
@@ -874,6 +1081,7 @@
                             </td>
 
 
+
                             {{-- DOB --}}
 
                             <td
@@ -881,6 +1089,7 @@
                                        text-sm
                                        text-slate-700"
                             >
+
                                 {{
                                     $student
                                         ->date_of_birth
@@ -890,7 +1099,9 @@
                                     ??
                                     '—'
                                 }}
+
                             </td>
+
 
 
                             {{-- Status --}}
@@ -935,7 +1146,9 @@
                                     </span>
 
 
-                                    @if ($isVacation)
+                                    @if (
+                                        $isVacation
+                                    )
 
                                         <p
                                             class="mt-1
@@ -960,6 +1173,7 @@
                             </td>
 
 
+
                             {{-- Class --}}
 
                             <td
@@ -974,6 +1188,7 @@
                                 }}
 
                             </td>
+
 
 
                             {{-- Day & Time --}}
@@ -998,7 +1213,9 @@
                                     @endphp
 
 
-                                    @if ($offering)
+                                    @if (
+                                        $offering
+                                    )
 
                                         <div class="mb-2">
 
@@ -1024,7 +1241,6 @@
                                         </div>
 
                                     @endif
-
 
                                 @empty
 
@@ -1061,6 +1277,7 @@
                             </td>
 
 
+
                             {{-- Notes --}}
 
                             <td
@@ -1070,7 +1287,9 @@
                                        text-slate-600"
                             >
 
-                                @if ($student->notes)
+                                @if (
+                                    $student->notes
+                                )
 
                                     <p class="line-clamp-2">
                                         {{ $student->notes }}
@@ -1092,6 +1311,7 @@
                             </td>
 
 
+
                             {{-- Actions --}}
 
                             <td class="px-5 py-5">
@@ -1103,10 +1323,12 @@
                                 >
 
                                     <a
-                                        href="{{ route(
-                                            'admin.students.show',
-                                            $student
-                                        ) }}"
+                                        href="{{
+                                            route(
+                                                'admin.students.show',
+                                                $student
+                                            )
+                                        }}"
                                         class="inline-flex
                                                h-10
                                                items-center
@@ -1123,7 +1345,8 @@
 
 
                                     @if (
-                                        auth()->user()
+                                        auth()
+                                            ->user()
                                             ->hasPermission(
                                                 'students.delete'
                                             )
@@ -1131,10 +1354,12 @@
 
                                         <form
                                             method="POST"
-                                            action="{{ route(
-                                                'admin.students.destroy',
-                                                $student
-                                            ) }}"
+                                            action="{{
+                                                route(
+                                                    'admin.students.destroy',
+                                                    $student
+                                                )
+                                            }}"
                                             onsubmit="
                                                 return confirm(
                                                     'Are you sure you want to delete this student?'
@@ -1143,6 +1368,7 @@
                                         >
 
                                             @csrf
+
                                             @method('DELETE')
 
 
@@ -1197,7 +1423,9 @@
         </div>
 
 
-        @if ($students->hasPages())
+        @if (
+            $students->hasPages()
+        )
 
             <div
                 class="border-t

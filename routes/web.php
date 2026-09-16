@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\SectionController;
 use App\Http\Controllers\Admin\SectionOfferingController;
 use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\StudentImportController;
 use App\Http\Controllers\Admin\StudentEnrolmentController;
 use App\Http\Controllers\Admin\StudentRegistrationController;
 use App\Http\Controllers\Admin\StudentReviewController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\Parent\ParentWishlistController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\StudentImportAliasController;
 
 
 /*
@@ -107,7 +109,9 @@ Route::middleware('auth')
     ->name('admin.')
     ->group(function () {
 
-        /*
+
+
+            /*
         |--------------------------------------------------------------------------
         | Role Routes
         |--------------------------------------------------------------------------
@@ -382,18 +386,6 @@ Route::middleware('auth')
         /*
         |--------------------------------------------------------------------------
         | Sub-section Routes
-        |--------------------------------------------------------------------------
-        |
-        | Sub-sections belong to Sections.
-        |
-        | Example:
-        |
-        | Math
-        |   ├── 3A
-        |   ├── B-D
-        |   └── E+
-        |
-        | For now these routes use the existing Section permissions.
         |--------------------------------------------------------------------------
         */
 
@@ -777,6 +769,110 @@ Route::middleware('auth')
         )
             ->middleware('permission:students.create')
             ->name('student-registration.cancel');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Student Excel Import Routes
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/students/import',
+            [
+                StudentImportController::class,
+                'index',
+            ]
+        )
+            ->middleware([
+                'permission:students.create',
+                'permission:enrolments.create',
+            ])
+            ->name('student-import.index');
+
+
+        Route::post(
+            '/students/import/profile',
+            [
+                StudentImportController::class,
+                'uploadProfile',
+            ]
+        )
+            ->middleware([
+                'permission:students.create',
+                'permission:enrolments.create',
+            ])
+            ->name('student-import.profile.upload');
+
+
+        Route::post(
+            '/students/import/timeslot',
+            [
+                StudentImportController::class,
+                'uploadTimeslot',
+            ]
+        )
+            ->middleware([
+                'permission:students.create',
+                'permission:enrolments.create',
+            ])
+            ->name('student-import.timeslot.upload');
+
+
+        Route::get(
+            '/students/import/preview',
+            [
+                StudentImportController::class,
+                'preview',
+            ]
+        )
+            ->middleware([
+                'permission:students.create',
+                'permission:enrolments.create',
+            ])
+            ->name('student-import.preview');
+
+
+        Route::post(
+            '/students/import/confirm',
+            [
+                StudentImportController::class,
+                'confirm',
+            ]
+        )
+            ->middleware([
+                'permission:students.create',
+                'permission:enrolments.create',
+            ])
+            ->name('student-import.confirm');
+
+
+        Route::post(
+            '/students/import/reset',
+            [
+                StudentImportController::class,
+                'reset',
+            ]
+        )
+            ->middleware([
+                'permission:students.create',
+                'permission:enrolments.create',
+            ])
+            ->name('student-import.reset');
+
+
+        Route::post(
+            '/students/import/alias',
+            [
+                StudentImportAliasController::class,
+                'store',
+            ]
+        )
+            ->middleware([
+                'permission:students.create',
+                'permission:enrolments.create',
+            ])
+            ->name('student-import.alias.store');
 
 
         /*
@@ -1269,6 +1365,7 @@ Route::prefix('parent')
             ]
         )
             ->name('otp');
+
 
         Route::post(
             '/otp/resend',
