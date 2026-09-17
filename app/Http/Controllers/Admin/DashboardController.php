@@ -379,6 +379,7 @@ class DashboardController extends Controller
             $offerings =
                 SectionOffering::with([
                     'section',
+                    'subSections',
 
                     'enrolments' =>
                         function ($query) {
@@ -497,6 +498,36 @@ class DashboardController extends Controller
                         .
                         $latestEndTime
                     );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Available Classes At This Time
+                |--------------------------------------------------------------------------
+                |
+                | Example:
+                | 3:45 PM -> English, Math, Interactive
+                | 4:10 PM -> Interactive
+                |--------------------------------------------------------------------------
+                */
+
+                $availableClasses =
+                    $classOfferings
+                        ->map(
+                            function ($offering) {
+
+                                return trim(
+                                    $offering
+                                        ->section
+                                        ?->section_name
+                                    ??
+                                    ''
+                                );
+                            }
+                        )
+                        ->filter()
+                        ->unique()
+                        ->values();
 
 
                 /*
@@ -683,6 +714,9 @@ class DashboardController extends Controller
                             ->format(
                                 'g:i A'
                             ),
+
+                    'classes' =>
+                        $availableClasses,
 
                     'regular_students' =>
                         $regularStudents,

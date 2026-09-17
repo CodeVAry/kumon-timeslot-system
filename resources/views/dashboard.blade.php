@@ -958,6 +958,19 @@
 
                             <th
                                 class="px-6 py-4
+                                       text-left
+                                       text-xs
+                                       font-semibold
+                                       uppercase
+                                       tracking-wide
+                                       text-cyan-800"
+                            >
+                                Available classes
+                            </th>
+
+
+                            <th
+                                class="px-6 py-4
                                        text-center
                                        text-xs
                                        font-semibold
@@ -1031,6 +1044,16 @@
                                         'class_time',
                                         '—'
                                     );
+
+                                $availableClasses =
+                                    collect(
+                                        data_get(
+                                            $class,
+                                            'classes',
+                                            []
+                                        )
+                                    );
+
 
                                 $regularStudents =
                                     data_get(
@@ -1134,6 +1157,94 @@
 
 
                                 <td
+                                    class="px-6 py-6"
+                                >
+                                    <div
+                                        class="flex
+                                               flex-wrap
+                                               gap-2"
+                                    >
+
+                                        @forelse (
+                                            $availableClasses
+                                            as $availableClass
+                                        )
+
+                                            @php
+
+                                                $normalClassName =
+                                                    strtolower(
+                                                        trim(
+                                                            $availableClass
+                                                        )
+                                                    );
+
+
+                                                if (
+                                                    $normalClassName
+                                                    ===
+                                                    'interactive'
+                                                ) {
+
+                                                    $classBadgeStyle =
+                                                        'border-purple-200 bg-purple-50 text-purple-700';
+
+                                                } elseif (
+                                                    $normalClassName
+                                                    ===
+                                                    'math'
+                                                ) {
+
+                                                    $classBadgeStyle =
+                                                        'border-blue-200 bg-blue-50 text-blue-700';
+
+                                                } elseif (
+                                                    $normalClassName
+                                                    ===
+                                                    'english'
+                                                ) {
+
+                                                    $classBadgeStyle =
+                                                        'border-green-200 bg-green-50 text-green-700';
+
+                                                } else {
+
+                                                    $classBadgeStyle =
+                                                        'border-slate-200 bg-slate-50 text-slate-700';
+                                                }
+
+                                            @endphp
+
+
+                                            <span
+                                                class="inline-flex
+                                                       items-center
+                                                       rounded-full
+                                                       border
+                                                       px-3 py-1
+                                                       text-xs
+                                                       font-semibold
+                                                       {{ $classBadgeStyle }}"
+                                            >
+                                                {{ $availableClass }}
+                                            </span>
+
+                                        @empty
+
+                                            <span
+                                                class="text-sm
+                                                       text-slate-400"
+                                            >
+                                                —
+                                            </span>
+
+                                        @endforelse
+
+                                    </div>
+                                </td>
+
+
+                                <td
                                     class="px-6 py-6
                                            text-center
                                            text-base
@@ -1190,7 +1301,7 @@
                             <tr>
 
                                 <td
-                                    colspan="5"
+                                    colspan="6"
                                     class="px-6 py-16
                                            text-center"
                                 >
