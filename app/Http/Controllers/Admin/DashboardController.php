@@ -392,6 +392,9 @@ class DashboardController extends Controller
                                 ->where(
                                     'is_wishlist',
                                     false
+                                )
+                                ->with(
+                                    'subSection'
                                 );
                         },
                 ])
@@ -546,12 +549,85 @@ class DashboardController extends Controller
                                         ->count();
 
 
+                                $subSections =
+                                    collect();
+
+
+                                if (
+                                    strtolower(
+                                        $className
+                                    )
+                                    ===
+                                    'math'
+                                ) {
+
+                                    $subSections =
+                                        $offering
+                                            ->enrolments
+                                            ->filter(
+                                                function ($enrolment) {
+
+                                                    return
+                                                        $enrolment
+                                                            ->subSection;
+                                                }
+                                            )
+                                            ->groupBy(
+                                                function ($enrolment) {
+
+                                                    return
+                                                        $enrolment
+                                                            ->subSection
+                                                            ?->sub_section_name
+                                                        ??
+                                                        'Unassigned';
+                                                }
+                                            )
+                                            ->map(
+                                                function (
+                                                    $items,
+                                                    $subSectionName
+                                                ) {
+
+                                                    return [
+                                                        'name' =>
+                                                            $subSectionName,
+
+                                                        'student_count' =>
+                                                            $items
+                                                                ->pluck(
+                                                                    'student_id'
+                                                                )
+                                                                ->unique()
+                                                                ->count(),
+                                                    ];
+                                                }
+                                            )
+                                            ->values();
+                                }
+
+
                                 return [
                                     'name' =>
                                         $className,
 
                                     'student_count' =>
                                         $studentCount,
+
+                                    'max_seats' =>
+                                        (int)
+                                            (
+                                                $offering
+                                                    ->max_seat
+                                                ??
+                                                $offering
+                                                    ->max_seats
+                                                ??
+                                                0
+                                            ),
+
+                                    'sub_sections' =>
+                                        $subSections,
                                 ];
                             }
                         )
@@ -565,6 +641,45 @@ class DashboardController extends Controller
                                 $className
                             ) {
 
+                                $combinedSubSections =
+                                    $items
+                                        ->flatMap(
+                                            function ($item) {
+
+                                                return
+                                                    collect(
+                                                        $item[
+                                                            'sub_sections'
+                                                        ]
+                                                        ??
+                                                        []
+                                                    );
+                                            }
+                                        )
+                                        ->groupBy(
+                                            'name'
+                                        )
+                                        ->map(
+                                            function (
+                                                $subItems,
+                                                $subSectionName
+                                            ) {
+
+                                                return [
+                                                    'name' =>
+                                                        $subSectionName,
+
+                                                    'student_count' =>
+                                                        $subItems
+                                                            ->sum(
+                                                                'student_count'
+                                                            ),
+                                                ];
+                                            }
+                                        )
+                                        ->values();
+
+
                                 return [
                                     'name' =>
                                         $className,
@@ -574,6 +689,15 @@ class DashboardController extends Controller
                                             ->sum(
                                                 'student_count'
                                             ),
+
+                                    'max_seats' =>
+                                        $items
+                                            ->sum(
+                                                'max_seats'
+                                            ),
+
+                                    'sub_sections' =>
+                                        $combinedSubSections,
                                 ];
                             }
                         )
@@ -767,6 +891,12 @@ class DashboardController extends Controller
 
                     'class_details' =>
                         $classDetails,
+
+                    'total_class_students' =>
+                        $classDetails
+                            ->sum(
+                                'student_count'
+                            ),
 
                     'regular_students' =>
                         $regularStudents,

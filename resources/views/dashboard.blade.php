@@ -978,6 +978,19 @@
                                        tracking-wide
                                        text-cyan-800"
                             >
+                                Total students
+                            </th>
+
+
+                            <th
+                                class="px-6 py-4
+                                       text-center
+                                       text-xs
+                                       font-semibold
+                                       uppercase
+                                       tracking-wide
+                                       text-cyan-800"
+                            >
                                 Status
                             </th>
 
@@ -1014,6 +1027,18 @@
                                             []
                                         )
                                     );
+
+
+                                $totalClassStudents =
+                                    (int)
+                                        data_get(
+                                            $class,
+                                            'total_class_students',
+                                            $classDetails
+                                                ->sum(
+                                                    'student_count'
+                                                )
+                                        );
 
 
                                 $regularStudents =
@@ -1245,6 +1270,85 @@
 
                                             </div>
 
+
+                                            @if (
+                                                $normalClassName
+                                                ===
+                                                'math'
+                                            )
+
+                                                @php
+
+                                                    $mathSubSections =
+                                                        collect(
+                                                            data_get(
+                                                                $classDetail,
+                                                                'sub_sections',
+                                                                []
+                                                            )
+                                                        );
+
+                                                @endphp
+
+
+                                                @if (
+                                                    $mathSubSections
+                                                        ->isNotEmpty()
+                                                )
+
+                                                    <div
+                                                        class="mt-2
+                                                               flex
+                                                               flex-wrap
+                                                               gap-1.5"
+                                                    >
+
+                                                        @foreach (
+                                                            $mathSubSections
+                                                            as $mathSubSection
+                                                        )
+
+                                                            <span
+                                                                class="inline-flex
+                                                                       items-center
+                                                                       rounded-lg
+                                                                       bg-blue-100
+                                                                       px-2.5
+                                                                       py-1
+                                                                       text-[11px]
+                                                                       font-semibold
+                                                                       text-blue-800"
+                                                            >
+                                                                {{
+                                                                    data_get(
+                                                                        $mathSubSection,
+                                                                        'name',
+                                                                        'Math'
+                                                                    )
+                                                                }}
+
+                                                                &nbsp;·&nbsp;
+
+                                                                {{
+                                                                    number_format(
+                                                                        (int)
+                                                                            data_get(
+                                                                                $mathSubSection,
+                                                                                'student_count',
+                                                                                0
+                                                                            )
+                                                                    )
+                                                                }}
+                                                            </span>
+
+                                                        @endforeach
+
+                                                    </div>
+
+                                                @endif
+
+                                            @endif
+
                                         @empty
 
                                             <span
@@ -1257,6 +1361,30 @@
                                         @endforelse
 
                                     </div>
+                                </td>
+
+
+                                <td
+                                    class="px-6 py-6
+                                           text-center"
+                                >
+
+                                    <div
+                                        class="text-xl
+                                               font-bold
+                                               text-cyan-700"
+                                    >
+                                        {{ number_format($totalClassStudents) }}
+                                    </div>
+
+                                    <div
+                                        class="mt-1
+                                               text-[11px]
+                                               text-slate-400"
+                                    >
+                                        Across all classes
+                                    </div>
+
                                 </td>
 
 
@@ -1286,7 +1414,7 @@
                             <tr>
 
                                 <td
-                                    colspan="3"
+                                    colspan="4"
                                     class="px-6 py-16
                                            text-center"
                                 >
