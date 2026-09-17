@@ -511,22 +511,72 @@ class DashboardController extends Controller
                 |--------------------------------------------------------------------------
                 */
 
-                $availableClasses =
+                $classDetails =
                     $classOfferings
                         ->map(
                             function ($offering) {
 
-                                return trim(
-                                    $offering
-                                        ->section
-                                        ?->section_name
-                                    ??
+                                $className =
+                                    trim(
+                                        $offering
+                                            ->section
+                                            ?->section_name
+                                        ??
+                                        ''
+                                    );
+
+
+                                if (
+                                    $className
+                                    ===
                                     ''
-                                );
+                                ) {
+
+                                    return null;
+                                }
+
+
+                                $studentCount =
+                                    $offering
+                                        ->enrolments
+                                        ->pluck(
+                                            'student_id'
+                                        )
+                                        ->unique()
+                                        ->count();
+
+
+                                return [
+                                    'name' =>
+                                        $className,
+
+                                    'student_count' =>
+                                        $studentCount,
+                                ];
                             }
                         )
                         ->filter()
-                        ->unique()
+                        ->groupBy(
+                            'name'
+                        )
+                        ->map(
+                            function (
+                                $items,
+                                $className
+                            ) {
+
+                                return [
+                                    'name' =>
+                                        $className,
+
+                                    'student_count' =>
+                                        $items
+                                            ->sum(
+                                                'student_count'
+                                            ),
+                                ];
+                            }
+                        )
                         ->values();
 
 
@@ -715,8 +765,8 @@ class DashboardController extends Controller
                                 'g:i A'
                             ),
 
-                    'classes' =>
-                        $availableClasses,
+                    'class_details' =>
+                        $classDetails,
 
                     'regular_students' =>
                         $regularStudents,

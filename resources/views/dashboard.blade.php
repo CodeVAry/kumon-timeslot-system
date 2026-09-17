@@ -965,7 +965,7 @@
                                        tracking-wide
                                        text-cyan-800"
                             >
-                                Available classes
+                                Class details
                             </th>
 
 
@@ -1045,11 +1045,11 @@
                                         '—'
                                     );
 
-                                $availableClasses =
+                                $classDetails =
                                     collect(
                                         data_get(
                                             $class,
-                                            'classes',
+                                            'class_details',
                                             []
                                         )
                                     );
@@ -1166,11 +1166,28 @@
                                     >
 
                                         @forelse (
-                                            $availableClasses
-                                            as $availableClass
+                                            $classDetails
+                                            as $classDetail
                                         )
 
                                             @php
+
+                                                $availableClass =
+                                                    data_get(
+                                                        $classDetail,
+                                                        'name',
+                                                        ''
+                                                    );
+
+
+                                                $classStudentCount =
+                                                    (int)
+                                                        data_get(
+                                                            $classDetail,
+                                                            'student_count',
+                                                            0
+                                                        );
+
 
                                                 $normalClassName =
                                                     strtolower(
@@ -1216,18 +1233,42 @@
                                             @endphp
 
 
-                                            <span
+                                            <div
                                                 class="inline-flex
                                                        items-center
-                                                       rounded-full
+                                                       gap-2
+                                                       rounded-xl
                                                        border
-                                                       px-3 py-1
-                                                       text-xs
-                                                       font-semibold
+                                                       px-3
+                                                       py-2
                                                        {{ $classBadgeStyle }}"
                                             >
-                                                {{ $availableClass }}
-                                            </span>
+
+                                                <span
+                                                    class="text-xs
+                                                           font-semibold"
+                                                >
+                                                    {{ $availableClass }}
+                                                </span>
+
+
+                                                <span
+                                                    class="inline-flex
+                                                           min-w-7
+                                                           items-center
+                                                           justify-center
+                                                           rounded-full
+                                                           bg-white/90
+                                                           px-2
+                                                           py-0.5
+                                                           text-xs
+                                                           font-bold
+                                                           text-slate-800"
+                                                >
+                                                    {{ number_format($classStudentCount) }}
+                                                </span>
+
+                                            </div>
 
                                         @empty
 
