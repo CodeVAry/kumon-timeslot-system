@@ -66,7 +66,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Wishlist Status Labels
+    | waitlist Status Labels
     |--------------------------------------------------------------------------
     */
 
@@ -89,7 +89,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Wishlist Badge Classes
+    | waitlist Badge Classes
     |--------------------------------------------------------------------------
     */
 
@@ -112,7 +112,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Wishlist Heading Classes
+    | waitlist Heading Classes
     |--------------------------------------------------------------------------
     */
 
@@ -135,7 +135,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Latest Wishlist Data
+    | Latest waitlist Data
     |--------------------------------------------------------------------------
     */
 
@@ -572,7 +572,7 @@
                            text-sm
                            text-slate-500"
                 >
-                    No wishlist request has been submitted.
+                    No waitlist request has been submitted.
                 </p>
 
             @endif
@@ -1234,7 +1234,7 @@
 
 
             {{-- =================================================
-                WISHLIST DETAIL CARD
+                waitlist DETAIL CARD
             ================================================== --}}
 
             <section
@@ -1358,7 +1358,7 @@
                                    leading-6
                                    text-green-700"
                         >
-                            Your latest wishlist request
+                            Your latest waitlist request
                             has been approved.
                         </p>
 
@@ -1380,7 +1380,7 @@
                                    font-semibold
                                    text-red-700"
                         >
-                            Your latest wishlist request
+                            Your latest waitlist request
                             was rejected.
                         </p>
 
@@ -1445,7 +1445,7 @@
                                    leading-6
                                    text-slate-600"
                         >
-                            Your latest wishlist request
+                            Your latest waitlist request
                             was cancelled.
                         </p>
 
@@ -1460,7 +1460,7 @@
                                leading-6
                                text-slate-600"
                     >
-                        No wishlist request has been submitted.
+                        No waitlist request has been submitted.
                     </p>
 
                 @endif

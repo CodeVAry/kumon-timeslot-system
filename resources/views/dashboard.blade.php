@@ -2109,7 +2109,7 @@
                                                font-semibold
                                                text-purple-700"
                                     >
-                                        Wishlist requests
+                                        Waitlist requests
                                     </p>
 
 
@@ -2161,7 +2161,7 @@
 
                                     @else
 
-                                        No active wishlist requests
+                                        No active waitlist requests
 
                                     @endif
 
@@ -2177,7 +2177,7 @@
                                            font-semibold
                                            text-purple-700"
                                 >
-                                    Open Wishlist
+                                    Open Waitlist
 
                                     <span>
                                         →
