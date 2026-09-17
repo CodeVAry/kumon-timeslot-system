@@ -978,45 +978,6 @@
                                        tracking-wide
                                        text-cyan-800"
                             >
-                                Regular classes
-                            </th>
-
-
-                            <th
-                                class="px-6 py-4
-                                       text-center
-                                       text-xs
-                                       font-semibold
-                                       uppercase
-                                       tracking-wide
-                                       text-cyan-800"
-                            >
-                                Interactive
-                            </th>
-
-
-                            <th
-                                class="px-6 py-4
-                                       text-center
-                                       text-xs
-                                       font-semibold
-                                       uppercase
-                                       tracking-wide
-                                       text-cyan-800"
-                            >
-                                Total students
-                            </th>
-
-
-                            <th
-                                class="px-6 py-4
-                                       text-center
-                                       text-xs
-                                       font-semibold
-                                       uppercase
-                                       tracking-wide
-                                       text-cyan-800"
-                            >
                                 Status
                             </th>
 
@@ -1189,6 +1150,15 @@
                                                         );
 
 
+                                                $classMaxSeats =
+                                                    (int)
+                                                        data_get(
+                                                            $classDetail,
+                                                            'max_seats',
+                                                            0
+                                                        );
+
+
                                                 $normalClassName =
                                                     strtolower(
                                                         trim(
@@ -1254,7 +1224,6 @@
 
                                                 <span
                                                     class="inline-flex
-                                                           min-w-7
                                                            items-center
                                                            justify-center
                                                            rounded-full
@@ -1266,6 +1235,12 @@
                                                            text-slate-800"
                                                 >
                                                     {{ number_format($classStudentCount) }}
+
+                                                    @if ($classMaxSeats > 0)
+
+                                                        / {{ number_format($classMaxSeats) }}
+
+                                                    @endif
                                                 </span>
 
                                             </div>
@@ -1282,37 +1257,6 @@
                                         @endforelse
 
                                     </div>
-                                </td>
-
-
-                                <td
-                                    class="px-6 py-6
-                                           text-center
-                                           text-base
-                                           text-slate-700"
-                                >
-                                    {{ number_format($regularStudents) }}
-                                </td>
-
-
-                                <td
-                                    class="px-6 py-6
-                                           text-center
-                                           text-base
-                                           text-slate-700"
-                                >
-                                    {{ number_format($interactiveStudents) }}
-                                </td>
-
-
-                                <td
-                                    class="px-6 py-6
-                                           text-center
-                                           text-lg
-                                           font-bold
-                                           text-cyan-700"
-                                >
-                                    {{ number_format($totalStudents) }}
                                 </td>
 
 
@@ -1342,7 +1286,7 @@
                             <tr>
 
                                 <td
-                                    colspan="6"
+                                    colspan="3"
                                     class="px-6 py-16
                                            text-center"
                                 >
