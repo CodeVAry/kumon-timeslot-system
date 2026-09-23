@@ -49,8 +49,8 @@ class ScheduleController extends Controller
 
         $selectedDate =
             $selectedDay
-            ? $dayDates[$selectedDay->id]
-            : null;
+                ? $dayDates[$selectedDay->id]
+                : null;
 
 
         /*
@@ -248,8 +248,8 @@ class ScheduleController extends Controller
                                 $offering
                                     ->start_time
                             )->format(
-                                    'H:i:s'
-                                );
+                                'H:i:s'
+                            );
                     }
                 );
 
@@ -257,7 +257,7 @@ class ScheduleController extends Controller
         foreach (
             $groupedOfferings
             as $rawTime =>
-            $group
+                $group
         ) {
 
             $scheduleRows->push([
@@ -268,8 +268,8 @@ class ScheduleController extends Controller
                     Carbon::parse(
                         $rawTime
                     )->format(
-                            'g:i A'
-                        ),
+                        'g:i A'
+                    ),
 
                 'class_count' =>
                     $group
@@ -337,15 +337,19 @@ class ScheduleController extends Controller
         $timeOfferings =
             $offerings
                 ->filter(
-                    function ($offering) use ($selectedTime) {
+                    function (
+                        $offering
+                    ) use (
+                        $selectedTime
+                    ) {
 
                         return
                             Carbon::parse(
                                 $offering
                                     ->start_time
                             )->format(
-                                    'H:i:s'
-                                )
+                                'H:i:s'
+                            )
                             ===
                             $selectedTime;
                     }
@@ -458,7 +462,7 @@ class ScheduleController extends Controller
                             'student_id'
                         )
                         ->map(
-                            fn($id) =>
+                            fn ($id) =>
                                 (int)
                                 $id
                         )
@@ -560,7 +564,7 @@ class ScheduleController extends Controller
         $dayName =
             $sectionOffering
                 ->day
-                    ?->day_name;
+                ?->day_name;
 
 
         if (
@@ -633,7 +637,7 @@ class ScheduleController extends Controller
                         'student_id'
                     )
                     ->map(
-                        fn($id) =>
+                        fn ($id) =>
                             (int)
                             $id
                     )
@@ -676,11 +680,63 @@ class ScheduleController extends Controller
             'all';
 
 
+        $selectedExportDate =
+            $request->input(
+                'date'
+            );
+
+
+        if ($selectedExportDate) {
+
+            try {
+
+                $dateForDay =
+                    Carbon::parse(
+                        $selectedExportDate
+                    );
+
+
+                $dateDay =
+                    Day::whereRaw(
+                        'LOWER(day_name) = ?',
+                        [
+                            strtolower(
+                                $dateForDay->format(
+                                    'l'
+                                )
+                            ),
+                        ]
+                    )
+                        ->where(
+                            'is_active',
+                            true
+                        )
+                        ->first();
+
+
+                if ($dateDay) {
+
+                    $requestedDayId =
+                        $dateDay->id;
+
+
+                    $allDaysSelected =
+                        false;
+                }
+
+            } catch (\Exception $exception) {
+
+                $selectedExportDate =
+                    null;
+            }
+        }
+
+
         $context =
             $this->getDayContext(
                 $allDaysSelected
-                ? null
-                : $requestedDayId
+                    ? null
+                    : $requestedDayId
             );
 
 
@@ -692,20 +748,20 @@ class ScheduleController extends Controller
 
         $selectedDay =
             $allDaysSelected
-            ? null
-            : $context[
-                'selectedDay'
-            ];
+                ? null
+                : $context[
+                    'selectedDay'
+                ];
 
 
         $selectedDate =
             $selectedDay
-            ? $context[
-                'dayDates'
-            ][
-                $selectedDay->id
-            ]
-            : null;
+                ? $context[
+                    'dayDates'
+                ][
+                    $selectedDay->id
+                ]
+                : null;
 
 
         /*
@@ -826,8 +882,8 @@ class ScheduleController extends Controller
                                 $offering
                                     ->start_time
                             )->format(
-                                    'H:i:s'
-                                );
+                                'H:i:s'
+                            );
                     }
                 )
                 ->unique()
@@ -837,10 +893,10 @@ class ScheduleController extends Controller
 
         $selectedOfferingId =
             $allDaysSelected
-            ? null
-            : $request->input(
-                'offering_id'
-            );
+                ? null
+                : $request->input(
+                    'offering_id'
+                );
 
 
         return view(
@@ -849,6 +905,7 @@ class ScheduleController extends Controller
                 'days',
                 'selectedDay',
                 'selectedDate',
+                'selectedExportDate',
                 'allDaysSelected',
                 'sections',
                 'subSections',
@@ -872,10 +929,19 @@ class ScheduleController extends Controller
     ) {
         $validated =
             $request->validate([
+                'date' => [
+                    'nullable',
+                    'date',
+                ],
+
                 'day_id' => [
                     'required',
 
-                    function ($attribute, $value, $fail) {
+                    function (
+                        $attribute,
+                        $value,
+                        $fail
+                    ) {
 
                         if (
                             $value
@@ -925,11 +991,84 @@ class ScheduleController extends Controller
                     'in:all,present,absent,vacation,not_marked',
                 ],
 
+                'include_attendance_status' => [
+                    'nullable',
+                    'boolean',
+                ],
+
                 'format' => [
                     'required',
                     'in:pdf,excel',
                 ],
             ]);
+
+
+        $validated[
+            'include_attendance_status'
+        ] =
+            $request->boolean(
+                'include_attendance_status'
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Historical Attendance Date
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            !empty(
+                $validated[
+                    'date'
+                ]
+            )
+        ) {
+
+            $historicalDate =
+                Carbon::parse(
+                    $validated[
+                        'date'
+                    ]
+                )
+                    ->startOfDay();
+
+
+            $historicalDay =
+                Day::whereRaw(
+                    'LOWER(day_name) = ?',
+                    [
+                        strtolower(
+                            $historicalDate
+                                ->format(
+                                    'l'
+                                )
+                        ),
+                    ]
+                )
+                    ->where(
+                        'is_active',
+                        true
+                    )
+                    ->first();
+
+
+            if (!$historicalDay) {
+
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'date' =>
+                            'No active class day exists for the selected date.',
+                    ]);
+            }
+
+
+            $validated[
+                'day_id'
+            ] =
+                $historicalDay->id;
+        }
 
 
         /*
@@ -940,16 +1079,16 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-            $validated[
-                'sub_section_id'
-            ]
-        )
+                $validated[
+                    'sub_section_id'
+                ]
+            )
             &&
             !empty(
-            $validated[
-                'section_id'
-            ]
-        )
+                $validated[
+                    'section_id'
+                ]
+            )
         ) {
 
             $validSubSection =
@@ -1175,9 +1314,21 @@ class ScheduleController extends Controller
 
 
         $date =
-            $this->resolveDateForDay(
-                $selectedDay
-            );
+            !empty(
+                $validated[
+                    'date'
+                ]
+            )
+                ? Carbon::parse(
+                    $validated[
+                        'date'
+                    ]
+                )
+                    ->startOfDay()
+
+                : $this->resolveDateForDay(
+                    $selectedDay
+                );
 
 
         $validated[
@@ -1309,10 +1460,10 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-            $filters[
-                'section_id'
-            ]
-        )
+                $filters[
+                    'section_id'
+                ]
+            )
         ) {
 
             $offeringQuery->where(
@@ -1332,10 +1483,10 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-            $filters[
-                'time'
-            ]
-        )
+                $filters[
+                    'time'
+                ]
+            )
         ) {
 
             $offeringQuery
@@ -1356,10 +1507,10 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-            $filters[
-                'offering_id'
-            ]
-        )
+                $filters[
+                    'offering_id'
+                ]
+            )
         ) {
 
             $offeringQuery->where(
@@ -1379,16 +1530,18 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-            $filters[
-                'sub_section_id'
-            ]
-        )
+                $filters[
+                    'sub_section_id'
+                ]
+            )
         ) {
 
             $offeringQuery
                 ->whereHas(
                     'subSections',
-                    function ($query) use ($filters) {
+                    function ($query) use (
+                        $filters
+                    ) {
 
                         $query->where(
                             'sub_sections.id',
@@ -1457,10 +1610,10 @@ class ScheduleController extends Controller
 
         if (
             !empty(
-            $filters[
-                'sub_section_id'
-            ]
-        )
+                $filters[
+                    'sub_section_id'
+                ]
+            )
         ) {
 
             $enrolmentsQuery->where(
@@ -1538,7 +1691,7 @@ class ScheduleController extends Controller
                         'student_id'
                     )
                     ->map(
-                        fn($id) =>
+                        fn ($id) =>
                             (int)
                             $id
                     )
@@ -1620,7 +1773,7 @@ class ScheduleController extends Controller
 
                 $attendanceStatus =
                     $attendance
-                            ?->status
+                        ?->status
                     ??
                     'not_marked';
 
@@ -1628,7 +1781,7 @@ class ScheduleController extends Controller
                 $displayStudentStatus =
                     $student
                         ->studentStatus
-                            ?->status_name
+                        ?->status_name
                     ??
                     'Active';
 
@@ -1636,7 +1789,7 @@ class ScheduleController extends Controller
                 $statusColour =
                     $student
                         ->studentStatus
-                            ?->color_code
+                        ?->color_code
                     ??
                     null;
             }
@@ -1679,10 +1832,30 @@ class ScheduleController extends Controller
                 null;
 
 
+            /*
+            |--------------------------------------------------------------------------
+            | Export Highlight Priority
+            |--------------------------------------------------------------------------
+            |
+            | Vacation = grey
+            | Absent   = red
+            | Otherwise keep the existing student-status colour behaviour.
+            |--------------------------------------------------------------------------
+            */
+
             if ($isVacation) {
 
                 $statusFill =
-                    StudentLeave::VACATION_COLOR;
+                    '#9ca3af';
+
+            } elseif (
+                $attendanceStatus
+                ===
+                'absent'
+            ) {
+
+                $statusFill =
+                    '#dc2626';
 
             } elseif (
                 strtolower(
@@ -1718,7 +1891,7 @@ class ScheduleController extends Controller
             $sectionName =
                 $offering
                     ->section
-                        ?->section_name
+                    ?->section_name
                 ??
                 'Class';
 
@@ -1726,7 +1899,7 @@ class ScheduleController extends Controller
             $subSectionName =
                 $enrolment
                     ->subSection
-                        ?->sub_section_name;
+                    ?->sub_section_name;
 
 
             $classDisplay =
@@ -1744,26 +1917,69 @@ class ScheduleController extends Controller
 
             /*
             |--------------------------------------------------------------------------
+            | Student Display Name
+            |--------------------------------------------------------------------------
+            */
+
+            $studentName =
+                trim(
+                    $student
+                        ->first_name
+                    .
+                    ' '
+                    .
+                    $student
+                        ->last_name
+                );
+
+
+            if (
+                !empty(
+                    $filters[
+                        'include_attendance_status'
+                    ]
+                )
+            ) {
+
+                $attendanceLabel =
+                    match (
+                        $attendanceStatus
+                    ) {
+                        'present' =>
+                            'Present',
+
+                        'absent' =>
+                            'Absent',
+
+                        'vacation' =>
+                            'Vacation',
+
+                        default =>
+                            'Not Marked',
+                    };
+
+
+                $studentName .=
+                    ' — '
+                    .
+                    $attendanceLabel;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
             | Row
             |--------------------------------------------------------------------------
             */
 
             $rows->push([
                 'student_name' =>
-                    trim(
-                        $student
-                            ->first_name
-                        .
-                        ' '
-                        .
-                        $student
-                            ->last_name
-                    ),
+                    $studentName,
 
                 'day' =>
                     $offering
                         ->day
-                            ?->day_name
+                        ?->day_name
                     ??
                     $date->format(
                         'l'
@@ -1774,16 +1990,16 @@ class ScheduleController extends Controller
                         $offering
                             ->start_time
                     )->format(
-                            'g:i A'
-                        ),
+                        'g:i A'
+                    ),
 
                 'start_time_sort' =>
                     Carbon::parse(
                         $offering
                             ->start_time
                     )->format(
-                            'H:i:s'
-                        ),
+                        'H:i:s'
+                    ),
 
                 'section' =>
                     $sectionName,
@@ -2046,7 +2262,9 @@ class ScheduleController extends Controller
         $defaultDay =
             $days
                 ->first(
-                    function ($day) use ($todayName) {
+                    function ($day) use (
+                        $todayName
+                    ) {
 
                         return
                             strtolower(
@@ -2071,7 +2289,11 @@ class ScheduleController extends Controller
             $defaultDay =
                 $days
                     ->sortBy(
-                        function ($day) use ($dayDates) {
+                        function (
+                            $day
+                        ) use (
+                            $dayDates
+                        ) {
 
                             return
                                 $dayDates[

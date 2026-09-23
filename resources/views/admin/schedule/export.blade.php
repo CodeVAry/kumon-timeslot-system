@@ -199,8 +199,51 @@
             class="grid
                    gap-6
                    md:grid-cols-2
-                   xl:grid-cols-3"
+                   xl:grid-cols-4"
         >
+
+
+            {{-- =================================================
+                DATE
+            ================================================== --}}
+
+            <div>
+
+                <label
+                    for="date"
+                    class="mb-2
+                           block
+                           text-sm
+                           font-semibold
+                           text-slate-700"
+                >
+                    Attendance Date
+                </label>
+
+
+                <input
+                    id="date"
+                    type="date"
+                    name="date"
+                    value="{{ old('date', $selectedExportDate) }}"
+                    class="h-12
+                           w-full
+                           rounded-xl
+                           border-slate-300"
+                >
+
+
+                <p
+                    class="mt-2
+                           text-xs
+                           text-slate-500"
+                >
+                    Optional. Choose an older date to print
+                    attendance recorded for that day.
+                </p>
+
+            </div>
+
 
 
             {{-- =================================================
@@ -293,8 +336,9 @@
                            text-xs
                            text-slate-500"
                 >
-                    Choose <strong>All Days</strong> to export the selected
-                    class/subject across every active teaching day.
+                    Choose <strong>All Days</strong> for the normal multi-day
+                    schedule export. If Attendance Date is selected, the selected
+                    date overrides the Day field.
                 </p>
 
             </div>
@@ -724,6 +768,73 @@
 
 
         {{-- =====================================================
+            ATTENDANCE DISPLAY
+        ====================================================== --}}
+
+        <div
+            class="mt-8
+                   rounded-2xl
+                   border
+                   border-blue-100
+                   bg-blue-50/50
+                   p-5"
+        >
+
+            <label
+                class="flex
+                       cursor-pointer
+                       items-start
+                       gap-4"
+            >
+
+                <input
+                    type="checkbox"
+                    name="include_attendance_status"
+                    value="1"
+                    @checked(
+                        old(
+                            'include_attendance_status'
+                        )
+                    )
+                    class="mt-0.5
+                           h-5 w-5
+                           rounded
+                           border-2
+                           border-slate-500
+                           text-blue-600
+                           focus:ring-blue-500"
+                >
+
+
+                <div>
+
+                    <p
+                        class="font-semibold
+                               text-slate-900"
+                    >
+                        Show Attendance Result
+                    </p>
+
+
+                    <p
+                        class="mt-1
+                               text-xs
+                               leading-5
+                               text-slate-500"
+                    >
+                        Add Present, Absent, Vacation or Not Marked beside each
+                        student name in the downloaded PDF or Excel file.
+                    </p>
+
+                </div>
+
+            </label>
+
+        </div>
+
+
+
+        {{-- =====================================================
             EXPORT FORMAT
         ====================================================== --}}
 
@@ -869,11 +980,7 @@
 
             <a
                 href="{{ route(
-                    'admin.schedule.index',
-                    [
-                        'day_id' =>
-                            $selectedDay?->id,
-                    ]
+                    'admin.schedule.export.form'
                 ) }}"
                 class="inline-flex
                        h-12
@@ -881,12 +988,14 @@
                        rounded-xl
                        border
                        border-slate-300
+                       bg-white
                        px-6
                        text-sm
                        font-semibold
-                       text-slate-700"
+                       text-slate-700
+                       hover:bg-slate-50"
             >
-                Cancel
+                Clear Filters
             </a>
 
 

@@ -19,9 +19,12 @@
         $studentsEnrolled > 0
             ? round(
                 (
-                    $presentCount /
+                    $presentCount
+                    /
                     $studentsEnrolled
-                ) * 100,
+                )
+                *
+                100,
                 1
             )
             : 0;
@@ -31,9 +34,12 @@
         $studentsEnrolled > 0
             ? round(
                 (
-                    $absentCount /
+                    $absentCount
+                    /
                     $studentsEnrolled
-                ) * 100,
+                )
+                *
+                100,
                 1
             )
             : 0;
@@ -43,9 +49,12 @@
         $studentsEnrolled > 0
             ? round(
                 (
-                    $vacationCount /
+                    $vacationCount
+                    /
                     $studentsEnrolled
-                ) * 100,
+                )
+                *
+                100,
                 1
             )
             : 0;
@@ -62,28 +71,203 @@
         PAGE HEADER
     ========================================================== --}}
 
-    <div>
+    <div
+        class="flex
+               flex-col
+               gap-4
+               lg:flex-row
+               lg:items-end
+               lg:justify-between"
+    >
 
-        <h1
-            class="text-4xl
-                   font-bold
-                   tracking-tight
-                   text-slate-900"
+        <div>
+
+            <h1
+                class="text-4xl
+                       font-bold
+                       tracking-tight
+                       text-slate-900"
+            >
+                Attendance
+            </h1>
+
+
+            <p
+                class="mt-2
+                       text-sm
+                       text-slate-500"
+            >
+                Select a day and mark each student once,
+                even when they attend more than one class.
+            </p>
+
+        </div>
+
+
+        <form
+            method="GET"
+            action="{{ route('admin.attendance.index') }}"
+            class="flex
+                   flex-col
+                   gap-2
+                   sm:flex-row
+                   sm:items-end"
         >
-            Attendance
-        </h1>
+
+            <div>
+
+                <label
+                    for="attendance_date_filter"
+                    class="mb-1
+                           block
+                           text-xs
+                           font-bold
+                           uppercase
+                           tracking-wide
+                           text-slate-500"
+                >
+                    Attendance Date
+                </label>
 
 
-        <p
-            class="mt-2
-                   text-sm
-                   text-slate-500"
-        >
-            View daily classes and record
-            student attendance.
-        </p>
+                <input
+                    id="attendance_date_filter"
+                    type="date"
+                    name="date"
+                    value="{{ $selectedDate?->toDateString() }}"
+                    max="{{ now()->toDateString() }}"
+                    class="h-11
+                           rounded-xl
+                           border-2
+                           border-slate-400
+                           bg-white
+                           px-3
+                           text-sm
+                           font-semibold
+                           text-slate-800
+                           focus:border-blue-600
+                           focus:ring-blue-600"
+                    required
+                >
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="inline-flex
+                       h-11
+                       items-center
+                       justify-center
+                       rounded-xl
+                       bg-blue-600
+                       px-5
+                       text-sm
+                       font-bold
+                       text-white
+                       hover:bg-blue-700"
+            >
+                Load Date
+            </button>
+
+
+            <a
+                href="{{ route('admin.attendance.index') }}"
+                class="inline-flex
+                       h-11
+                       items-center
+                       justify-center
+                       rounded-xl
+                       border-2
+                       border-slate-300
+                       bg-white
+                       px-4
+                       text-sm
+                       font-semibold
+                       text-slate-600
+                       hover:bg-slate-50"
+            >
+                Today
+            </a>
+
+        </form>
 
     </div>
+
+
+
+    {{-- =========================================================
+        MESSAGES
+    ========================================================== --}}
+
+    @if (session('success'))
+
+        <div
+            class="rounded-xl
+                   border
+                   border-green-200
+                   bg-green-50
+                   px-5 py-4
+                   text-sm
+                   font-semibold
+                   text-green-700"
+        >
+            {{ session('success') }}
+        </div>
+
+    @endif
+
+
+    @if (session('error'))
+
+        <div
+            class="rounded-xl
+                   border
+                   border-red-200
+                   bg-red-50
+                   px-5 py-4
+                   text-sm
+                   font-semibold
+                   text-red-700"
+        >
+            {{ session('error') }}
+        </div>
+
+    @endif
+
+
+    @if ($errors->any())
+
+        <div
+            class="rounded-xl
+                   border
+                   border-red-200
+                   bg-red-50
+                   px-5 py-4
+                   text-sm
+                   text-red-700"
+        >
+
+            <p class="font-bold">
+                Attendance was not saved.
+            </p>
+
+
+            <ul class="mt-2 list-disc pl-5">
+
+                @foreach ($errors->all() as $error)
+
+                    <li>
+                        {{ $error }}
+                    </li>
+
+                @endforeach
+
+            </ul>
+
+        </div>
+
+    @endif
 
 
 
@@ -92,7 +276,8 @@
     ========================================================== --}}
 
     <div
-        class="flex flex-wrap
+        class="flex
+               flex-wrap
                gap-3
                rounded-2xl
                border
@@ -120,11 +305,15 @@
                     [
                         'day_id' =>
                             $day->id,
+
+                        'date' =>
+                            $date
+                                ->toDateString(),
                     ]
                 ) }}"
                 class="min-w-32
                        rounded-xl
-                       border
+                       border-2
                        px-6 py-3
                        text-center
                        transition
@@ -135,9 +324,9 @@
                         (int)
                         $day->id
 
-                            ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
+                            ? 'border-blue-700 bg-blue-600 text-white shadow-sm'
 
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50'
+                            : 'border-slate-400 bg-white text-slate-700 hover:border-blue-500 hover:bg-blue-50'
                     }}"
             >
 
@@ -171,7 +360,7 @@
 
                                 ? 'text-blue-100'
 
-                                : 'text-slate-400'
+                                : 'text-slate-500'
                         }}"
                 >
                     {{ $date->format('M j') }}
@@ -185,26 +374,85 @@
 
 
 
+    @if (
+        $selectedDate
+        &&
+        !$selectedDate->isToday()
+    )
+
+        <div
+            class="flex
+                   flex-col
+                   gap-2
+                   rounded-2xl
+                   border
+                   border-amber-200
+                   bg-amber-50
+                   px-5 py-4
+                   sm:flex-row
+                   sm:items-center
+                   sm:justify-between"
+        >
+
+            <div>
+
+                <p
+                    class="text-sm
+                           font-bold
+                           text-amber-900"
+                >
+                    Historical attendance
+                </p>
+
+
+                <p
+                    class="mt-1
+                           text-xs
+                           text-amber-700"
+                >
+                    You are viewing and editing attendance for
+                    {{ $selectedDate->format('l, j F Y') }}.
+                </p>
+
+            </div>
+
+
+            <span
+                class="inline-flex
+                       w-fit
+                       rounded-full
+                       bg-amber-100
+                       px-3 py-1
+                       text-xs
+                       font-bold
+                       text-amber-800"
+            >
+                Past Date
+            </span>
+
+        </div>
+
+    @endif
+
+
     {{-- =========================================================
-        SUMMARY CARDS
+        SUMMARY
     ========================================================== --}}
 
     <div
         class="grid
                gap-4
-               md:grid-cols-2
-               xl:grid-cols-5"
+               sm:grid-cols-2
+               xl:grid-cols-6"
     >
 
 
-        {{-- Selected Day --}}
         <div
             class="rounded-2xl
                    border
-                   border-blue-100
+                   border-slate-200
                    bg-white
-                   p-5
-                   shadow-sm"
+                   p-5"
         >
 
             <p
@@ -213,46 +461,7 @@
                        uppercase
                        text-slate-400"
             >
-                Selected Day
-            </p>
-
-
-            <p
-                class="mt-2
-                       text-lg
-                       font-bold
-                       text-slate-900"
-            >
-                {{
-                    $selectedDate
-                        ?->format(
-                            'l, j F Y'
-                        )
-                    ?? '—'
-                }}
-            </p>
-
-        </div>
-
-
-
-        {{-- Classes --}}
-        <div
-            class="rounded-2xl
-                   border
-                   border-blue-100
-                   bg-blue-50/50
-                   p-5
-                   shadow-sm"
-        >
-
-            <p
-                class="text-xs
-                       font-semibold
-                       uppercase
-                       text-slate-400"
-            >
-                Total Classes
+                Students
             </p>
 
 
@@ -262,6 +471,45 @@
                        font-bold
                        text-slate-900"
             >
+                {{ $studentsEnrolled }}
+            </p>
+
+
+            <p
+                class="mt-1
+                       text-xs
+                       text-slate-500"
+            >
+                Unique students
+            </p>
+
+        </div>
+
+
+        <div
+            class="rounded-2xl
+                   border
+                   border-blue-100
+                   bg-blue-50
+                   p-5"
+        >
+
+            <p
+                class="text-xs
+                       font-semibold
+                       uppercase
+                       text-slate-500"
+            >
+                Classes
+            </p>
+
+
+            <p
+                class="mt-2
+                       text-3xl
+                       font-bold
+                       text-blue-700"
+            >
                 {{ $totalClasses }}
             </p>
 
@@ -269,30 +517,27 @@
             <p
                 class="mt-1
                        text-xs
-                       text-slate-400"
+                       text-slate-500"
             >
-                Scheduled
+                Active offerings
             </p>
 
         </div>
 
 
-
-        {{-- Present --}}
         <div
             class="rounded-2xl
                    border
                    border-green-100
                    bg-green-50
-                   p-5
-                   shadow-sm"
+                   p-5"
         >
 
             <p
                 class="text-xs
                        font-semibold
                        uppercase
-                       text-slate-400"
+                       text-slate-500"
             >
                 Present
             </p>
@@ -314,28 +559,24 @@
                        text-slate-500"
             >
                 {{ $presentPercentage }}%
-                of enrolled
             </p>
 
         </div>
 
 
-
-        {{-- Absent --}}
         <div
             class="rounded-2xl
                    border
                    border-red-100
                    bg-red-50
-                   p-5
-                   shadow-sm"
+                   p-5"
         >
 
             <p
                 class="text-xs
                        font-semibold
                        uppercase
-                       text-slate-400"
+                       text-slate-500"
             >
                 Absent
             </p>
@@ -357,28 +598,24 @@
                        text-slate-500"
             >
                 {{ $absentPercentage }}%
-                of enrolled
             </p>
 
         </div>
 
 
-
-        {{-- Vacation --}}
         <div
             class="rounded-2xl
                    border
                    border-amber-100
                    bg-amber-50
-                   p-5
-                   shadow-sm"
+                   p-5"
         >
 
             <p
                 class="text-xs
                        font-semibold
                        uppercase
-                       text-slate-400"
+                       text-slate-500"
             >
                 Vacation
             </p>
@@ -400,7 +637,45 @@
                        text-slate-500"
             >
                 {{ $vacationPercentage }}%
-                of enrolled
+            </p>
+
+        </div>
+
+
+        <div
+            class="rounded-2xl
+                   border
+                   border-violet-100
+                   bg-violet-50
+                   p-5"
+        >
+
+            <p
+                class="text-xs
+                       font-semibold
+                       uppercase
+                       text-slate-500"
+            >
+                Not Marked
+            </p>
+
+
+            <p
+                class="mt-2
+                       text-3xl
+                       font-bold
+                       text-violet-600"
+            >
+                {{ $notMarkedCount }}
+            </p>
+
+
+            <p
+                class="mt-1
+                       text-xs
+                       text-slate-500"
+            >
+                Needs action
             </p>
 
         </div>
@@ -410,288 +685,28 @@
 
 
     {{-- =========================================================
-        MAIN AREA
+        WHOLE DAY ATTENDANCE
     ========================================================== --}}
 
-    <div
-        class="grid
-               gap-5
-               xl:grid-cols-[0.85fr_1.15fr]"
+    <section
+        class="overflow-hidden
+               rounded-2xl
+               border
+               border-slate-200
+               bg-white
+               shadow-sm"
     >
 
-
-        {{-- =====================================================
-            CLASS TIMES
-        ====================================================== --}}
-
-        <section
-            class="overflow-hidden
-                   rounded-2xl
-                   border
-                   border-slate-200
-                   bg-white
-                   shadow-sm"
-        >
-
-
-            <div
-                class="border-b
-                       border-slate-100
-                       px-6 py-5"
-            >
-
-                <h2
-                    class="text-xl
-                           font-bold
-                           text-slate-900"
-                >
-                    Class Times
-                </h2>
-
-
-                <p
-                    class="mt-1
-                           text-sm
-                           text-slate-500"
-                >
-                    All classes scheduled for
-                    {{
-                        $selectedDate
-                            ?->format(
-                                'l, j F Y'
-                            )
-                    }}.
-                </p>
-
-            </div>
-
-
-
-            <div class="overflow-x-auto">
-
-                <table class="min-w-full">
-
-
-                    <thead class="bg-slate-50">
-
-                        <tr>
-
-                            <th
-                                class="px-5 py-4
-                                       text-left
-                                       text-xs
-                                       font-bold
-                                       uppercase
-                                       text-slate-500"
-                            >
-                                Time
-                            </th>
-
-
-                            <th
-                                class="px-5 py-4
-                                       text-center
-                                       text-xs
-                                       font-bold
-                                       uppercase
-                                       text-slate-500"
-                            >
-                                Classes
-                            </th>
-
-
-                            <th
-                                class="px-5 py-4
-                                       text-center
-                                       text-xs
-                                       font-bold
-                                       uppercase
-                                       text-slate-500"
-                            >
-                                Students
-                            </th>
-
-
-                            <th
-                                class="px-5 py-4
-                                       text-center
-                                       text-xs
-                                       font-bold
-                                       uppercase
-                                       text-slate-500"
-                            >
-                                Action
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-
-
-                    <tbody
-                        class="divide-y
-                               divide-slate-100"
-                    >
-
-                        @forelse ($classTimes as $rawTime => $classes)
-
-                            @php
-
-                                $endTime =
-                                    $classes
-                                        ->max(
-                                            'end_time'
-                                        );
-
-                                $studentTotal =
-                                    $classes
-                                        ->sum(
-                                            'enrolled_count'
-                                        );
-
-                            @endphp
-
-
-                            <tr
-                                class="
-                                    {{
-                                        $selectedTime
-                                        ===
-                                        $rawTime
-
-                                            ? 'bg-blue-50'
-
-                                            : 'hover:bg-slate-50'
-                                    }}"
-                            >
-
-                                <td
-                                    class="whitespace-nowrap
-                                           px-5 py-5
-                                           font-bold
-                                           text-slate-900"
-                                >
-
-                                    {{
-                                        \Carbon\Carbon::parse(
-                                            $rawTime
-                                        )->format(
-                                            'g:i A'
-                                        )
-                                    }}
-
-                                    –
-
-                                    {{
-                                        \Carbon\Carbon::parse(
-                                            $endTime
-                                        )->format(
-                                            'g:i A'
-                                        )
-                                    }}
-
-                                </td>
-
-
-                                <td
-                                    class="px-5 py-5
-                                           text-center
-                                           text-sm
-                                           text-slate-700"
-                                >
-                                    {{ $classes->count() }}
-                                </td>
-
-
-                                <td
-                                    class="px-5 py-5
-                                           text-center
-                                           text-sm
-                                           font-semibold
-                                           text-slate-700"
-                                >
-                                    {{ $studentTotal }}
-                                </td>
-
-
-                                <td
-                                    class="px-5 py-5
-                                           text-center"
-                                >
-
-                                    <a
-                                        href="{{ route(
-                                            'admin.attendance.index',
-                                            [
-                                                'day_id' =>
-                                                    $selectedDayId,
-
-                                                'time' =>
-                                                    $rawTime,
-                                            ]
-                                        ) }}"
-                                        class="inline-flex
-                                               h-10
-                                               items-center
-                                               justify-center
-                                               rounded-xl
-                                               border
-                                               border-blue-300
-                                               px-4
-                                               text-xs
-                                               font-semibold
-                                               text-blue-700
-                                               hover:bg-blue-50"
-                                    >
-                                        View Classes
-                                    </a>
-
-                                </td>
-
-                            </tr>
-
-
-                        @empty
-
-
-                            <tr>
-
-                                <td
-                                    colspan="4"
-                                    class="px-6 py-14
-                                           text-center
-                                           text-sm
-                                           text-slate-500"
-                                >
-                                    No classes scheduled.
-                                </td>
-
-                            </tr>
-
-                        @endforelse
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        </section>
-
-
-
-        {{-- =====================================================
-            CLASSES AT SELECTED TIME
-        ====================================================== --}}
-
-        <section
-            class="rounded-2xl
-                   border
-                   border-slate-200
-                   bg-white
-                   p-6
-                   shadow-sm"
+        <div
+            class="flex
+                   flex-col
+                   gap-4
+                   border-b
+                   border-slate-100
+                   px-6 py-5
+                   lg:flex-row
+                   lg:items-center
+                   lg:justify-between"
         >
 
             <div>
@@ -701,25 +716,7 @@
                            font-bold
                            text-slate-900"
                 >
-
-                    @if ($selectedTime)
-
-                        Classes at
-
-                        {{
-                            \Carbon\Carbon::parse(
-                                $selectedTime
-                            )->format(
-                                'g:i A'
-                            )
-                        }}
-
-                    @else
-
-                        Classes
-
-                    @endif
-
+                    All Students
                 </h2>
 
 
@@ -728,175 +725,520 @@
                            text-sm
                            text-slate-500"
                 >
-                    Select a class to take
-                    attendance.
+                    Each student appears once.
+                    Their classes for this day are shown beside their name.
                 </p>
 
             </div>
 
 
+            @if ($attendanceRows->isNotEmpty())
 
-            <div
-                class="mt-5
-                       grid
-                       gap-4
-                       md:grid-cols-2"
+                <button
+                    id="markAllPresentButton"
+                    type="button"
+                    class="inline-flex
+                           h-11
+                           items-center
+                           justify-center
+                           rounded-xl
+                           border-2
+                           border-green-500
+                           bg-green-50
+                           px-5
+                           text-sm
+                           font-semibold
+                           text-green-700
+                           hover:bg-green-100"
+                >
+                    Mark All Present
+                </button>
+
+            @endif
+
+        </div>
+
+
+        @if (
+            $selectedDay
+            &&
+            $selectedDate
+        )
+
+            <form
+                method="POST"
+                action="{{ route(
+                    'admin.attendance.store-day',
+                    [
+                        'day' =>
+                            $selectedDay->id,
+                    ]
+                ) }}"
             >
 
-                @forelse ($selectedTimeOfferings as $offering)
+                @csrf
 
-                    <div
-                        class="rounded-2xl
-                               border
-                               border-slate-200
-                               bg-white
-                               p-5
-                               shadow-sm"
-                    >
 
-                        <div
-                            class="flex
-                                   items-start
-                                   justify-between
-                                   gap-3"
+                <input
+                    type="hidden"
+                    name="attendance_date"
+                    value="{{ $selectedDate->toDateString() }}"
+                >
+
+
+                <div class="overflow-x-auto">
+
+                    <table class="min-w-full">
+
+                        <thead
+                            class="border-b
+                                   border-slate-200
+                                   bg-slate-50"
                         >
 
-                            <div>
+                            <tr>
 
-                                <h3
-                                    class="text-lg
+                                <th
+                                    class="px-6 py-4
+                                           text-left
+                                           text-xs
                                            font-bold
-                                           text-slate-900"
-                                >
-                                    {{
-                                        $offering
-                                            ->section
-                                            ?->section_name
-                                        ?? 'Class'
-                                    }}
-                                </h3>
-
-
-                                <p
-                                    class="mt-1
-                                           text-sm
+                                           uppercase
+                                           tracking-wide
                                            text-slate-500"
                                 >
-
-                                    {{
-                                        $offering
-                                            ->enrolled_count
-                                    }}
-
-                                    /
-
-                                    {{
-                                        $offering
-                                            ->max_seats
-                                    }}
-
-                                    students
-
-                                </p>
-
-                            </div>
+                                    Student
+                                </th>
 
 
-                            <span
-                                class="rounded-full
-                                       bg-blue-50
-                                       px-3 py-1
-                                       text-xs
-                                       font-semibold
-                                       text-blue-700"
-                            >
-
-                                {{
-                                    \Carbon\Carbon::parse(
-                                        $offering
-                                            ->start_time
-                                    )->format(
-                                        'g:i A'
-                                    )
-                                }}
-
-                            </span>
-
-                        </div>
+                                <th
+                                    class="px-6 py-4
+                                           text-left
+                                           text-xs
+                                           font-bold
+                                           uppercase
+                                           tracking-wide
+                                           text-slate-500"
+                                >
+                                    Classes
+                                </th>
 
 
+                                <th
+                                    class="px-6 py-4
+                                           text-left
+                                           text-xs
+                                           font-bold
+                                           uppercase
+                                           tracking-wide
+                                           text-slate-500"
+                                >
+                                    Time
+                                </th>
 
-                        <a
-                            href="{{ route(
-                                'admin.attendance.takeAttendance',
-                                [
-                                    'sectionOffering' =>
-                                        $offering->id,
 
-                                    'date' =>
-                                        $selectedDate
-                                            ->toDateString(),
-                                ]
-                            ) }}"
-                            class="mt-5
-                                   inline-flex
-                                   h-11 w-full
+                                <th
+                                    class="px-6 py-4
+                                           text-center
+                                           text-xs
+                                           font-bold
+                                           uppercase
+                                           tracking-wide
+                                           text-slate-500"
+                                >
+                                    Attendance
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody
+                            class="divide-y
+                                   divide-slate-100"
+                        >
+
+                            @forelse (
+                                $attendanceRows
+                                as $row
+                            )
+
+                                @php
+
+                                    $student =
+                                        $row[
+                                            'student'
+                                        ];
+
+
+                                    $studentId =
+                                        $row[
+                                            'student_id'
+                                        ];
+
+
+                                    $status =
+                                        old(
+                                            'attendance.'
+                                            .
+                                            $studentId,
+                                            $row[
+                                                'status'
+                                            ]
+                                        );
+
+
+                                    $isVacation =
+                                        $row[
+                                            'is_vacation'
+                                        ];
+
+                                @endphp
+
+
+                                <tr
+                                    class="{{
+                                        $isVacation
+                                            ? 'bg-amber-50/60'
+                                            : 'hover:bg-slate-50/70'
+                                    }}"
+                                >
+
+                                    <td
+                                        class="whitespace-nowrap
+                                               px-6 py-5"
+                                    >
+
+                                        <p
+                                            class="font-semibold
+                                                   text-slate-900"
+                                        >
+                                            {{ $student->first_name }}
+                                            {{ $student->last_name }}
+                                        </p>
+
+
+                                        <p
+                                            class="mt-1
+                                                   text-xs
+                                                   text-slate-500"
+                                        >
+                                            ID:
+                                            {{ $student->external_id ?: 'Not added yet' }}
+                                        </p>
+
+                                    </td>
+
+
+                                    <td
+                                        class="px-6 py-5"
+                                    >
+
+                                        <div
+                                            class="flex
+                                                   flex-wrap
+                                                   gap-2"
+                                        >
+
+                                            @foreach (
+                                                $row[
+                                                    'classes'
+                                                ]
+                                                as $className
+                                            )
+
+                                                <span
+                                                    class="inline-flex
+                                                           rounded-lg
+                                                           border
+                                                           border-slate-300
+                                                           bg-slate-50
+                                                           px-2.5 py-1
+                                                           text-xs
+                                                           font-semibold
+                                                           text-slate-700"
+                                                >
+                                                    {{ $className }}
+                                                </span>
+
+                                            @endforeach
+
+                                        </div>
+
+                                    </td>
+
+
+                                    <td
+                                        class="px-6 py-5
+                                               text-sm
+                                               text-slate-600"
+                                    >
+                                        {{
+                                            $row[
+                                                'times'
+                                            ]
+                                                ->implode(
+                                                    ', '
+                                                )
+                                        }}
+                                    </td>
+
+
+                                    <td
+                                        class="px-6 py-5"
+                                    >
+
+                                        @if ($isVacation)
+
+                                            <div
+                                                class="flex
+                                                       justify-center"
+                                            >
+
+                                                <span
+                                                    class="inline-flex
+                                                           items-center
+                                                           rounded-full
+                                                           border
+                                                           border-amber-300
+                                                           bg-amber-100
+                                                           px-4 py-2
+                                                           text-xs
+                                                           font-bold
+                                                           text-amber-800"
+                                                >
+                                                    Vacation
+                                                </span>
+
+                                            </div>
+
+                                        @else
+
+                                            <div
+                                                class="flex
+                                                       flex-wrap
+                                                       justify-center
+                                                       gap-3"
+                                            >
+
+                                                <label
+                                                    class="inline-flex
+                                                           cursor-pointer
+                                                           items-center
+                                                           gap-2
+                                                           rounded-xl
+                                                           border-2
+                                                           px-4 py-2.5
+                                                           transition
+                                                        {{
+                                                            $status
+                                                            ===
+                                                            'present'
+
+                                                                ? 'border-green-600 bg-green-50 text-green-700'
+
+                                                                : 'border-slate-400 bg-white text-slate-700'
+                                                        }}"
+                                                >
+
+                                                    <input
+                                                        type="radio"
+                                                        name="attendance[{{ $studentId }}]"
+                                                        value="present"
+                                                        @checked(
+                                                            $status
+                                                            ===
+                                                            'present'
+                                                        )
+                                                        class="attendance-present
+                                                               h-5 w-5
+                                                               border-2
+                                                               border-slate-500
+                                                               text-green-600
+                                                               focus:ring-green-500"
+                                                        required
+                                                    >
+
+                                                    <span
+                                                        class="text-sm
+                                                               font-semibold"
+                                                    >
+                                                        Present
+                                                    </span>
+
+                                                </label>
+
+
+                                                <label
+                                                    class="inline-flex
+                                                           cursor-pointer
+                                                           items-center
+                                                           gap-2
+                                                           rounded-xl
+                                                           border-2
+                                                           px-4 py-2.5
+                                                           transition
+                                                        {{
+                                                            $status
+                                                            ===
+                                                            'absent'
+
+                                                                ? 'border-red-600 bg-red-50 text-red-700'
+
+                                                                : 'border-slate-400 bg-white text-slate-700'
+                                                        }}"
+                                                >
+
+                                                    <input
+                                                        type="radio"
+                                                        name="attendance[{{ $studentId }}]"
+                                                        value="absent"
+                                                        @checked(
+                                                            $status
+                                                            ===
+                                                            'absent'
+                                                        )
+                                                        class="h-5 w-5
+                                                               border-2
+                                                               border-slate-500
+                                                               text-red-600
+                                                               focus:ring-red-500"
+                                                        required
+                                                    >
+
+                                                    <span
+                                                        class="text-sm
+                                                               font-semibold"
+                                                    >
+                                                        Absent
+                                                    </span>
+
+                                                </label>
+
+                                            </div>
+
+                                        @endif
+
+                                    </td>
+
+                                </tr>
+
+
+                            @empty
+
+                                <tr>
+
+                                    <td
+                                        colspan="4"
+                                        class="px-6 py-16
+                                               text-center
+                                               text-sm
+                                               text-slate-500"
+                                    >
+                                        No students are scheduled for this day.
+                                    </td>
+
+                                </tr>
+
+                            @endforelse
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+                @if ($attendanceRows->isNotEmpty())
+
+                    <div
+                        class="flex
+                               justify-end
+                               border-t
+                               border-slate-100
+                               bg-slate-50/60
+                               px-6 py-5"
+                    >
+
+                        <button
+                            type="submit"
+                            class="inline-flex
+                                   h-12
+                                   min-w-48
                                    items-center
                                    justify-center
                                    rounded-xl
                                    bg-blue-600
+                                   px-6
                                    text-sm
-                                   font-semibold
+                                   font-bold
                                    text-white
+                                   shadow-sm
                                    transition
                                    hover:bg-blue-700"
                         >
-                            Take Attendance
-                        </a>
+                            Save Attendance
+                        </button>
 
                     </div>
 
+                @endif
 
-                @empty
+            </form>
 
+        @endif
 
-                    <div
-                        class="col-span-full
-                               rounded-xl
-                               border
-                               border-slate-200
-                               bg-slate-50
-                               p-10
-                               text-center"
-                    >
-
-                        <p
-                            class="font-semibold
-                                   text-slate-700"
-                        >
-                            No class selected
-                        </p>
-
-
-                        <p
-                            class="mt-1
-                                   text-sm
-                                   text-slate-500"
-                        >
-                            Choose a class time
-                            from the left.
-                        </p>
-
-                    </div>
-
-                @endforelse
-
-            </div>
-
-        </section>
-
-    </div>
+    </section>
 
 </div>
 
 @endsection
+
+
+@push('scripts')
+
+<script>
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function () {
+
+        const markAllPresentButton =
+            document.getElementById(
+                'markAllPresentButton'
+            );
+
+
+        if (!markAllPresentButton) {
+
+            return;
+        }
+
+
+        markAllPresentButton.addEventListener(
+            'click',
+            function () {
+
+                const presentRadios =
+                    document.querySelectorAll(
+                        '.attendance-present'
+                    );
+
+
+                presentRadios.forEach(
+                    function (radio) {
+
+                        radio.checked =
+                            true;
+                    }
+                );
+            }
+        );
+
+    }
+);
+
+</script>
+
+@endpush

@@ -750,18 +750,6 @@
 
                         <th
                             class="px-5 py-4
-                                   text-left
-                                   text-xs
-                                   font-semibold
-                                   uppercase
-                                   text-slate-500"
-                        >
-                            Notes
-                        </th>
-
-
-                        <th
-                            class="px-5 py-4
                                    text-center
                                    text-xs
                                    font-semibold
@@ -1278,40 +1266,6 @@
 
 
 
-                            {{-- Notes --}}
-
-                            <td
-                                class="max-w-xs
-                                       px-5 py-5
-                                       text-sm
-                                       text-slate-600"
-                            >
-
-                                @if (
-                                    $student->notes
-                                )
-
-                                    <p class="line-clamp-2">
-                                        {{ $student->notes }}
-                                    </p>
-
-                                @endif
-
-
-                                <span>
-                                    Can leave:
-                                    {{
-                                        $student
-                                            ->can_leave_alone
-                                            ? 'Yes'
-                                            : 'No'
-                                    }}
-                                </span>
-
-                            </td>
-
-
-
                             {{-- Actions --}}
 
                             <td class="px-5 py-5">
@@ -1404,7 +1358,7 @@
                         <tr>
 
                             <td
-                                colspan="9"
+                                colspan="8"
                                 class="px-6 py-16
                                        text-center
                                        text-slate-500"

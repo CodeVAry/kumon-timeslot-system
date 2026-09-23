@@ -14,9 +14,6 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ScheduleExcelExporter
 {
-    private const MAX_DETAIL_ROWS_PER_CHUNK = 20;
-
-
     /*
     |--------------------------------------------------------------------------
     | Single Day
@@ -56,7 +53,8 @@ class ScheduleExcelExporter
     | All Days
     |--------------------------------------------------------------------------
     |
-    | One worksheet is created for each working day.
+    | Every working day gets its own worksheet.
+    | Each worksheet is designed as ONE A4 portrait page.
     |--------------------------------------------------------------------------
     */
 
@@ -102,22 +100,12 @@ class ScheduleExcelExporter
                 $schedule
         ) {
 
-            if (
-                $index
-                ===
-                0
-            ) {
-
-                $sheet =
-                    $spreadsheet
-                        ->getActiveSheet();
-
-            } else {
-
-                $sheet =
-                    $spreadsheet
+            $sheet =
+                $index === 0
+                    ? $spreadsheet
+                        ->getActiveSheet()
+                    : $spreadsheet
                         ->createSheet();
-            }
 
 
             $this->buildDaySheet(
@@ -132,9 +120,10 @@ class ScheduleExcelExporter
         }
 
 
-        $spreadsheet->setActiveSheetIndex(
-            0
-        );
+        $spreadsheet
+            ->setActiveSheetIndex(
+                0
+            );
 
 
         return $this->stream(
@@ -146,7 +135,15 @@ class ScheduleExcelExporter
 
     /*
     |--------------------------------------------------------------------------
-    | Build One Day Worksheet
+    | Build One Day Sheet - TWO COLUMN DESIGN
+    |--------------------------------------------------------------------------
+    |
+    | LEFT:  A = Time, B = Subject / Student
+    | SPACE: C
+    | RIGHT: D = Time, E = Subject / Student
+    |
+    | The schedule is divided approximately in half and shown side-by-side.
+    | This makes the exported sheet compact enough to print on one portrait page.
     |--------------------------------------------------------------------------
     */
 
@@ -167,12 +164,18 @@ class ScheduleExcelExporter
         );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Page Columns
+        |--------------------------------------------------------------------------
+        */
+
         $sheet
             ->getColumnDimension(
                 'A'
             )
             ->setWidth(
-                12
+                8
             );
 
 
@@ -181,18 +184,45 @@ class ScheduleExcelExporter
                 'B'
             )
             ->setWidth(
-                42
+                30
+            );
+
+
+        $sheet
+            ->getColumnDimension(
+                'C'
+            )
+            ->setWidth(
+                2
+            );
+
+
+        $sheet
+            ->getColumnDimension(
+                'D'
+            )
+            ->setWidth(
+                8
+            );
+
+
+        $sheet
+            ->getColumnDimension(
+                'E'
+            )
+            ->setWidth(
+                30
             );
 
 
         /*
         |--------------------------------------------------------------------------
-        | Main Title
+        | Title
         |--------------------------------------------------------------------------
         */
 
         $sheet->mergeCells(
-            'A1:B1'
+            'A1:E1'
         );
 
 
@@ -204,20 +234,20 @@ class ScheduleExcelExporter
 
         $sheet
             ->getStyle(
-                'A1:B1'
+                'A1:E1'
             )
             ->getFont()
             ->setBold(
                 true
             )
             ->setSize(
-                16
+                14
             );
 
 
         $sheet
             ->getStyle(
-                'A1:B1'
+                'A1:E1'
             )
             ->getAlignment()
             ->setHorizontal(
@@ -230,7 +260,7 @@ class ScheduleExcelExporter
 
         $sheet
             ->getStyle(
-                'A1:B1'
+                'A1:E1'
             )
             ->getFill()
             ->setFillType(
@@ -247,7 +277,7 @@ class ScheduleExcelExporter
                 1
             )
             ->setRowHeight(
-                30
+                24
             );
 
 
@@ -258,12 +288,12 @@ class ScheduleExcelExporter
         */
 
         $sheet->mergeCells(
-            'A3:B3'
+            'A2:E2'
         );
 
 
         $sheet->setCellValue(
-            'A3',
+            'A2',
             $date->format(
                 'l, d F Y'
             )
@@ -272,20 +302,20 @@ class ScheduleExcelExporter
 
         $sheet
             ->getStyle(
-                'A3:B3'
+                'A2:E2'
             )
             ->getFont()
             ->setBold(
                 true
             )
             ->setSize(
-                13
+                11
             );
 
 
         $sheet
             ->getStyle(
-                'A3:B3'
+                'A2:E2'
             )
             ->getAlignment()
             ->setHorizontal(
@@ -298,7 +328,7 @@ class ScheduleExcelExporter
 
         $sheet
             ->getStyle(
-                'A3:B3'
+                'A2:E2'
             )
             ->getFill()
             ->setFillType(
@@ -312,494 +342,165 @@ class ScheduleExcelExporter
 
         $sheet
             ->getRowDimension(
-                3
+                2
             )
             ->setRowHeight(
-                25
+                20
             );
 
 
         /*
         |--------------------------------------------------------------------------
-        | Header
+        | Two Column Headers
         |--------------------------------------------------------------------------
         */
 
-        $sheet->setCellValue(
-            'A4',
-            'Time'
-        );
+        foreach (
+            [
+                'A3' => 'Time',
+                'B3' => 'Subject / Student',
+                'D3' => 'Time',
+                'E3' => 'Subject / Student',
+            ]
+            as $cell =>
+                $value
+        ) {
 
-
-        $sheet->setCellValue(
-            'B4',
-            'Subject / Student'
-        );
-
-
-        $sheet
-            ->getStyle(
-                'A4:B4'
-            )
-            ->getFont()
-            ->setBold(
-                true
-            )
-            ->setSize(
-                11
+            $sheet->setCellValue(
+                $cell,
+                $value
             );
-
-
-        $sheet
-            ->getStyle(
-                'A4:B4'
-            )
-            ->getAlignment()
-            ->setHorizontal(
-                Alignment::HORIZONTAL_CENTER
-            )
-            ->setVertical(
-                Alignment::VERTICAL_CENTER
-            );
-
-
-        $sheet
-            ->getStyle(
-                'A4:B4'
-            )
-            ->getFill()
-            ->setFillType(
-                Fill::FILL_SOLID
-            )
-            ->getStartColor()
-            ->setRGB(
-                'F3F4F6'
-            );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Data
-        |--------------------------------------------------------------------------
-        */
-
-        $timeGroups =
-            $rows
-                ->groupBy(
-                    'start_time'
-                );
-
-
-        $chunks =
-            $this->buildPrintableChunks(
-                $timeGroups
-            );
-
-
-        $currentRow =
-            5;
+        }
 
 
         foreach (
-            $chunks
-            as $chunkIndex =>
-                $chunk
+            [
+                'A3:B3',
+                'D3:E3',
+            ]
+            as $range
         ) {
 
-            if (
-                $chunkIndex
-                >
-                0
-            ) {
-
-                $sheet->setBreak(
-                    'A'
-                    .
-                    $currentRow,
-                    Worksheet::BREAK_ROW
-                );
-            }
-
-
-            $timeStartRow =
-                $currentRow;
-
-
-            foreach (
-                $chunk[
-                    'subjects'
-                ]
-                as $subjectBlock
-            ) {
-
-                /*
-                |--------------------------------------------------------------------------
-                | Subject
-                |--------------------------------------------------------------------------
-                */
-
-                $sheet->setCellValue(
-                    'B'
-                    .
-                    $currentRow,
-                    $subjectBlock[
-                        'subject_name'
-                    ]
+            $sheet
+                ->getStyle(
+                    $range
+                )
+                ->getFont()
+                ->setBold(
+                    true
+                )
+                ->setSize(
+                    9
                 );
 
 
-                $sheet
-                    ->getStyle(
-                        'B'
-                        .
-                        $currentRow
-                    )
-                    ->getFont()
-                    ->setBold(
-                        true
-                    )
-                    ->setSize(
-                        13
-                    );
-
-
-                $sheet
-                    ->getStyle(
-                        'B'
-                        .
-                        $currentRow
-                    )
-                    ->getAlignment()
-                    ->setHorizontal(
-                        Alignment::HORIZONTAL_CENTER
-                    )
-                    ->setVertical(
-                        Alignment::VERTICAL_CENTER
-                    );
-
-
-                $sheet
-                    ->getStyle(
-                        'B'
-                        .
-                        $currentRow
-                    )
-                    ->getFill()
-                    ->setFillType(
-                        Fill::FILL_SOLID
-                    )
-                    ->getStartColor()
-                    ->setRGB(
-                        'EAF2F8'
-                    );
-
-
-                $sheet
-                    ->getRowDimension(
-                        $currentRow
-                    )
-                    ->setRowHeight(
-                        24
-                    );
-
-
-                $this->applyBorders(
-                    $sheet,
-                    'A'
-                    .
-                    $currentRow
-                    .
-                    ':B'
-                    .
-                    $currentRow
+            $sheet
+                ->getStyle(
+                    $range
+                )
+                ->getAlignment()
+                ->setHorizontal(
+                    Alignment::HORIZONTAL_CENTER
+                )
+                ->setVertical(
+                    Alignment::VERTICAL_CENTER
                 );
 
 
-                $currentRow++;
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Students
-                |--------------------------------------------------------------------------
-                */
-
-                foreach (
-                    $subjectBlock[
-                        'rows'
-                    ]
-                    as $row
-                ) {
-
-                    $sheet->setCellValue(
-                        'B'
-                        .
-                        $currentRow,
-                        $row[
-                            'student_name'
-                        ]
-                    );
-
-
-                    $sheet
-                        ->getStyle(
-                            'B'
-                            .
-                            $currentRow
-                        )
-                        ->getFont()
-                        ->setSize(
-                            11
-                        );
-
-
-                    $sheet
-                        ->getStyle(
-                            'B'
-                            .
-                            $currentRow
-                        )
-                        ->getAlignment()
-                        ->setHorizontal(
-                            Alignment::HORIZONTAL_LEFT
-                        )
-                        ->setVertical(
-                            Alignment::VERTICAL_CENTER
-                        );
-
-
-                    if (
-                        !empty(
-                            $row[
-                                'status_fill'
-                            ]
-                        )
-                    ) {
-
-                        $colour =
-                            ltrim(
-                                $row[
-                                    'status_fill'
-                                ],
-                                '#'
-                            );
-
-
-                        if (
-                            preg_match(
-                                '/^[0-9A-Fa-f]{6}$/',
-                                $colour
-                            )
-                        ) {
-
-                            $sheet
-                                ->getStyle(
-                                    'B'
-                                    .
-                                    $currentRow
-                                )
-                                ->getFill()
-                                ->setFillType(
-                                    Fill::FILL_SOLID
-                                )
-                                ->getStartColor()
-                                ->setRGB(
-                                    strtoupper(
-                                        $colour
-                                    )
-                                );
-
-
-                            $sheet
-                                ->getStyle(
-                                    'B'
-                                    .
-                                    $currentRow
-                                )
-                                ->getFont()
-                                ->setBold(
-                                    true
-                                );
-
-
-                            if (
-                                $this->useWhiteText(
-                                    $colour
-                                )
-                            ) {
-
-                                $sheet
-                                    ->getStyle(
-                                        'B'
-                                        .
-                                        $currentRow
-                                    )
-                                    ->getFont()
-                                    ->getColor()
-                                    ->setRGB(
-                                        'FFFFFF'
-                                    );
-                            }
-                        }
-                    }
-
-
-                    $sheet
-                        ->getRowDimension(
-                            $currentRow
-                        )
-                        ->setRowHeight(
-                            22
-                        );
-
-
-                    $this->applyBorders(
-                        $sheet,
-                        'A'
-                        .
-                        $currentRow
-                        .
-                        ':B'
-                        .
-                        $currentRow
-                    );
-
-
-                    $currentRow++;
-                }
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Time
-            |--------------------------------------------------------------------------
-            */
-
-            $timeEndRow =
-                $currentRow
-                -
-                1;
-
-
-            if (
-                $timeEndRow
-                >=
-                $timeStartRow
-            ) {
-
-                if (
-                    $timeEndRow
-                    >
-                    $timeStartRow
-                ) {
-
-                    $sheet->mergeCells(
-                        'A'
-                        .
-                        $timeStartRow
-                        .
-                        ':A'
-                        .
-                        $timeEndRow
-                    );
-                }
-
-
-                $timeLabel =
-                    $chunk[
-                        'time'
-                    ];
-
-
-                if (
-                    $chunk[
-                        'chunk_number'
-                    ]
-                    >
-                    1
-                ) {
-
-                    $timeLabel .=
-                        ' cont.';
-                }
-
-
-                $sheet->setCellValue(
-                    'A'
-                    .
-                    $timeStartRow,
-                    $timeLabel
+            $sheet
+                ->getStyle(
+                    $range
+                )
+                ->getFill()
+                ->setFillType(
+                    Fill::FILL_SOLID
+                )
+                ->getStartColor()
+                ->setRGB(
+                    'F3F4F6'
                 );
 
 
-                $sheet
-                    ->getStyle(
-                        'A'
-                        .
-                        $timeStartRow
-                    )
-                    ->getAlignment()
-                    ->setTextRotation(
-                        90
-                    )
-                    ->setHorizontal(
-                        Alignment::HORIZONTAL_CENTER
-                    )
-                    ->setVertical(
-                        Alignment::VERTICAL_CENTER
-                    );
-
-
-                $sheet
-                    ->getStyle(
-                        'A'
-                        .
-                        $timeStartRow
-                    )
-                    ->getFont()
-                    ->setBold(
-                        true
-                    )
-                    ->setSize(
-                        11
-                    );
-
-
-                $this->applyBorders(
-                    $sheet,
-                    'A'
-                    .
-                    $timeStartRow
-                    .
-                    ':A'
-                    .
-                    $timeEndRow
-                );
-            }
+            $this->applyBorders(
+                $sheet,
+                $range
+            );
         }
+
+
+        $sheet
+            ->getRowDimension(
+                3
+            )
+            ->setRowHeight(
+                18
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Build Logical Schedule Blocks
+        |--------------------------------------------------------------------------
+        */
+
+        $blocks =
+            $this->buildBlocks(
+                $rows
+            );
+
+
+        [
+            $leftBlocks,
+            $rightBlocks,
+        ] =
+            $this->splitBlocks(
+                $blocks
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Render Both Sides
+        |--------------------------------------------------------------------------
+        */
+
+        $leftLastRow =
+            $this->renderColumn(
+                $sheet,
+                $leftBlocks,
+                'A',
+                'B',
+                4
+            );
+
+
+        $rightLastRow =
+            $this->renderColumn(
+                $sheet,
+                $rightBlocks,
+                'D',
+                'E',
+                4
+            );
 
 
         $lastRow =
             max(
-                4,
-                $currentRow
-                -
-                1
+                3,
+                $leftLastRow,
+                $rightLastRow
             );
 
 
-        $this->applyBorders(
-            $sheet,
-            'A4:B'
-            .
-            $lastRow
-        );
-
+        /*
+        |--------------------------------------------------------------------------
+        | Sheet Formatting
+        |--------------------------------------------------------------------------
+        */
 
         $sheet
             ->getStyle(
-                'A1:B'
+                'A1:E'
                 .
                 $lastRow
             )
@@ -811,54 +512,62 @@ class ScheduleExcelExporter
 
         /*
         |--------------------------------------------------------------------------
-        | Print Settings
+        | Print Settings - ONE PORTRAIT PAGE
         |--------------------------------------------------------------------------
         */
 
         $sheet
             ->getPageSetup()
             ->setOrientation(
-                PageSetup::ORIENTATION_LANDSCAPE
+                PageSetup::ORIENTATION_PORTRAIT
             )
             ->setPaperSize(
                 PageSetup::PAPERSIZE_A4
+            )
+            ->setFitToPage(
+                true
             )
             ->setFitToWidth(
                 1
             )
             ->setFitToHeight(
-                0
+                1
             );
 
 
         $sheet
             ->getPageMargins()
             ->setTop(
-                0.3
+                0.2
             )
             ->setBottom(
-                0.3
+                0.2
             )
             ->setLeft(
-                0.3
+                0.2
             )
             ->setRight(
-                0.3
+                0.2
+            )
+            ->setHeader(
+                0
+            )
+            ->setFooter(
+                0
             );
 
 
         $sheet
             ->getPageSetup()
-            ->setRowsToRepeatAtTopByStartAndEnd(
-                4,
-                4
+            ->setHorizontalCentered(
+                true
             );
 
 
         $sheet
             ->getPageSetup()
             ->setPrintArea(
-                'A1:B'
+                'A1:E'
                 .
                 $lastRow
             );
@@ -867,16 +576,27 @@ class ScheduleExcelExporter
 
     /*
     |--------------------------------------------------------------------------
-    | Printable Chunks
+    | Build Blocks
+    |--------------------------------------------------------------------------
+    |
+    | A block is one subject within one time.
+    | Keeping a block together reduces awkward splits between columns.
     |--------------------------------------------------------------------------
     */
 
-    private function buildPrintableChunks(
-        Collection $timeGroups
+    private function buildBlocks(
+        Collection $rows
     ): Collection {
 
-        $chunks =
+        $blocks =
             collect();
+
+
+        $timeGroups =
+            $rows
+                ->groupBy(
+                    'start_time'
+                );
 
 
         foreach (
@@ -892,142 +612,467 @@ class ScheduleExcelExporter
                     );
 
 
-            $currentSubjects = [];
-            $currentRowCount = 0;
-            $chunkNumber = 1;
-
-
             foreach (
                 $subjectGroups
                 as $subjectName =>
                     $subjectRows
             ) {
 
-                $subjectRows =
-                    $subjectRows
-                        ->values();
-
-
-                $studentsPerPart =
-                    max(
-                        1,
-                        self::MAX_DETAIL_ROWS_PER_CHUNK
-                        -
-                        1
-                    );
-
-
-                foreach (
-                    $subjectRows
-                        ->chunk(
-                            $studentsPerPart
-                        )
-                    as $partIndex =>
-                        $subjectPartRows
-                ) {
-
-                    $partSubjectName =
-                        $subjectName;
-
-
-                    if (
-                        $partIndex
-                        >
-                        0
-                    ) {
-
-                        $partSubjectName .=
-                            ' (continued)';
-                    }
-
-
-                    $neededRows =
-                        1
-                        +
-                        $subjectPartRows
-                            ->count();
-
-
-                    if (
-                        $currentRowCount
-                        >
-                        0
-                        &&
-                        (
-                            $currentRowCount
-                            +
-                            $neededRows
-                        )
-                        >
-                        self::MAX_DETAIL_ROWS_PER_CHUNK
-                    ) {
-
-                        $chunks->push([
-                            'time' =>
-                                $time,
-
-                            'chunk_number' =>
-                                $chunkNumber,
-
-                            'subjects' =>
-                                collect(
-                                    $currentSubjects
-                                ),
-
-                            'row_count' =>
-                                $currentRowCount,
-                        ]);
-
-
-                        $chunkNumber++;
-
-                        $currentSubjects = [];
-
-                        $currentRowCount = 0;
-                    }
-
-
-                    $currentSubjects[] = [
-                        'subject_name' =>
-                            $partSubjectName,
-
-                        'rows' =>
-                            $subjectPartRows,
-                    ];
-
-
-                    $currentRowCount +=
-                        $neededRows;
-                }
-            }
-
-
-            if (
-                $currentRowCount
-                >
-                0
-            ) {
-
-                $chunks->push([
+                $blocks->push([
                     'time' =>
                         $time,
 
-                    'chunk_number' =>
-                        $chunkNumber,
+                    'subject_name' =>
+                        $subjectName,
 
-                    'subjects' =>
-                        collect(
-                            $currentSubjects
-                        ),
+                    'rows' =>
+                        $subjectRows
+                            ->values(),
 
-                    'row_count' =>
-                        $currentRowCount,
+                    'height' =>
+                        1
+                        +
+                        $subjectRows
+                            ->count(),
                 ]);
             }
         }
 
 
-        return $chunks;
+        return $blocks;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Split Blocks Approximately 50 / 50
+    |--------------------------------------------------------------------------
+    */
+
+    private function splitBlocks(
+        Collection $blocks
+    ): array {
+
+        if (
+            $blocks
+                ->isEmpty()
+        ) {
+
+            return [
+                collect(),
+                collect(),
+            ];
+        }
+
+
+        $totalHeight =
+            $blocks
+                ->sum(
+                    'height'
+                );
+
+
+        $target =
+            (int)
+            ceil(
+                $totalHeight
+                /
+                2
+            );
+
+
+        $left =
+            collect();
+
+
+        $right =
+            collect();
+
+
+        $leftHeight =
+            0;
+
+
+        foreach (
+            $blocks
+            as $block
+        ) {
+
+            if (
+                $leftHeight
+                <
+                $target
+            ) {
+
+                $left->push(
+                    $block
+                );
+
+
+                $leftHeight +=
+                    $block[
+                        'height'
+                    ];
+
+            } else {
+
+                $right->push(
+                    $block
+                );
+            }
+        }
+
+
+        return [
+            $left,
+            $right,
+        ];
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Render One Side
+    |--------------------------------------------------------------------------
+    */
+
+    private function renderColumn(
+        Worksheet $sheet,
+        Collection $blocks,
+        string $timeColumn,
+        string $detailColumn,
+        int $startRow
+    ): int {
+
+        $currentRow =
+            $startRow;
+
+
+        foreach (
+            $blocks
+            as $block
+        ) {
+
+            $blockStartRow =
+                $currentRow;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Subject Header
+            |--------------------------------------------------------------------------
+            */
+
+            $sheet->setCellValue(
+                $detailColumn
+                .
+                $currentRow,
+                $block[
+                    'subject_name'
+                ]
+            );
+
+
+            $sheet
+                ->getStyle(
+                    $detailColumn
+                    .
+                    $currentRow
+                )
+                ->getFont()
+                ->setBold(
+                    true
+                )
+                ->setSize(
+                    9
+                );
+
+
+            $sheet
+                ->getStyle(
+                    $detailColumn
+                    .
+                    $currentRow
+                )
+                ->getAlignment()
+                ->setHorizontal(
+                    Alignment::HORIZONTAL_CENTER
+                )
+                ->setVertical(
+                    Alignment::VERTICAL_CENTER
+                );
+
+
+            $sheet
+                ->getStyle(
+                    $detailColumn
+                    .
+                    $currentRow
+                )
+                ->getFill()
+                ->setFillType(
+                    Fill::FILL_SOLID
+                )
+                ->getStartColor()
+                ->setRGB(
+                    'EAF2F8'
+                );
+
+
+            $sheet
+                ->getRowDimension(
+                    $currentRow
+                )
+                ->setRowHeight(
+                    14
+                );
+
+
+            $currentRow++;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Students
+            |--------------------------------------------------------------------------
+            */
+
+            foreach (
+                $block[
+                    'rows'
+                ]
+                as $row
+            ) {
+
+                $sheet->setCellValue(
+                    $detailColumn
+                    .
+                    $currentRow,
+                    $row[
+                        'student_name'
+                    ]
+                );
+
+
+                $sheet
+                    ->getStyle(
+                        $detailColumn
+                        .
+                        $currentRow
+                    )
+                    ->getFont()
+                    ->setSize(
+                        8
+                    );
+
+
+                $sheet
+                    ->getStyle(
+                        $detailColumn
+                        .
+                        $currentRow
+                    )
+                    ->getAlignment()
+                    ->setHorizontal(
+                        Alignment::HORIZONTAL_LEFT
+                    )
+                    ->setVertical(
+                        Alignment::VERTICAL_CENTER
+                    );
+
+
+                if (
+                    !empty(
+                        $row[
+                            'status_fill'
+                        ]
+                    )
+                ) {
+
+                    $colour =
+                        ltrim(
+                            $row[
+                                'status_fill'
+                            ],
+                            '#'
+                        );
+
+
+                    if (
+                        preg_match(
+                            '/^[0-9A-Fa-f]{6}$/',
+                            $colour
+                        )
+                    ) {
+
+                        $sheet
+                            ->getStyle(
+                                $detailColumn
+                                .
+                                $currentRow
+                            )
+                            ->getFill()
+                            ->setFillType(
+                                Fill::FILL_SOLID
+                            )
+                            ->getStartColor()
+                            ->setRGB(
+                                strtoupper(
+                                    $colour
+                                )
+                            );
+
+
+                        $sheet
+                            ->getStyle(
+                                $detailColumn
+                                .
+                                $currentRow
+                            )
+                            ->getFont()
+                            ->setBold(
+                                true
+                            );
+
+
+                        if (
+                            $this->useWhiteText(
+                                $colour
+                            )
+                        ) {
+
+                            $sheet
+                                ->getStyle(
+                                    $detailColumn
+                                    .
+                                    $currentRow
+                                )
+                                ->getFont()
+                                ->getColor()
+                                ->setRGB(
+                                    'FFFFFF'
+                                );
+                        }
+                    }
+                }
+
+
+                $sheet
+                    ->getRowDimension(
+                        $currentRow
+                    )
+                    ->setRowHeight(
+                        13
+                    );
+
+
+                $currentRow++;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Time Cell
+            |--------------------------------------------------------------------------
+            */
+
+            $blockEndRow =
+                $currentRow
+                -
+                1;
+
+
+            if (
+                $blockEndRow
+                >
+                $blockStartRow
+            ) {
+
+                $sheet->mergeCells(
+                    $timeColumn
+                    .
+                    $blockStartRow
+                    .
+                    ':'
+                    .
+                    $timeColumn
+                    .
+                    $blockEndRow
+                );
+            }
+
+
+            $sheet->setCellValue(
+                $timeColumn
+                .
+                $blockStartRow,
+                Carbon::parse(
+                    $block[
+                        'time'
+                    ]
+                )->format(
+                    'g:i A'
+                )
+            );
+
+
+            $sheet
+                ->getStyle(
+                    $timeColumn
+                    .
+                    $blockStartRow
+                )
+                ->getFont()
+                ->setBold(
+                    true
+                )
+                ->setSize(
+                    8
+                );
+
+
+            $sheet
+                ->getStyle(
+                    $timeColumn
+                    .
+                    $blockStartRow
+                )
+                ->getAlignment()
+                ->setTextRotation(
+                    90
+                )
+                ->setHorizontal(
+                    Alignment::HORIZONTAL_CENTER
+                )
+                ->setVertical(
+                    Alignment::VERTICAL_CENTER
+                );
+
+
+            $this->applyBorders(
+                $sheet,
+                $timeColumn
+                .
+                $blockStartRow
+                .
+                ':'
+                .
+                $detailColumn
+                .
+                $blockEndRow
+            );
+        }
+
+
+        return
+            max(
+                $startRow
+                    -
+                    1,
+                $currentRow
+                    -
+                    1
+            );
     }
 
 
@@ -1082,7 +1127,7 @@ class ScheduleExcelExporter
     */
 
     private function applyBorders(
-        $sheet,
+        Worksheet $sheet,
         string $range
     ): void {
 

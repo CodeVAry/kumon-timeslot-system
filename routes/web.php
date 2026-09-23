@@ -1107,6 +1107,26 @@ Route::middleware('auth')
             ->name('attendance.index');
 
 
+        Route::post(
+            '/attendance/day/{day}',
+            [
+                AttendanceController::class,
+                'storeDay',
+            ]
+        )
+            ->name('attendance.store-day');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Existing Class-Level Attendance Routes
+        |--------------------------------------------------------------------------
+        |
+        | Kept temporarily so old links/bookmarks do not break.
+        | The main Attendance page now records all students for the day at once.
+        |--------------------------------------------------------------------------
+        */
+
         Route::get(
             '/attendance/classes/{sectionOffering}',
             [

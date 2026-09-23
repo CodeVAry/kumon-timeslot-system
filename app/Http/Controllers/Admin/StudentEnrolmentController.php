@@ -123,9 +123,16 @@ class StudentEnrolmentController extends Controller
     ) {
         $validated =
             $request->validate([
-                'section_offering_id' => [
+                'section_offering_ids' => [
+                    'required',
+                    'array',
+                    'min:1',
+                ],
+
+                'section_offering_ids.*' => [
                     'required',
                     'integer',
+                    'distinct',
 
                     Rule::exists(
                         'section_offerings',
@@ -152,155 +159,199 @@ class StudentEnrolmentController extends Controller
             ]);
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Prevent Duplicate Active Offering
-        |--------------------------------------------------------------------------
-        */
+        $selectedOfferingIds =
+            collect(
+                $validated[
+                    'section_offering_ids'
+                ]
+            )
+                ->map(
+                    fn ($id) =>
+                        (int) $id
+                )
+                ->unique()
+                ->values();
 
-        $alreadyExists =
+
+        $existingOfferingIds =
             Enrolment::where(
                 'student_id',
                 $student->id
             )
-                ->where(
+                ->whereIn(
                     'section_offering_id',
-                    $validated[
-                        'section_offering_id'
-                    ]
+                    $selectedOfferingIds
                 )
                 ->where(
                     'is_active',
                     true
                 )
-                ->exists();
+                ->pluck(
+                    'section_offering_id'
+                );
 
 
-        if ($alreadyExists) {
+        if (
+            $existingOfferingIds
+                ->isNotEmpty()
+        ) {
 
             throw ValidationException::withMessages([
-                'section_offering_id' =>
-                    'This student already has this class or an active wishlist request for it.',
+                'section_offering_ids' =>
+                    'One or more selected classes are already assigned to this student.',
             ]);
         }
 
 
+        $isWishlist =
+            $validated[
+                'enrolment_type'
+            ]
+            ===
+            'wishlist';
+
+
         DB::transaction(
             function () use (
-                $validated,
-                $student
+                $selectedOfferingIds,
+                $student,
+                $isWishlist
             ) {
 
-                /*
-                |--------------------------------------------------------------------------
-                | Lock Offering
-                |--------------------------------------------------------------------------
-                */
-
-                $offering =
-                    SectionOffering::where(
+                $offerings =
+                    SectionOffering::whereIn(
                         'id',
-                        $validated[
-                            'section_offering_id'
-                        ]
+                        $selectedOfferingIds
                     )
                         ->where(
                             'is_active',
                             true
                         )
+                        ->orderBy(
+                            'id'
+                        )
                         ->lockForUpdate()
-                        ->firstOrFail();
+                        ->get();
 
 
-                $isWishlist =
-                    $validated[
-                        'enrolment_type'
-                    ]
-                    ===
-                    'wishlist';
+                if (
+                    $offerings->count()
+                    !==
+                    $selectedOfferingIds->count()
+                ) {
 
+                    throw ValidationException::withMessages([
+                        'section_offering_ids' =>
+                            'One or more selected classes are no longer available. Please refresh and try again.',
+                    ]);
+                }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Confirmed Class Capacity
-                |--------------------------------------------------------------------------
-                |
-                | Wishlist does NOT consume a seat.
-                |
-                */
 
                 if (!$isWishlist) {
 
-                    $allocatedSeats =
-                        Enrolment::where(
-                            'section_offering_id',
-                            $offering->id
-                        )
-                            ->where(
-                                'is_active',
-                                true
-                            )
-                            ->where(
-                                'is_wishlist',
-                                false
-                            )
-                            ->count();
-
-
-                    if (
-                        $allocatedSeats
-                        >=
-                        $offering
-                            ->max_seats
+                    foreach (
+                        $offerings
+                        as $offering
                     ) {
 
-                        throw ValidationException::withMessages([
-                            'section_offering_id' =>
-                                'This class is full. You can add the student to the wishlist instead.',
-                        ]);
+                        $allocatedSeats =
+                            Enrolment::where(
+                                'section_offering_id',
+                                $offering->id
+                            )
+                                ->where(
+                                    'is_active',
+                                    true
+                                )
+                                ->where(
+                                    'is_wishlist',
+                                    false
+                                )
+                                ->count();
+
+
+                        if (
+                            $allocatedSeats
+                            >=
+                            $offering->max_seats
+                        ) {
+
+                            $offering->loadMissing([
+                                'section',
+                                'day',
+                            ]);
+
+
+                            $className =
+                                $offering
+                                    ->section
+                                    ?->section_name
+                                ??
+                                'Selected class';
+
+
+                            $dayName =
+                                $offering
+                                    ->day
+                                    ?->day_name
+                                ??
+                                '';
+
+
+                            throw ValidationException::withMessages([
+                                'section_offering_ids' =>
+                                    $className
+                                    .
+                                    (
+                                        $dayName
+                                            ? ' on ' . $dayName
+                                            : ''
+                                    )
+                                    .
+                                    ' is full. Choose another class or add the selections to the wishlist.',
+                            ]);
+                        }
                     }
                 }
 
 
-                /*
-                |--------------------------------------------------------------------------
-                | Create Enrolment
-                |--------------------------------------------------------------------------
-                */
+                foreach (
+                    $offerings
+                    as $offering
+                ) {
 
-                Enrolment::create([
-                    'student_id' =>
-                        $student->id,
+                    Enrolment::create([
+                        'student_id' =>
+                            $student->id,
 
-                    'section_offering_id' =>
-                        $offering->id,
+                        'section_offering_id' =>
+                            $offering->id,
 
-                    /*
-                     * Direct wishlist does not
-                     * have an original class.
-                     */
-                    'wishlist_for_enrolment_id' =>
-                        null,
+                        'wishlist_for_enrolment_id' =>
+                            null,
 
-                    'enrolment_date' =>
-                        now()->toDateString(),
+                        'enrolment_date' =>
+                            now()->toDateString(),
 
-                    'is_wishlist' =>
-                        $isWishlist,
+                        'is_wishlist' =>
+                            $isWishlist,
 
-                    /*
-                     * This is the important fix.
-                     */
-                    'wishlist_status' =>
-                        $isWishlist
-                            ? 'pending'
-                            : null,
+                        'wishlist_status' =>
+                            $isWishlist
+                                ? 'pending'
+                                : null,
 
-                    'is_active' =>
-                        true,
-                ]);
+                        'is_active' =>
+                            true,
+                    ]);
+                }
             }
         );
+
+
+        $classCount =
+            $selectedOfferingIds
+                ->count();
 
 
         return redirect()
@@ -310,13 +361,17 @@ class StudentEnrolmentController extends Controller
             )
             ->with(
                 'success',
-                $validated[
-                    'enrolment_type'
-                ]
-                ===
-                'wishlist'
-                    ? 'Student added to the wishlist successfully.'
-                    : 'Class added successfully.'
+                $isWishlist
+                    ? (
+                        $classCount === 1
+                            ? 'Student added to the wishlist successfully.'
+                            : $classCount . ' classes added to the wishlist successfully.'
+                    )
+                    : (
+                        $classCount === 1
+                            ? 'Class added successfully.'
+                            : $classCount . ' classes added successfully.'
+                    )
             );
     }
 
