@@ -10,16 +10,28 @@ class SubSectionSeeder extends Seeder
 {
     public function run(): void
     {
-        $math = Section::where(
-            'section_name',
-            'Math'
-        )->firstOrFail();
+        /*
+        |--------------------------------------------------------------------------
+        | Math Sub-sections
+        |--------------------------------------------------------------------------
+        */
 
-        foreach ([
-            '3A',
-            'B-D',
-            'E+',
-        ] as $name) {
+        $math =
+            Section::where(
+                'section_name',
+                'Math'
+            )
+                ->firstOrFail();
+
+
+        foreach (
+            [
+                '3A',
+                'B-D',
+                'E+',
+            ]
+            as $name
+        ) {
 
             SubSection::updateOrCreate(
                 [
@@ -32,6 +44,52 @@ class SubSectionSeeder extends Seeder
                 [
                     'description' =>
                         null,
+
+                    'is_active' =>
+                        true,
+                ]
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Interactive Sub-sections
+        |--------------------------------------------------------------------------
+        |
+        | The client requested Interactive to be divided into:
+        | - English
+        | - Math
+        |--------------------------------------------------------------------------
+        */
+
+        $interactive =
+            Section::where(
+                'section_name',
+                'Interactive'
+            )
+                ->firstOrFail();
+
+
+        foreach (
+            [
+                'English',
+                'Math',
+            ]
+            as $name
+        ) {
+
+            SubSection::updateOrCreate(
+                [
+                    'section_id' =>
+                        $interactive->id,
+
+                    'sub_section_name' =>
+                        $name,
+                ],
+                [
+                    'description' =>
+                        'Interactive ' . $name,
 
                     'is_active' =>
                         true,

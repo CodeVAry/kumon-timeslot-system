@@ -255,7 +255,7 @@
                 class="grid
                        gap-5
                        md:grid-cols-2
-                       xl:grid-cols-3"
+                       xl:grid-cols-4"
             >
 
 
@@ -559,6 +559,65 @@
 
                 </div>
 
+
+                {{-- Sort Order --}}
+
+                <div>
+
+                    <label
+                        for="sort"
+                        class="mb-2
+                               block
+                               text-xs
+                               font-semibold
+                               text-slate-600"
+                    >
+                        Sort Students
+                    </label>
+
+
+                    <select
+                        id="sort"
+                        name="sort"
+                        class="h-12
+                               w-full
+                               rounded-xl
+                               border-slate-300"
+                    >
+
+                        <option
+                            value="latest"
+                            @selected(
+                                request(
+                                    'sort',
+                                    $sort ?? 'latest'
+                                )
+                                ===
+                                'latest'
+                            )
+                        >
+                            Latest Added First
+                        </option>
+
+
+                        <option
+                            value="earliest"
+                            @selected(
+                                request(
+                                    'sort',
+                                    $sort ?? 'latest'
+                                )
+                                ===
+                                'earliest'
+                            )
+                        >
+                            Earliest Added First
+                        </option>
+
+                    </select>
+
+                </div>
+
             </div>
 
 
@@ -619,7 +678,7 @@
         RESULTS
     ====================================================== --}}
 
-    <div class="flex justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
         <p class="text-sm text-slate-500">
 
@@ -634,6 +693,43 @@
             }}
 
         </p>
+
+
+        @if (
+            auth()
+                ->user()
+                ->hasPermission(
+                    'students.delete'
+                )
+        )
+
+            <button
+                type="button"
+                id="bulkDeleteButton"
+                disabled
+                class="hidden h-10 items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-50 px-4 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                Delete Selected
+                <span
+                    id="bulkDeleteCount"
+                    class="rounded-full bg-red-600 px-2 py-0.5 text-xs text-white"
+                >
+                    0
+                </span>
+            </button>
+
+
+            <form
+                id="bulkDeleteForm"
+                method="POST"
+                action="{{ route('admin.students.bulk-destroy') }}"
+                class="hidden"
+            >
+                @csrf
+                @method('DELETE')
+            </form>
+
+        @endif
 
     </div>
 
@@ -663,6 +759,27 @@
                 >
 
                     <tr>
+
+                        <th class="w-14 px-5 py-4 text-center">
+
+                            @if (
+                                auth()
+                                    ->user()
+                                    ->hasPermission(
+                                        'students.delete'
+                                    )
+                            )
+
+                                <input
+                                    type="checkbox"
+                                    id="selectAllStudents"
+                                    aria-label="Select all students on this page"
+                                    class="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                >
+
+                            @endif
+
+                        </th>
 
                         <th
                             class="px-5 py-4
@@ -732,19 +849,7 @@
                                    uppercase
                                    text-slate-500"
                         >
-                            Class
-                        </th>
-
-
-                        <th
-                            class="px-5 py-4
-                                   text-left
-                                   text-xs
-                                   font-semibold
-                                   uppercase
-                                   text-slate-500"
-                        >
-                            Day & Time
+                            Schedule
                         </th>
 
 
@@ -849,47 +954,34 @@
                                     );
 
 
-                            $classNames =
+                            $sortedConfirmedEnrolments =
                                 $confirmedEnrolments
-                                    ->map(
+                                    ->sortBy(
                                         function (
                                             $enrolment
                                         ) {
 
-                                            $class =
+                                            $offering =
                                                 $enrolment
-                                                    ->sectionOffering
-                                                    ?->section
-                                                    ?->section_name;
+                                                    ->sectionOffering;
 
 
-                                            $subSection =
-                                                $enrolment
-                                                    ->subSection
-                                                    ?->sub_section_name;
-
-
-                                            if (
-                                                $class
-                                                &&
-                                                $subSection
-                                            ) {
-
-                                                return
-                                                    $class
-                                                    .
-                                                    ' - '
-                                                    .
-                                                    $subSection;
-                                            }
-
-
-                                            return $class;
+                                            return sprintf(
+                                                '%05d-%s',
+                                                (int) (
+                                                    $offering
+                                                        ?->day_id
+                                                    ??
+                                                    99999
+                                                ),
+                                                $offering
+                                                    ?->start_time
+                                                ??
+                                                '99:99:99'
+                                            );
                                         }
                                     )
-                                    ->filter()
-                                    ->unique()
-                                    ->implode(', ');
+                                    ->values();
 
 
                             /*
@@ -965,6 +1057,31 @@
                             "
                         >
 
+                            {{-- Select --}}
+
+                            <td class="px-5 py-5 text-center align-top">
+
+                                @if (
+                                    auth()
+                                        ->user()
+                                        ->hasPermission(
+                                            'students.delete'
+                                        )
+                                )
+
+                                    <input
+                                        type="checkbox"
+                                        value="{{ $student->id }}"
+                                        data-student-name="{{ $student->first_name }} {{ $student->last_name }}"
+                                        data-delete-url="{{ route('admin.students.destroy', $student) }}"
+                                        aria-label="Select {{ $student->first_name }} {{ $student->last_name }}"
+                                        class="student-select h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                    >
+
+                                @endif
+
+                            </td>
+
                             {{-- Student --}}
 
                             <td
@@ -983,15 +1100,11 @@
                                     {{ $student->last_name }}
                                 </p>
 
-
-                                <p
-                                    class="mt-1
-                                           text-xs
-                                           text-slate-400"
-                                >
-                                    Record ID:
-                                    {{ $student->id }}
-                                </p>
+                                @if ($student->nickname)
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        “{{ $student->nickname }}”
+                                    </p>
+                                @endif
 
                             </td>
 
@@ -1162,33 +1275,14 @@
 
 
 
-                            {{-- Class --}}
+                            {{-- Schedule --}}
 
                             <td
-                                class="px-5 py-5
-                                       text-sm
-                                       text-slate-700"
-                            >
-
-                                {{
-                                    $classNames
-                                    ?: '—'
-                                }}
-
-                            </td>
-
-
-
-                            {{-- Day & Time --}}
-
-                            <td
-                                class="px-5 py-5
-                                       text-sm
-                                       text-slate-700"
+                                class="min-w-[360px] px-5 py-5 align-top"
                             >
 
                                 @forelse (
-                                    $confirmedEnrolments
+                                    $sortedConfirmedEnrolments
                                     as $enrolment
                                 )
 
@@ -1205,26 +1299,35 @@
                                         $offering
                                     )
 
-                                        <div class="mb-2">
+                                        <div class="mb-2 flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 last:mb-0">
 
-                                            {{
-                                                $offering
-                                                    ->day
-                                                    ?->day_name
-                                                ??
-                                                ''
-                                            }}
+                                            <div class="min-w-0">
 
-                                            ·
+                                                <p class="truncate text-sm font-semibold text-slate-800">
+                                                    {{ $offering->section?->section_name ?? 'Class' }}
 
-                                            {{
-                                                \Carbon\Carbon::parse(
-                                                    $offering
-                                                        ->start_time
-                                                )->format(
-                                                    'g:i A'
-                                                )
-                                            }}
+                                                    @if ($enrolment->subSection)
+                                                        <span class="font-medium text-cyan-700">
+                                                            · {{ $enrolment->subSection->sub_section_name }}
+                                                        </span>
+                                                    @endif
+                                                </p>
+
+                                            </div>
+
+                                            <div class="shrink-0 text-right">
+
+                                                <p class="text-xs font-bold uppercase tracking-wide text-cyan-700">
+                                                    {{ $offering->day?->day_name ?? '—' }}
+                                                </p>
+
+                                                <p class="mt-0.5 whitespace-nowrap text-xs font-medium text-slate-600">
+                                                    {{ \Carbon\Carbon::parse($offering->start_time)->format('g:i A') }}
+                                                    –
+                                                    {{ \Carbon\Carbon::parse($offering->end_time)->format('g:i A') }}
+                                                </p>
+
+                                            </div>
 
                                         </div>
 
@@ -1245,7 +1348,7 @@
                                 )
 
                                     <span
-                                        class="inline-flex
+                                        class="mt-2 inline-flex
                                                rounded-full
                                                bg-purple-100
                                                px-2.5 py-1
@@ -1396,3 +1499,248 @@
 </div>
 
 @endsection
+
+
+@push('scripts')
+
+<script>
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function () {
+
+        const selectAll =
+            document.getElementById(
+                'selectAllStudents'
+            );
+
+        const studentCheckboxes =
+            Array.from(
+                document.querySelectorAll(
+                    '.student-select'
+                )
+            );
+
+        const bulkDeleteButton =
+            document.getElementById(
+                'bulkDeleteButton'
+            );
+
+        const bulkDeleteCount =
+            document.getElementById(
+                'bulkDeleteCount'
+            );
+
+        const bulkDeleteForm =
+            document.getElementById(
+                'bulkDeleteForm'
+            );
+
+
+        function selectedStudents()
+        {
+            return studentCheckboxes.filter(
+                function (checkbox) {
+
+                    return checkbox.checked;
+                }
+            );
+        }
+
+
+        function updateSelection()
+        {
+            const selected =
+                selectedStudents();
+
+
+            studentCheckboxes.forEach(
+                function (checkbox) {
+
+                    const row =
+                        checkbox.closest(
+                            'tr'
+                        );
+
+
+                    if (row) {
+
+                        row.classList.toggle(
+                            'bg-red-50/60',
+                            checkbox.checked
+                        );
+                    }
+                }
+            );
+
+
+            if (selectAll) {
+
+                selectAll.checked =
+                    studentCheckboxes.length > 0
+                    &&
+                    selected.length === studentCheckboxes.length;
+
+                selectAll.indeterminate =
+                    selected.length > 0
+                    &&
+                    selected.length < studentCheckboxes.length;
+            }
+
+
+            if (bulkDeleteButton) {
+
+                bulkDeleteButton.disabled =
+                    selected.length === 0;
+
+                bulkDeleteButton.classList.toggle(
+                    'hidden',
+                    selected.length === 0
+                );
+
+                bulkDeleteButton.classList.toggle(
+                    'inline-flex',
+                    selected.length > 0
+                );
+            }
+
+
+            if (bulkDeleteCount) {
+
+                bulkDeleteCount.textContent =
+                    selected.length;
+            }
+        }
+
+
+        selectAll?.addEventListener(
+            'change',
+            function () {
+
+                studentCheckboxes.forEach(
+                    function (checkbox) {
+
+                        checkbox.checked =
+                            selectAll.checked;
+                    }
+                );
+
+
+                updateSelection();
+            }
+        );
+
+
+        studentCheckboxes.forEach(
+            function (checkbox) {
+
+                checkbox.addEventListener(
+                    'change',
+                    updateSelection
+                );
+            }
+        );
+
+
+        bulkDeleteButton?.addEventListener(
+            'click',
+            function () {
+
+                const selected =
+                    selectedStudents();
+
+
+                if (selected.length === 0) {
+
+                    return;
+                }
+
+
+                const studentNames =
+                    selected
+                        .map(
+                            function (checkbox) {
+
+                                return checkbox.dataset.studentName;
+                            }
+                        )
+                        .join(', ');
+
+
+                const confirmed =
+                    window.confirm(
+                        'Permanently delete '
+                        + selected.length
+                        + (
+                            selected.length === 1
+                                ? ' selected student?\n\n'
+                                : ' selected students?\n\n'
+                        )
+                        + studentNames
+                        + '\n\nThis action cannot be undone.'
+                    );
+
+
+                if (!confirmed) {
+
+                    return;
+                }
+
+
+                if (!bulkDeleteForm) {
+
+                    alert(
+                        'The bulk delete form is unavailable. Refresh the page and try again.'
+                    );
+
+                    return;
+                }
+
+
+                bulkDeleteForm
+                    .querySelectorAll(
+                        'input[name="student_ids[]"]'
+                    )
+                    .forEach(
+                        function (input) {
+
+                            input.remove();
+                        }
+                    );
+
+
+                selected.forEach(
+                    function (checkbox) {
+
+                        const input =
+                            document.createElement(
+                                'input'
+                            );
+
+                        input.type = 'hidden';
+                        input.name = 'student_ids[]';
+                        input.value = checkbox.value;
+
+                        bulkDeleteForm.appendChild(
+                            input
+                        );
+                    }
+                );
+
+
+                bulkDeleteButton.disabled = true;
+                bulkDeleteButton.textContent =
+                    'Deleting selected students...';
+
+                bulkDeleteForm.submit();
+            }
+        );
+
+
+        updateSelection();
+    }
+);
+
+</script>
+
+@endpush

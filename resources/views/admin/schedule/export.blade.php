@@ -229,7 +229,7 @@
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300"
+                           border-slate-400"
                 >
 
 
@@ -276,7 +276,7 @@
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300"
+                           border-slate-400"
                 >
 
                     <option
@@ -369,7 +369,7 @@
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300"
+                           border-slate-400"
                 >
 
                     <option value="">
@@ -411,7 +411,7 @@
 
 
             {{-- =================================================
-                MATH SUB-SECTION
+                SUB-SECTION
             ================================================== --}}
 
             <div>
@@ -424,7 +424,7 @@
                            font-semibold
                            text-slate-700"
                 >
-                    Math Sub-section
+                    Sub-section
                 </label>
 
 
@@ -434,7 +434,7 @@
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300"
+                           border-slate-400"
                 >
 
                     <option value="">
@@ -507,7 +507,7 @@
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300"
+                           border-slate-400"
                 >
 
                     <option value="">
@@ -574,7 +574,7 @@
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300
+                           border-slate-400
                            disabled:bg-slate-100
                            disabled:text-slate-400"
                 >
@@ -686,7 +686,7 @@
                     class="h-12
                            w-full
                            rounded-xl
-                           border-slate-300"
+                           border-slate-400"
                 >
 
                     <option
@@ -987,7 +987,7 @@
                        items-center
                        rounded-xl
                        border
-                       border-slate-300
+                       border-slate-400
                        bg-white
                        px-6
                        text-sm

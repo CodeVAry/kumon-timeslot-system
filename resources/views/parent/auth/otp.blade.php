@@ -20,7 +20,6 @@
         Verify Code | Kumon Parent Portal
     </title>
 
-
     @vite([
         'resources/css/app.css',
         'resources/js/app.js'
@@ -56,16 +55,18 @@
     ></div>
 
 
+    {{-- Dark overlay --}}
     <div
         class="absolute
                inset-0
                bg-gradient-to-r
-               from-slate-950/55
-               via-slate-900/15
+               from-slate-950/65
+               via-slate-900/20
                to-slate-900/10"
     ></div>
 
 
+    {{-- Soft overlay --}}
     <div
         class="absolute
                inset-0
@@ -84,7 +85,8 @@
                flex
                min-h-screen
                items-center
-               px-5 py-10
+               px-5
+               py-10
                sm:px-8
                lg:px-14
                xl:px-20"
@@ -112,37 +114,108 @@
                        lg:block"
             >
 
-                <p
-                    class="text-sm
-                           font-semibold
-                           uppercase
-                           tracking-[0.15em]
-                           text-white/90"
-                >
-                    Kumon North Hobart
-                </p>
 
+                {{-- =============================================
+                    BRAND
+                ============================================== --}}
+
+                <div
+                    class="flex
+                           items-center
+                           gap-5"
+                >
+
+
+                    {{-- Logo --}}
+                    <div
+                        class="flex
+                               items-center
+                               justify-center"
+                    >
+
+                        <img
+                            src="{{ asset('images/kumon-logo.png') }}"
+                            alt="Kumon Logo"
+                            class="h-14
+                                   w-auto
+                                   object-contain
+                                   xl:h-16"
+                        >
+
+                    </div>
+
+
+
+                    {{-- Divider --}}
+                    <div
+                        class="h-12
+                               w-px
+                               bg-white/40"
+                    ></div>
+
+
+
+                    {{-- Centre Information --}}
+                    <div>
+
+                        <p
+                            class="text-xs
+                                   font-bold
+                                   uppercase
+                                   tracking-[0.20em]
+                                   text-violet-200"
+                        >
+                            Kumon North Hobart
+                        </p>
+
+
+                        <p
+                            class="mt-1
+                                   text-lg
+                                   font-semibold
+                                   text-white"
+                        >
+                            Time Scheduling System
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                {{-- =============================================
+                    HEADING
+                ============================================== --}}
 
                 <h1
-                    class="mt-8
-                           max-w-2xl
+                    class="mt-12
+                           max-w-[680px]
                            text-5xl
                            font-bold
-                           leading-[1.15]
+                           leading-[1.08]
+                           tracking-tight
                            text-white
-                           xl:text-6xl"
+                           xl:text-[60px]"
                 >
-                    One more step to access your Parent Portal.
+                    One more step to access
+                    <br>
+                    your Parent Portal.
                 </h1>
 
 
+
+                {{-- =============================================
+                    DESCRIPTION
+                ============================================== --}}
+
                 <p
-                    class="mt-10
+                    class="mt-7
                            max-w-xl
-                           text-xl
+                           text-lg
                            leading-relaxed
                            text-white/90
-                           xl:text-2xl"
+                           xl:text-xl"
                 >
                     Enter the verification code sent to
                     your registered email address.
@@ -177,6 +250,77 @@
 
 
                     {{-- =============================================
+                        MOBILE BRAND
+                    ============================================== --}}
+
+                    <div
+                        class="mb-8
+                               lg:hidden"
+                    >
+
+                        <div
+                            class="flex
+                                   items-center
+                                   gap-4"
+                        >
+
+                            <div
+                                class="rounded-lg
+                                       bg-white
+                                       px-3
+                                       py-2
+                                       shadow-sm"
+                            >
+
+                                <img
+                                    src="{{ asset('images/kumon-logo.png') }}"
+                                    alt="Kumon Logo"
+                                    class="h-8
+                                           w-auto
+                                           object-contain"
+                                >
+
+                            </div>
+
+
+                            <div
+                                class="h-9
+                                       w-px
+                                       bg-slate-300"
+                            ></div>
+
+
+                            <div>
+
+                                <p
+                                    class="text-[10px]
+                                           font-bold
+                                           uppercase
+                                           tracking-[0.18em]
+                                           text-violet-700"
+                                >
+                                    Kumon North Hobart
+                                </p>
+
+
+                                <p
+                                    class="mt-1
+                                           text-sm
+                                           font-semibold
+                                           text-slate-800"
+                                >
+                                    Time Scheduling System
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+
+                    {{-- =============================================
                         BACK
                     ============================================== --}}
 
@@ -188,14 +332,16 @@
                                gap-2
                                rounded-full
                                border
-                               border-slate-300
+                               border-violet-300
                                bg-white/70
                                px-5
                                text-sm
                                font-semibold
                                text-slate-700
                                transition
-                               hover:bg-white"
+                               hover:border-violet-400
+                               hover:bg-violet-50
+                               hover:text-violet-800"
                     >
 
                         <svg
@@ -204,7 +350,8 @@
                             fill="none"
                             stroke="currentColor"
                             stroke-width="2"
-                            class="h-4 w-4"
+                            class="h-4
+                                   w-4"
                         >
                             <path
                                 stroke-linecap="round"
@@ -226,11 +373,16 @@
                     <div class="mt-5">
 
                         <span
-                            class="text-xs
+                            class="inline-flex
+                                   rounded-full
+                                   bg-violet-100
+                                   px-5
+                                   py-2
+                                   text-xs
                                    font-bold
                                    uppercase
                                    tracking-wide
-                                   text-slate-800"
+                                   text-violet-800"
                         >
                             Parent Verification
                         </span>
@@ -280,7 +432,8 @@
                                border
                                border-violet-100
                                bg-violet-50
-                               px-5 py-4"
+                               px-5
+                               py-4"
                     >
 
                         <p
@@ -315,16 +468,21 @@
                     @if (session('success'))
 
                         <div
-                            class="mt-6 rounded-xl
-                                   border border-green-200
+                            class="mt-6
+                                   rounded-xl
+                                   border
+                                   border-green-200
                                    bg-green-50
-                                   px-4 py-3
-                                   text-sm text-green-700"
+                                   px-4
+                                   py-3
+                                   text-sm
+                                   text-green-700"
                         >
                             {{ session('success') }}
                         </div>
 
                     @endif
+
 
 
                     {{-- =============================================
@@ -339,7 +497,8 @@
                                    border
                                    border-red-200
                                    bg-red-50
-                                   px-4 py-3
+                                   px-4
+                                   py-3
                                    text-sm
                                    text-red-700"
                         >
@@ -417,6 +576,7 @@
                                        text-slate-900
                                        shadow-sm
                                        outline-none
+                                       transition
                                        placeholder:text-slate-300
                                        focus:border-violet-500
                                        focus:ring-4
@@ -440,14 +600,18 @@
 
 
 
-                        {{-- Expiry --}}
+                        {{-- =========================================
+                            EXPIRY
+                        ========================================== --}}
+
                         <div
                             class="mt-5
                                    rounded-2xl
                                    border
                                    border-slate-200
                                    bg-white/50
-                                   px-4 py-3"
+                                   px-4
+                                   py-3"
                         >
 
                             <p
@@ -464,18 +628,26 @@
 
 
 
-                        {{-- Resend Code --}}
+                        {{-- =========================================
+                            RESEND
+                        ========================================== --}}
+
                         <div
                             class="mt-5
-                                   flex flex-col
+                                   flex
+                                   flex-col
                                    items-center
                                    gap-2
                                    text-center"
                         >
 
-                            <p class="text-sm text-slate-600">
+                            <p
+                                class="text-sm
+                                       text-slate-600"
+                            >
                                 Didn't receive the code?
                             </p>
+
 
                             <button
                                 type="submit"
@@ -492,14 +664,20 @@
                                        disabled:cursor-not-allowed
                                        disabled:text-slate-400"
                             >
+
                                 <span id="resendOtpText">
                                     Resend code
                                 </span>
+
                             </button>
+
 
                             @error('resend')
 
-                                <p class="text-xs text-red-600">
+                                <p
+                                    class="text-xs
+                                           text-red-600"
+                                >
                                     {{ $message }}
                                 </p>
 
@@ -508,7 +686,11 @@
                         </div>
 
 
-                        {{-- Verify --}}
+
+                        {{-- =========================================
+                            VERIFY
+                        ========================================== --}}
+
                         <button
                             type="submit"
                             class="mt-7
@@ -525,12 +707,14 @@
                                    font-bold
                                    text-white
                                    shadow-lg
+                                   shadow-violet-500/20
                                    transition
                                    hover:bg-violet-700
                                    focus:outline-none
                                    focus:ring-4
                                    focus:ring-violet-300"
                         >
+
                             Verify & Continue
 
 
@@ -540,7 +724,8 @@
                                 fill="none"
                                 stroke="currentColor"
                                 stroke-width="2"
-                                class="h-4 w-4"
+                                class="h-4
+                                       w-4"
                             >
                                 <path
                                     stroke-linecap="round"
@@ -564,39 +749,103 @@
 </div>
 
 
+
+{{-- =========================================================
+    RESEND TIMER
+========================================================== --}}
+
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const button = document.getElementById('resendOtpButton');
-    const text = document.getElementById('resendOtpText');
 
-    if (!button || !text) {
-        return;
-    }
+document.addEventListener(
+    'DOMContentLoaded',
+    function () {
 
-    const availableAt = Number(button.dataset.availableAt) * 1000;
+        const button =
+            document.getElementById(
+                'resendOtpButton'
+            );
 
-    function updateResendButton() {
-        const remaining = Math.ceil((availableAt - Date.now()) / 1000);
+        const text =
+            document.getElementById(
+                'resendOtpText'
+            );
 
-        if (remaining > 0) {
-            button.disabled = true;
-            text.textContent = 'Resend code in ' + remaining + 's';
-        } else {
-            button.disabled = false;
-            text.textContent = 'Resend code';
+
+        if (!button || !text) {
+            return;
         }
-    }
 
-    updateResendButton();
 
-    const timer = setInterval(function () {
+        const availableAt =
+            Number(
+                button.dataset.availableAt
+            ) * 1000;
+
+
+        function updateResendButton() {
+
+            const remaining =
+                Math.ceil(
+                    (
+                        availableAt
+                        -
+                        Date.now()
+                    )
+                    /
+                    1000
+                );
+
+
+            if (remaining > 0) {
+
+                button.disabled = true;
+
+                text.textContent =
+                    'Resend code in '
+                    + remaining
+                    + 's';
+
+            } else {
+
+                button.disabled = false;
+
+                text.textContent =
+                    'Resend code';
+
+            }
+
+        }
+
+
         updateResendButton();
 
-        if (Date.now() >= availableAt) {
-            clearInterval(timer);
-        }
-    }, 1000);
-});
+
+        const timer =
+            setInterval(
+                function () {
+
+                    updateResendButton();
+
+
+                    if (
+                        Date.now()
+                        >=
+                        availableAt
+                    ) {
+
+                        clearInterval(
+                            timer
+                        );
+
+                    }
+
+                },
+                1000
+            );
+
+    }
+);
+
 </script>
 
 </body>

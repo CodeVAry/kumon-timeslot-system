@@ -185,6 +185,12 @@
                     {{ $student->last_name }}
                 </h1>
 
+                @if ($student->nickname)
+                    <p class="mt-1 text-sm font-medium text-slate-500">
+                        Nickname: {{ $student->nickname }}
+                    </p>
+                @endif
+
 
                 <p
                     class="mt-1

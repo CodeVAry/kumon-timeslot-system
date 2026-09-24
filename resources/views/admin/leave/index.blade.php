@@ -583,6 +583,10 @@
                             Expected Return
                         </th>
 
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
+                            Early Return
+                        </th>
+
                         <th class="px-6 py-4 text-center text-xs font-bold uppercase text-slate-500">
                             Duration
                         </th>
@@ -655,6 +659,17 @@
 
                             $rowStyle =
                                 '';
+
+
+                            if (
+                                $tab === 'upcoming'
+                                &&
+                                $leave->is_actioned
+                            ) {
+
+                                $rowStyle =
+                                    'background-color: #f0fdf4;';
+                            }
 
 
                             /*
@@ -742,6 +757,41 @@
 
                             /*
                             |--------------------------------------------------------------------------
+                            | Expected Return Date Passed
+                            |--------------------------------------------------------------------------
+                            */
+
+                            elseif (
+                                $daysUntilReturn < 0
+                            ) {
+
+                                $overdueDays =
+                                    abs($daysUntilReturn);
+
+
+                                $returnBadge =
+                                    'Return overdue by '
+                                    .
+                                    $overdueDays
+                                    .
+                                    (
+                                        $overdueDays === 1
+                                            ? ' day'
+                                            : ' days'
+                                    );
+
+
+                                $returnBadgeStyle =
+                                    'background-color: #fee2e2; color: #b91c1c;';
+
+
+                                $rowStyle =
+                                    'background-color: #fff7ed;';
+                            }
+
+
+                            /*
+                            |--------------------------------------------------------------------------
                             | Enrolled Classes
                             |--------------------------------------------------------------------------
                             */
@@ -820,7 +870,6 @@
                                     }}
                                 </div>
 
-
                                 @if ($returnBadge)
 
                                     <span
@@ -837,6 +886,14 @@
 
                                 @endif
 
+                            </td>
+
+                            <td class="whitespace-nowrap px-6 py-5 text-sm text-slate-700">
+                                @if ($leave->actual_return_date)
+                                    {{ $leave->actual_return_date->format('d M Y') }}
+                                @else
+                                    —
+                                @endif
                             </td>
 
 
@@ -928,6 +985,133 @@
                                         >
                                             Edit
                                         </a>
+
+
+                                        @if ($tab === 'current')
+
+                                            <form
+                                                method="POST"
+                                                action="{{ route(
+                                                    'admin.leave.return',
+                                                    $leave
+                                                ) }}"
+                                                class="flex flex-wrap items-center justify-center gap-2"
+                                                onsubmit="
+                                                    return confirm(
+                                                        'Record this student as returned on the selected date?'
+                                                    );
+                                                "
+                                            >
+
+                                                @csrf
+                                                @method('PATCH')
+
+
+                                                <input
+                                                    type="hidden"
+                                                    name="return_to"
+                                                    value="current_list"
+                                                >
+
+
+                                                <input
+                                                    type="date"
+                                                    name="actual_return_date"
+                                                    value="{{ today()->toDateString() }}"
+                                                    min="{{ $leave->start_date->toDateString() }}"
+                                                    max="{{ today()->toDateString() }}"
+                                                    required
+                                                    aria-label="Actual return date"
+                                                    class="h-10 rounded-xl border-slate-300 px-2 text-xs text-slate-700"
+                                                >
+
+
+                                                <button
+                                                    type="submit"
+                                                    class="inline-flex h-10 items-center justify-center rounded-xl border border-cyan-300 bg-cyan-50 px-4 text-xs font-semibold text-cyan-700 hover:bg-cyan-100"
+                                                >
+                                                    {{
+                                                        today()->lt(
+                                                            $leave
+                                                                ->expected_return_date
+                                                                ->copy()
+                                                                ->startOfDay()
+                                                        )
+                                                            ? 'Early Return'
+                                                            : 'Mark Returned'
+                                                    }}
+                                                </button>
+
+                                            </form>
+
+                                        @endif
+
+
+                                        @if ($tab === 'upcoming')
+
+                                            @if ($leave->is_actioned)
+
+                                                <span
+                                                    class="inline-flex
+                                                           h-10
+                                                           items-center
+                                                           justify-center
+                                                           rounded-xl
+                                                           border
+                                                           border-green-300
+                                                           bg-green-100
+                                                           px-4
+                                                           text-xs
+                                                           font-bold
+                                                           text-green-700"
+                                                >
+                                                    ✓ Completed
+                                                </span>
+
+                                            @else
+
+                                                <form
+                                                    method="POST"
+                                                    action="{{ route(
+                                                        'admin.leave.completed',
+                                                        $leave
+                                                    ) }}"
+                                                    onsubmit="
+                                                        return confirm(
+                                                            'Mark this upcoming leave as planned/completed?'
+                                                        );
+                                                    "
+                                                >
+
+                                                    @csrf
+
+                                                    @method('PATCH')
+
+
+                                                    <button
+                                                        type="submit"
+                                                        class="inline-flex
+                                                               h-10
+                                                               items-center
+                                                               justify-center
+                                                               rounded-xl
+                                                               border
+                                                               border-green-400
+                                                               bg-white
+                                                               px-4
+                                                               text-xs
+                                                               font-semibold
+                                                               text-green-700
+                                                               hover:bg-green-50"
+                                                    >
+                                                        Completed
+                                                    </button>
+
+                                                </form>
+
+                                            @endif
+
+                                        @endif
 
                                     @endif
 

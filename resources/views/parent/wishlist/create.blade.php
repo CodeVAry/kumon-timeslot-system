@@ -162,6 +162,10 @@
                                 ?? 'Class'
                             }}
 
+                            @if ($enrolment->subSection)
+                                ({{ $enrolment->subSection->sub_section_name }})
+                            @endif
+
                             —
 
                             {{
@@ -169,8 +173,10 @@
                                     ->sectionOffering
                                     ?->day
                                     ?->day_name
-                                ?? ''
+                            ?? ''
                             }}
+
+                            —
 
                             {{
                                 $enrolment
@@ -179,6 +185,19 @@
                                     $enrolment
                                         ->sectionOffering
                                         ->start_time
+                                )->format('g:i A')
+                                : ''
+                            }}
+
+                            –
+
+                            {{
+                                $enrolment
+                                    ->sectionOffering
+                                ? \Carbon\Carbon::parse(
+                                    $enrolment
+                                        ->sectionOffering
+                                        ->end_time
                                 )->format('g:i A')
                                 : ''
                             }}
@@ -240,6 +259,12 @@
                                         ?->section
                                         ?->section_name
                                 }}
+
+                                @if ($enrolment->subSection)
+                                    <span class="text-blue-700">
+                                        ({{ $enrolment->subSection->sub_section_name }})
+                                    </span>
+                                @endif
                             </p>
 
 

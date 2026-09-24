@@ -63,7 +63,7 @@ class StudentRegistrationController extends Controller
         $validated =
             $request->validate([
                 'external_id' => [
-                    'required',
+                    'nullable',
                     'string',
                     'max:50',
                     'unique:students,external_id',
@@ -83,6 +83,12 @@ class StudentRegistrationController extends Controller
 
                 'last_name' => [
                     'required',
+                    'string',
+                    'max:100',
+                ],
+
+                'nickname' => [
+                    'nullable',
                     'string',
                     'max:100',
                 ],
@@ -120,11 +126,25 @@ class StudentRegistrationController extends Controller
 
 
         $validated['external_id'] =
+            isset(
+                $validated[
+                    'external_id'
+                ]
+            )
+            &&
             trim(
                 $validated[
                     'external_id'
                 ]
-            );
+            )
+            !==
+            ''
+                ? trim(
+                    $validated[
+                        'external_id'
+                    ]
+                )
+                : null;
 
 
         $validated['first_name'] =
@@ -141,6 +161,12 @@ class StudentRegistrationController extends Controller
                     'last_name'
                 ]
             );
+
+
+        $validated['nickname'] =
+            trim(
+                $validated['nickname'] ?? ''
+            ) ?: null;
 
 
         session([
@@ -773,61 +799,100 @@ class StudentRegistrationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | One Offering Per Main Class
-        |--------------------------------------------------------------------------
-        |
-        | English: one
-        | Math: one
-        | Interactive: one
+        | Prevent Overlapping Class Times
         |--------------------------------------------------------------------------
         */
 
-        $duplicateSections =
+        $offeringsByDay =
             $selectedOfferings
-                ->groupBy(
-                    'section_id'
-                )
-                ->filter(
-                    function ($offerings) {
-                        return
-                            $offerings->count()
-                            >
-                            1;
+                ->groupBy('day_id');
+
+        foreach ($offeringsByDay as $dayOfferings) {
+
+            $sortedDayOfferings =
+                $dayOfferings
+                    ->sortBy('start_time')
+                    ->values();
+
+            for ($i = 0; $i < $sortedDayOfferings->count(); $i++) {
+
+                $firstOffering =
+                    $sortedDayOfferings[$i];
+
+                $firstStart =
+                    \Carbon\Carbon::parse(
+                        $firstOffering->start_time
+                    );
+
+                $firstEnd =
+                    \Carbon\Carbon::parse(
+                        $firstOffering->end_time
+                    );
+
+                for ($j = $i + 1; $j < $sortedDayOfferings->count(); $j++) {
+
+                    $secondOffering =
+                        $sortedDayOfferings[$j];
+
+                    $secondStart =
+                        \Carbon\Carbon::parse(
+                            $secondOffering->start_time
+                        );
+
+                    $secondEnd =
+                        \Carbon\Carbon::parse(
+                            $secondOffering->end_time
+                        );
+
+                    $overlaps =
+                        $firstStart->lt($secondEnd)
+                        &&
+                        $secondStart->lt($firstEnd);
+
+                    if (!$overlaps) {
+                        continue;
                     }
-                );
 
+                    $firstName =
+                        $firstOffering
+                            ->section
+                            ?->section_name
+                        ?? 'Class';
 
-        if (
-            $duplicateSections
-                ->isNotEmpty()
-        ) {
-            $duplicateClassNames =
-                $duplicateSections
-                    ->map(
-                        function ($offerings) {
-                            return
-                                $offerings
-                                    ->first()
-                                    ->section
-                                    ?->section_name
-                                ??
-                                'Class';
-                        }
-                    )
-                    ->unique()
-                    ->implode(', ');
+                    $secondName =
+                        $secondOffering
+                            ->section
+                            ?->section_name
+                        ?? 'Class';
 
+                    $dayName =
+                        $firstOffering
+                            ->day
+                            ?->day_name
+                        ?? 'the selected day';
 
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'classes' =>
-                        'Only one class time can be selected for each class. Please choose only one offering for: '
-                        .
-                        $duplicateClassNames
-                        .
-                        '.',
-                ]);
+                    return back()
+                        ->withInput()
+                        ->withErrors([
+                            'classes' =>
+                                'Schedule conflict: '
+                                . $firstName
+                                . ' ('
+                                . \Carbon\Carbon::parse($firstOffering->start_time)->format('g:i A')
+                                . ' - '
+                                . \Carbon\Carbon::parse($firstOffering->end_time)->format('g:i A')
+                                . ') overlaps with '
+                                . $secondName
+                                . ' ('
+                                . \Carbon\Carbon::parse($secondOffering->start_time)->format('g:i A')
+                                . ' - '
+                                . \Carbon\Carbon::parse($secondOffering->end_time)->format('g:i A')
+                                . ') on '
+                                . $dayName
+                                . '. Please choose a different time.',
+                        ]);
+                }
+            }
         }
 
 
@@ -942,13 +1007,26 @@ class StudentRegistrationController extends Controller
         */
 
         $studentIdExists =
-            Student::where(
-                'external_id',
+            false;
+
+
+        if (
+            !empty(
                 $studentData[
                     'external_id'
                 ]
             )
-                ->exists();
+        ) {
+
+            $studentIdExists =
+                Student::where(
+                    'external_id',
+                    $studentData[
+                        'external_id'
+                    ]
+                )
+                    ->exists();
+        }
 
 
         if ($studentIdExists) {
@@ -1036,6 +1114,11 @@ class StudentRegistrationController extends Controller
                             $studentData[
                                 'last_name'
                             ],
+
+                        'nickname' =>
+                            $studentData[
+                                'nickname'
+                            ] ?? null,
 
                         'email' =>
                             null,
@@ -1353,11 +1436,7 @@ class StudentRegistrationController extends Controller
 
         return redirect()
             ->route(
-                'dashboard'
-            )
-            ->with(
-                'success',
-                'Student registration cancelled.'
+                'admin.student-registration.student'
             );
     }
 }

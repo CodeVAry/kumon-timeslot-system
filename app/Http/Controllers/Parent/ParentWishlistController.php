@@ -183,8 +183,10 @@ class ParentWishlistController extends Controller
             Enrolment::with([
                 'sectionOffering.section',
                 'sectionOffering.day',
+                'subSection',
                 'wishlistForEnrolment.sectionOffering.section',
                 'wishlistForEnrolment.sectionOffering.day',
+                'wishlistForEnrolment.subSection',
                 'reviewedBy',
             ])
                 ->where(
@@ -315,6 +317,7 @@ class ParentWishlistController extends Controller
             Enrolment::with([
                 'sectionOffering.section',
                 'sectionOffering.day',
+                'subSection',
             ])
                 ->where(
                     'student_id',
@@ -359,6 +362,7 @@ class ParentWishlistController extends Controller
                 SectionOffering::with([
                     'section',
                     'day',
+                    'subSections',
                 ])
                     ->where(
                         'section_id',
@@ -373,6 +377,22 @@ class ParentWishlistController extends Controller
                         'id',
                         '!=',
                         $currentOffering->id
+                    )
+                    ->when(
+                        $enrolment->sub_section_id,
+                        function ($query) use ($enrolment) {
+
+                            $query->whereHas(
+                                'subSections',
+                                function ($subSectionQuery) use ($enrolment) {
+
+                                    $subSectionQuery->where(
+                                        'sub_sections.id',
+                                        $enrolment->sub_section_id
+                                    );
+                                }
+                            );
+                        }
                     )
                     ->orderBy(
                         'day_id'
@@ -506,7 +526,7 @@ class ParentWishlistController extends Controller
                 ->withInput()
                 ->withErrors([
                     'enrolment_id' =>
-                        'This class already has a pending wishlist request.',
+                        'This class already has a pending waitlist request.',
                 ]);
         }
 
@@ -528,7 +548,8 @@ class ParentWishlistController extends Controller
 
 
         $requestedOffering =
-            SectionOffering::where(
+            SectionOffering::with('subSections')
+                ->where(
                 'id',
                 $validated[
                     'section_offering_id'
@@ -587,6 +608,26 @@ class ParentWishlistController extends Controller
         }
 
 
+        if (
+            $enrolment->sub_section_id
+            &&
+            !$requestedOffering
+                ->subSections
+                ->contains(
+                    'id',
+                    (int) $enrolment->sub_section_id
+                )
+        ) {
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'section_offering_id' =>
+                        'The selected class time does not support this sub-section.',
+                ]);
+        }
+
+
         $wishlist =
             Enrolment::create([
                 'student_id' =>
@@ -594,6 +635,9 @@ class ParentWishlistController extends Controller
 
                 'section_offering_id' =>
                     $requestedOffering->id,
+
+                'sub_section_id' =>
+                    $enrolment->sub_section_id,
 
                 'wishlist_for_enrolment_id' =>
                     $enrolment->id,
@@ -633,7 +677,7 @@ class ParentWishlistController extends Controller
             )
             ->with(
                 'success',
-                'Wishlist request submitted successfully.'
+                'Waitlist request submitted successfully.'
             );
     }
 
@@ -656,8 +700,10 @@ class ParentWishlistController extends Controller
         $wishlist->load([
             'sectionOffering.section',
             'sectionOffering.day',
+            'subSection',
             'wishlistForEnrolment.sectionOffering.section',
             'wishlistForEnrolment.sectionOffering.day',
+            'wishlistForEnrolment.subSection',
             'reviewedBy',
         ]);
 
@@ -701,7 +747,7 @@ class ParentWishlistController extends Controller
                 )
                 ->with(
                     'error',
-                    'Only pending wishlist requests can be edited.'
+                    'Only pending waitlist requests can be edited.'
                 );
         }
 
@@ -709,8 +755,10 @@ class ParentWishlistController extends Controller
         $wishlist->load([
             'sectionOffering.section',
             'sectionOffering.day',
+            'subSection',
             'wishlistForEnrolment.sectionOffering.section',
             'wishlistForEnrolment.sectionOffering.day',
+            'wishlistForEnrolment.subSection',
         ]);
 
 
@@ -812,7 +860,7 @@ class ParentWishlistController extends Controller
                 )
                 ->with(
                     'error',
-                    'Only pending wishlist requests can be updated.'
+                    'Only pending waitlist requests can be updated.'
                 );
         }
 
@@ -921,7 +969,7 @@ class ParentWishlistController extends Controller
             )
             ->with(
                 'success',
-                'Wishlist request updated successfully.'
+                'Waitlist request updated successfully.'
             );
     }
 
@@ -954,7 +1002,7 @@ class ParentWishlistController extends Controller
                 )
                 ->with(
                     'error',
-                    'Only pending wishlist requests can be cancelled.'
+                    'Only pending waitlist requests can be cancelled.'
                 );
         }
 
@@ -975,7 +1023,7 @@ class ParentWishlistController extends Controller
             )
             ->with(
                 'success',
-                'Wishlist request cancelled successfully.'
+                'Waitlist request cancelled successfully.'
             );
     }
 
@@ -1012,7 +1060,7 @@ class ParentWishlistController extends Controller
                 )
                 ->with(
                     'error',
-                    'Only rejected or cancelled wishlist requests can be deleted.'
+                    'Only rejected or cancelled waitlist requests can be deleted.'
                 );
         }
 
@@ -1026,7 +1074,7 @@ class ParentWishlistController extends Controller
             )
             ->with(
                 'success',
-                'Wishlist request deleted successfully.'
+                'Waitlist request deleted successfully.'
             );
     }
 }

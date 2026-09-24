@@ -101,15 +101,11 @@ class LeaveController extends Controller
 
             $query->whereHas(
                 'student',
-                function ($studentQuery) use (
-                    $search
-                ) {
+                function ($studentQuery) use ($search) {
 
                     $studentQuery
                         ->where(
-                            function ($query) use (
-                                $search
-                            ) {
+                            function ($query) use ($search) {
 
                                 $query
                                     ->where(
@@ -157,14 +153,17 @@ class LeaveController extends Controller
                     today()
                         ->toDateString()
                 )
-                ->whereDate(
-                    'expected_return_date',
-                    '>=',
-                    today()
-                        ->toDateString()
-                )
-                ->whereNull(
-                    'actual_return_date'
+                ->where(
+                    function ($query) {
+
+                        $query
+                            ->whereNull('actual_return_date')
+                            ->orWhereDate(
+                                'actual_return_date',
+                                '>',
+                                today()->toDateString()
+                            );
+                    }
                 );
         }
 
@@ -216,14 +215,17 @@ class LeaveController extends Controller
                     today()
                         ->toDateString()
                 )
-                ->whereDate(
-                    'expected_return_date',
-                    '>=',
-                    today()
-                        ->toDateString()
-                )
-                ->whereNull(
-                    'actual_return_date'
+                ->where(
+                    function ($query) {
+
+                        $query
+                            ->whereNull('actual_return_date')
+                            ->orWhereDate(
+                                'actual_return_date',
+                                '>',
+                                today()->toDateString()
+                            );
+                    }
                 )
                 ->count();
 
@@ -293,20 +295,10 @@ class LeaveController extends Controller
                                         'status',
                                         'approved'
                                     )
-                                    ->where(
-                                        function ($query) {
-
-                                            $query
-                                                ->whereNotNull(
-                                                    'actual_return_date'
-                                                )
-                                                ->orWhereDate(
-                                                    'expected_return_date',
-                                                    '<',
-                                                    today()
-                                                        ->toDateString()
-                                                );
-                                        }
+                                    ->whereDate(
+                                        'actual_return_date',
+                                        '<=',
+                                        today()->toDateString()
                                     );
                             }
                         );
@@ -359,9 +351,7 @@ class LeaveController extends Controller
                     true
                 )
                     ->where(
-                        function ($query) use (
-                            $search
-                        ) {
+                        function ($query) use ($search) {
 
                             $query
                                 ->where(
@@ -700,7 +690,15 @@ class LeaveController extends Controller
             !==
             'approved'
             ||
-            $leave->actual_return_date
+            (
+                $leave->actual_return_date
+                &&
+                Carbon::parse(
+                    $leave->actual_return_date
+                )->isBefore(
+                    today()
+                )
+            )
         ) {
 
             return redirect()
@@ -761,7 +759,15 @@ class LeaveController extends Controller
             !==
             'approved'
             ||
-            $leave->actual_return_date
+            (
+                $leave->actual_return_date
+                &&
+                Carbon::parse(
+                    $leave->actual_return_date
+                )->isBefore(
+                    today()
+                )
+            )
         ) {
 
             return redirect()
@@ -904,6 +910,16 @@ class LeaveController extends Controller
         ]);
 
 
+        // Editing an active leave cancels any previously recorded return.
+        // Use a direct query so model fillable settings cannot ignore it.
+        StudentLeave::whereKey(
+            $leave->id
+        )->update([
+            'actual_return_date' => null,
+            'returned_early' => false,
+        ]);
+
+
         return redirect()
             ->route(
                 'admin.leave.show',
@@ -944,7 +960,11 @@ class LeaveController extends Controller
         }
 
 
-        if ($leave->actual_return_date) {
+        if (
+            $leave->actual_return_date
+            &&
+            $leave->actual_return_date->lte(today())
+        ) {
 
             return redirect()
                 ->route(
@@ -964,6 +984,13 @@ class LeaveController extends Controller
                     'required',
                     'date',
                 ],
+
+                'return_to' => [
+                    'nullable',
+                    Rule::in([
+                        'current_list',
+                    ]),
+                ],
             ]);
 
 
@@ -978,23 +1005,8 @@ class LeaveController extends Controller
 
         if (
             $actualReturnDate->lt(
-                today()
-            )
-        ) {
-
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'actual_return_date' =>
-                        'Return date cannot be before today.',
-                ]);
-        }
-
-
-        if (
-            $actualReturnDate->gt(
                 $leave
-                    ->expected_return_date
+                    ->start_date
                     ->copy()
                     ->startOfDay()
             )
@@ -1004,7 +1016,22 @@ class LeaveController extends Controller
                 ->withInput()
                 ->withErrors([
                     'actual_return_date' =>
-                        'Return date cannot be after the expected return date.',
+                        'Return date cannot be before the leave start date.',
+                ]);
+        }
+
+
+        if (
+            $actualReturnDate->gt(
+                today()
+            )
+        ) {
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'actual_return_date' =>
+                        'Return date cannot be in the future.',
                 ]);
         }
 
@@ -1028,16 +1055,28 @@ class LeaveController extends Controller
         ]);
 
 
-        return redirect()
-            ->route(
-                'admin.leave.show',
-                $leave
-            )
+        $redirect =
+            ($validated['return_to'] ?? null)
+            ===
+            'current_list'
+                ? redirect()->route(
+                    'admin.leave.index',
+                    [
+                        'tab' => 'current',
+                    ]
+                )
+                : redirect()->route(
+                    'admin.leave.show',
+                    $leave
+                );
+
+
+        return $redirect
             ->with(
                 'success',
                 $returnedEarly
-                    ? 'Student early return recorded successfully.'
-                    : 'Student return recorded successfully.'
+                ? 'Student early return recorded successfully.'
+                : 'Student return recorded successfully.'
             );
     }
 
@@ -1081,20 +1120,10 @@ class LeaveController extends Controller
                                             'status',
                                             'approved'
                                         )
-                                        ->where(
-                                            function ($query) {
-
-                                                $query
-                                                    ->whereNotNull(
-                                                        'actual_return_date'
-                                                    )
-                                                    ->orWhereDate(
-                                                        'expected_return_date',
-                                                        '<',
-                                                        today()
-                                                            ->toDateString()
-                                                    );
-                                            }
+                                        ->whereDate(
+                                            'actual_return_date',
+                                            '<=',
+                                            today()->toDateString()
                                         );
                                 }
                             );
@@ -1106,15 +1135,11 @@ class LeaveController extends Controller
 
             $query->whereHas(
                 'student',
-                function ($studentQuery) use (
-                    $search
-                ) {
+                function ($studentQuery) use ($search) {
 
                     $studentQuery
                         ->where(
-                            function ($query) use (
-                                $search
-                            ) {
+                            function ($query) use ($search) {
 
                                 $query
                                     ->where(
@@ -1156,4 +1181,75 @@ class LeaveController extends Controller
             )
         );
     }
+
+
+
+    public function markCompleted(
+        StudentLeave $leave
+    ) {
+        if (
+            $leave->status
+            !==
+            'approved'
+        ) {
+
+            return back()
+                ->with(
+                    'error',
+                    'Only approved leave can be marked as completed.'
+                );
+        }
+
+
+        if (
+            $leave->start_date
+                ->copy()
+                ->startOfDay()
+                ->lte(
+                    today()
+                )
+        ) {
+
+            return back()
+                ->with(
+                    'error',
+                    'Only upcoming leave can be marked as completed.'
+                );
+        }
+
+
+        if (
+            $leave->is_actioned
+        ) {
+
+            return back()
+                ->with(
+                    'success',
+                    'This leave has already been marked as completed.'
+                );
+        }
+
+
+        $leave->is_actioned =
+            true;
+
+
+        $leave->actioned_at =
+            now();
+
+
+        $leave->actioned_by_user_id =
+            auth()->id();
+
+
+        $leave->save();
+
+
+        return back()
+            ->with(
+                'success',
+                'Leave planning marked as completed.'
+            );
+    }
+
 }

@@ -19,6 +19,37 @@
     ];
 
 
+    /*
+     * Interactive uses one shared capacity across its
+     * English and Math sub-sections.
+     */
+    $interactiveSubSections =
+        $interactiveSubSections
+        ??
+        (
+            $interactiveSection
+                ?->subSections
+            ??
+            collect()
+        );
+
+
+    $interactiveCapacity =
+        (int)
+        (
+            (
+                $interactiveRows
+                ??
+                collect()
+            )
+                ->max(
+                    'maximum'
+                )
+            ??
+            5
+        );
+
+
     $getStatus =
         function (
             $allocated,
@@ -493,8 +524,28 @@
                     Interactive
                 </strong>
 
-                capacity is managed
-                per class offering.
+                has one shared maximum of
+                {{ $interactiveCapacity ?: 5 }}
+                students across
+
+                @if (
+                    $interactiveSubSections
+                        ->isNotEmpty()
+                )
+
+                    {{
+                        $interactiveSubSections
+                            ->pluck(
+                                'sub_section_name'
+                            )
+                            ->implode(' and ')
+                    }}.
+
+                @else
+
+                    English and Math.
+
+                @endif
 
             @endif
 
@@ -556,6 +607,7 @@
                             <th class="px-7 py-5 text-left">
                                 Time
                             </th>
+
 
                             <th class="px-7 py-5 text-center">
                                 Enrolled / Capacity
@@ -1157,8 +1209,23 @@
                                 Time
                             </th>
 
+
+                            @foreach (
+                                $interactiveSubSections
+                                as $subSection
+                            )
+
+                                <th class="px-6 py-5 text-center">
+                                    {{
+                                        $subSection
+                                            ->sub_section_name
+                                    }}
+                                </th>
+
+                            @endforeach
+
                             <th class="px-7 py-5 text-center">
-                                Enrolled / Capacity
+                                Interactive Total / Capacity
                             </th>
 
                             <th class="px-7 py-5 text-center">
@@ -1208,6 +1275,13 @@
                                         $maximum
                                     );
 
+                                $interactiveAllocations =
+                                    $row[
+                                        'interactive_allocations'
+                                    ]
+                                    ??
+                                    [];
+
                             @endphp
 
 
@@ -1228,6 +1302,31 @@
                                     </div>
 
                                 </td>
+
+
+                                @foreach (
+                                    $interactiveSubSections
+                                    as $subSection
+                                )
+
+                                    <td
+                                        class="px-6 py-7
+                                               text-center
+                                               font-semibold"
+                                    >
+                                        {{
+                                            (int)
+                                            (
+                                                $interactiveAllocations[
+                                                    $subSection->id
+                                                ]
+                                                ??
+                                                0
+                                            )
+                                        }}
+                                    </td>
+
+                                @endforeach
 
 
                                 <td
@@ -1363,7 +1462,12 @@
                             <tr>
 
                                 <td
-                                    colspan="5"
+                                    colspan="{{
+                                        5
+                                        +
+                                        $interactiveSubSections
+                                            ->count()
+                                    }}"
                                     class="px-6 py-16
                                            text-center
                                            text-slate-500"
@@ -1433,7 +1537,9 @@
 
                     @else
 
-                        Managed per Interactive offering
+                        Shared max
+                        {{ $interactiveCapacity ?: 5 }}
+                        students across Interactive English and Math
 
                     @endif
 

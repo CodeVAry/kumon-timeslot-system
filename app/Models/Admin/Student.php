@@ -16,6 +16,7 @@ class Student extends Model
         'status_changed_at',
         'first_name',
         'last_name',
+        'nickname',
         'email',
         'phone',
         'date_of_birth',

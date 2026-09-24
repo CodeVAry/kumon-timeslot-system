@@ -797,7 +797,7 @@ class ScheduleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Math Sub-sections
+        | Sub-sections
         |--------------------------------------------------------------------------
         */
 
@@ -1931,6 +1931,36 @@ class ScheduleController extends Controller
                     $student
                         ->last_name
                 );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Interactive Subject Beside Student Name
+            |--------------------------------------------------------------------------
+            |
+            | Interactive has one shared capacity of five seats. Each enrolled
+            | student is labelled as either Math or English on printed/exported
+            | schedules so staff can see the subject beside the student's name.
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                strtolower(
+                    trim(
+                        $sectionName
+                    )
+                )
+                ===
+                'interactive'
+                &&
+                $subSectionName
+            ) {
+
+                $studentName .=
+                    ' — '
+                    .
+                    $subSectionName;
+            }
 
 
             if (

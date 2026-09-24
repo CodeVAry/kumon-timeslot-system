@@ -34,18 +34,18 @@
                 @include('panel.breadcrumb')
 
                 {{-- Success message --}}
-                @if (session('success'))
+                {{-- @if (session('success'))
                     <div class="mb-5 rounded-lg border border-green-200 bg-green-100 px-4 py-3 text-green-700">
                         {{ session('success') }}
                     </div>
-                @endif
+                @endif --}}
 
                 {{-- Error message --}}
-                @if (session('error'))
+                {{-- @if (session('error'))
                     <div class="mb-5 rounded-lg border border-red-200 bg-red-100 px-4 py-3 text-red-700">
                         {{ session('error') }}
                     </div>
-                @endif
+                @endif --}}
 
                 {{-- Page content --}}
                 @yield('content')

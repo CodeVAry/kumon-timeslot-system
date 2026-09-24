@@ -111,11 +111,11 @@ Route::middleware('auth')
 
 
 
-            /*
-        |--------------------------------------------------------------------------
-        | Role Routes
-        |--------------------------------------------------------------------------
-        */
+        /*
+    |--------------------------------------------------------------------------
+    | Role Routes
+    |--------------------------------------------------------------------------
+    */
 
         Route::get(
             '/roles',
@@ -892,6 +892,17 @@ Route::middleware('auth')
             ->name('students.index');
 
 
+        Route::delete(
+            '/students/bulk-delete',
+            [
+                StudentController::class,
+                'bulkDestroy',
+            ]
+        )
+            ->middleware('permission:students.delete')
+            ->name('students.bulk-destroy');
+
+
         Route::get(
             '/students/{student}',
             [
@@ -1184,6 +1195,20 @@ Route::middleware('auth')
         )
             ->middleware('permission:leave.create')
             ->name('leave.store');
+
+        Route::patch(
+            '/leave/{leave}/completed',
+            [
+                LeaveController::class,
+                'markCompleted',
+            ]
+        )
+            ->middleware(
+                'permission:leave.edit'
+            )
+            ->name(
+                'leave.completed'
+            );
 
 
         Route::get(

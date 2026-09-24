@@ -1,66 +1,110 @@
 @php
     $loggedInUser = auth()->user();
 
-    $auditNotificationCount =
-        session(
-            'audit_notification_count',
-            0
-        );
+    $auditNotificationCount = session('audit_notification_count', 0);
 @endphp
 
 
 <aside
-    class="fixed left-0 top-0 z-40
-           h-screen w-64
-           bg-slate-900 text-white"
->
+    style="
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 40;
+        width: 256px;
+        height: 100vh;
+        background-color: #0f172a;
+        color: #ffffff;
+    ">
 
     {{-- =========================================================
         SYSTEM LOGO
     ========================================================== --}}
-
     <div
-        class="flex h-16
-               items-center
-               border-b
-               border-slate-700
-               px-5"
-    >
+        style="
+        height: 80px;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        background-color: #0f172a;
+        border-bottom: 1px solid #d1d5db;
+    ">
 
-        <a
-            href="{{ route('dashboard') }}"
-            class="flex items-center gap-3"
-        >
+        <a href="{{ route('dashboard') }}"
+            style="
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        ">
 
+            {{-- KUMON LOGO --}}
             <div
-                class="flex h-10 w-10
-                       items-center
-                       justify-center
-                       rounded-lg
-                       bg-blue-600
-                       text-lg
-                       font-bold"
-            >
-                K
+                style="
+                width: 88px;
+                height: 48px;
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #ffffff;
+                border-radius: 8px;
+                padding: 6px 8px;
+                box-sizing: border-box;
+            ">
+
+                <img src="{{ asset('images/kumon-logo.png') }}" alt="Kumon Logo"
+                    style="
+                    display: block;
+                    max-width: 100%;
+                    max-height: 34px;
+                    width: auto;
+                    height: auto;
+                    object-fit: contain;
+                ">
+
             </div>
 
 
-            <div>
+            {{-- DIVIDER --}}
+            <div
+                style="
+                width: 1px;
+                height: 40px;
+                flex-shrink: 0;
+                background-color: #cbd5e1;
+            ">
+            </div>
 
-                <h1
-                    class="text-sm
-                           font-bold"
-                >
+
+            {{-- SYSTEM NAME --}}
+            <div style="
+                min-width: 0;
+                line-height: 1.25;
+            ">
+
+                <div
+                    style="
+                    color: #e5e8ed;
+                    font-size: 14px;
+                    font-weight: 700;
+                    white-space: nowrap;
+                ">
                     Kumon
-                </h1>
+                </div>
 
 
-                <p
-                    class="text-xs
-                           text-slate-400"
-                >
+                <div
+                    style="
+                    margin-top: 4px;
+                    color: #64748b;
+                    font-size: 12px;
+                    font-weight: 400;
+                    white-space: nowrap;
+                ">
                     Timeslot System
-                </p>
+                </div>
 
             </div>
 
@@ -74,19 +118,16 @@
         SIDEBAR NAVIGATION
     ========================================================== --}}
 
-    <nav
-        class="h-[calc(100vh-145px)]
+    <nav class="h-[calc(100vh-145px)]
                overflow-y-auto
-               px-4 py-5"
-    >
+               px-4 py-5">
 
 
         {{-- =====================================================
             DASHBOARD
         ====================================================== --}}
 
-        <a
-            href="{{ route('dashboard') }}"
+        <a href="{{ route('dashboard') }}"
             class="mb-1
                    flex items-center
                    gap-3
@@ -96,25 +137,14 @@
                    font-medium
                 {{ request()->routeIs('dashboard')
                     ? 'bg-blue-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-        >
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
-            <svg
-                class="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-            >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M3 12l2-2m0 0l7-7 7 7m-2
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7m-2
                        2v6a2 2 0 01-2 2h-3m-4
                        0H7a2 2 0 01-2-2v-6m3
-                       8v-6h4v6"
-                />
+                       8v-6h4v6" />
 
             </svg>
 
@@ -132,15 +162,8 @@
         ====================================================== --}}
 
         @if (
-            $loggedInUser
-            &&
-            $loggedInUser->hasAnyPermission([
-                'roles.view',
-                'permissions.view',
-                'users.view',
-                'audit_logs.view',
-            ])
-        )
+            $loggedInUser &&
+                $loggedInUser->hasAnyPermission(['roles.view', 'permissions.view', 'users.view', 'audit_logs.view']))
 
             <p
                 class="mb-2 mt-6
@@ -149,8 +172,7 @@
                        font-semibold
                        uppercase
                        tracking-wider
-                       text-slate-500"
-            >
+                       text-slate-500">
                 User & Access
             </p>
 
@@ -162,17 +184,8 @@
                     ROLES
                 ============================================== --}}
 
-                @if (
-                    $loggedInUser
-                        ->hasPermission(
-                            'roles.view'
-                        )
-                )
-
-                    <a
-                        href="{{ route(
-                            'admin.roles.index'
-                        ) }}"
+                @if ($loggedInUser->hasPermission('roles.view'))
+                    <a href="{{ route('admin.roles.index') }}"
                         class="flex
                                items-center
                                gap-3
@@ -182,21 +195,11 @@
                                font-medium
                             {{ request()->routeIs('admin.roles.*')
                                 ? 'bg-blue-600 text-white'
-                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-                    >
+                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M17 20h5v-2a3 3 0
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0
                                    00-5.356-1.857M17
                                    20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7
                                    20H2v-2a3 3 0
@@ -205,8 +208,7 @@
                                    0a5.002 5.002 0
                                    019.288 0M15 7a3 3 0
                                    11-6 0 3 3 0
-                                   016 0z"
-                            />
+                                   016 0z" />
 
                         </svg>
 
@@ -216,7 +218,6 @@
                         </span>
 
                     </a>
-
                 @endif
 
 
@@ -225,17 +226,8 @@
                     PERMISSIONS
                 ============================================== --}}
 
-                @if (
-                    $loggedInUser
-                        ->hasPermission(
-                            'permissions.view'
-                        )
-                )
-
-                    <a
-                        href="{{ route(
-                            'admin.permissions.index'
-                        ) }}"
+                @if ($loggedInUser->hasPermission('permissions.view'))
+                    <a href="{{ route('admin.permissions.index') }}"
                         class="flex
                                items-center
                                gap-3
@@ -245,27 +237,16 @@
                                font-medium
                             {{ request()->routeIs('admin.permissions.*')
                                 ? 'bg-blue-600 text-white'
-                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-                    >
+                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M12 15v2m-6 4h12a2 2 0
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0
                                    002-2v-6a2 2 0
                                    00-2-2H6a2 2 0
                                    00-2 2v6a2 2 0
                                    002 2zm10-10V7a4 4 0
-                                   00-8 0v4h8z"
-                            />
+                                   00-8 0v4h8z" />
 
                         </svg>
 
@@ -275,7 +256,6 @@
                         </span>
 
                     </a>
-
                 @endif
 
 
@@ -284,17 +264,8 @@
                     USERS
                 ============================================== --}}
 
-                @if (
-                    $loggedInUser
-                        ->hasPermission(
-                            'users.view'
-                        )
-                )
-
-                    <a
-                        href="{{ route(
-                            'admin.users.index'
-                        ) }}"
+                @if ($loggedInUser->hasPermission('users.view'))
+                    <a href="{{ route('admin.users.index') }}"
                         class="flex
                                items-center
                                gap-3
@@ -304,29 +275,18 @@
                                font-medium
                             {{ request()->routeIs('admin.users.*')
                                 ? 'bg-blue-600 text-white'
-                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-                    >
+                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M5.121 17.804A9.004
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9.004
                                    9.004 0 0112 15c2.21
                                    0 4.236.795 5.879
                                    2.115M15 11a3 3
                                    0 11-6 0 3 3
                                    0 016 0zm6 1a9
                                    9 0 11-18 0 9
-                                   9 0 0118 0z"
-                            />
+                                   9 0 0118 0z" />
 
                         </svg>
 
@@ -336,7 +296,6 @@
                         </span>
 
                     </a>
-
                 @endif
 
 
@@ -345,17 +304,9 @@
                     AUDIT LOGS
                 ============================================== --}}
 
-                @if (
-                    $loggedInUser
-                        ->hasPermission(
-                            'audit_logs.view'
-                        )
-                )
+                @if ($loggedInUser->hasPermission('audit_logs.view'))
 
-                    <a
-                        href="{{ route(
-                            'admin.audit-logs.index'
-                        ) }}"
+                    <a href="{{ route('admin.audit-logs.index') }}"
                         class="flex
                                items-center
                                gap-3
@@ -365,30 +316,20 @@
                                font-medium
                             {{ request()->routeIs('admin.audit-logs.*')
                                 ? 'bg-blue-600 text-white'
-                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-                    >
+                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
-                        <svg
-                            class="h-5 w-5
-                                   shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
+                        <svg class="h-5 w-5
+                                   shrink-0" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
 
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M9 5H7a2 2 0
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0
                                    00-2 2v12a2 2 0
                                    002 2h10a2 2 0
                                    002-2V7a2 2 0
                                    00-2-2h-2M9
                                    5a2 2 0 002
                                    2h2a2 2 0
-                                   002-2M9 12h6m-6 4h6"
-                            />
+                                   002-2M9 12h6m-6 4h6" />
 
                         </svg>
 
@@ -402,12 +343,7 @@
                             AUDIT NOTIFICATION BADGE
                         ====================================== --}}
 
-                        @if (
-                            $auditNotificationCount
-                            >
-                            0
-                        )
-
+                        @if ($auditNotificationCount > 0)
                             <span
                                 class="ml-auto
                                        inline-flex
@@ -422,17 +358,9 @@
                                        font-bold
                                        leading-none
                                        text-white
-                                       shadow-sm"
-                            >
-                                {{
-                                    $auditNotificationCount
-                                    >
-                                    99
-                                        ? '99+'
-                                        : $auditNotificationCount
-                                }}
+                                       shadow-sm">
+                                {{ $auditNotificationCount > 99 ? '99+' : $auditNotificationCount }}
                             </span>
-
                         @endif
 
                     </a>
@@ -450,15 +378,8 @@
         ====================================================== --}}
 
         @if (
-            $loggedInUser
-            &&
-            $loggedInUser->hasAnyPermission([
-                'days.view',
-                'timeslots.view',
-                'sections.view',
-                'section_offerings.view',
-            ])
-        )
+            $loggedInUser &&
+                $loggedInUser->hasAnyPermission(['days.view', 'timeslots.view', 'sections.view', 'section_offerings.view']))
 
             <p
                 class="mb-2 mt-6
@@ -467,8 +388,7 @@
                        font-semibold
                        uppercase
                        tracking-wider
-                       text-slate-500"
-            >
+                       text-slate-500">
                 Class Setup
             </p>
 
@@ -480,19 +400,8 @@
                     SECTIONS
                 ============================================== --}}
 
-                @if (
-                    $loggedInUser
-                    &&
-                    $loggedInUser
-                        ->hasPermission(
-                            'sections.view'
-                        )
-                )
-
-                    <a
-                        href="{{ route(
-                            'admin.sections.index'
-                        ) }}"
+                @if ($loggedInUser && $loggedInUser->hasPermission('sections.view'))
+                    <a href="{{ route('admin.sections.index') }}"
                         class="flex
                                items-center
                                gap-3
@@ -502,14 +411,12 @@
                                font-medium
                             {{ request()->routeIs('admin.sections.*')
                                 ? 'bg-blue-600 text-white'
-                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-                    >
+                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
                         <span
                             class="h-2 w-2
                                    rounded-full
-                                   bg-current"
-                        ></span>
+                                   bg-current"></span>
 
 
                         <span>
@@ -517,7 +424,6 @@
                         </span>
 
                     </a>
-
                 @endif
 
 
@@ -526,17 +432,8 @@
                     SECTION OFFERINGS
                 ============================================== --}}
 
-                @if (
-                    $loggedInUser
-                        ->hasPermission(
-                            'section_offerings.view'
-                        )
-                )
-
-                    <a
-                        href="{{ route(
-                            'admin.section-offerings.index'
-                        ) }}"
+                @if ($loggedInUser->hasPermission('section_offerings.view'))
+                    <a href="{{ route('admin.section-offerings.index') }}"
                         class="flex
                                items-center
                                gap-3
@@ -546,14 +443,12 @@
                                font-medium
                             {{ request()->routeIs('admin.section-offerings.*')
                                 ? 'bg-blue-600 text-white'
-                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-                    >
+                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
                         <span
                             class="h-2 w-2
                                    rounded-full
-                                   bg-current"
-                        ></span>
+                                   bg-current"></span>
 
 
                         <span>
@@ -561,7 +456,6 @@
                         </span>
 
                     </a>
-
                 @endif
 
             </div>
@@ -574,14 +468,7 @@
             STUDENT SETUP
         ====================================================== --}}
 
-        @if (
-            $loggedInUser
-            &&
-            $loggedInUser->hasAnyPermission([
-                'student_statuses.view',
-                'students.view',
-            ])
-        )
+        @if ($loggedInUser && $loggedInUser->hasAnyPermission(['student_statuses.view', 'students.view']))
 
             <p
                 class="mb-2 mt-6
@@ -590,8 +477,7 @@
                        font-semibold
                        uppercase
                        tracking-wider
-                       text-slate-500"
-            >
+                       text-slate-500">
                 Student Setup
             </p>
 
@@ -603,17 +489,8 @@
                     STUDENT STATUSES
                 ============================================== --}}
 
-                @if (
-                    $loggedInUser
-                        ->hasPermission(
-                            'student_statuses.view'
-                        )
-                )
-
-                    <a
-                        href="{{ route(
-                            'admin.student-statuses.index'
-                        ) }}"
+                @if ($loggedInUser->hasPermission('student_statuses.view'))
+                    <a href="{{ route('admin.student-statuses.index') }}"
                         class="flex
                                items-center
                                gap-3
@@ -623,14 +500,12 @@
                                font-medium
                             {{ request()->routeIs('admin.student-statuses.*')
                                 ? 'bg-blue-600 text-white'
-                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-                    >
+                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
                         <span
                             class="h-2 w-2
                                    rounded-full
-                                   bg-current"
-                        ></span>
+                                   bg-current"></span>
 
 
                         <span>
@@ -638,7 +513,6 @@
                         </span>
 
                     </a>
-
                 @endif
 
 
@@ -647,17 +521,8 @@
                     STUDENT LIST
                 ============================================== --}}
 
-                @if (
-                    $loggedInUser
-                        ->hasPermission(
-                            'students.view'
-                        )
-                )
-
-                    <a
-                        href="{{ route(
-                            'admin.students.index'
-                        ) }}"
+                @if ($loggedInUser->hasPermission('students.view'))
+                    <a href="{{ route('admin.students.index') }}"
                         class="flex
                                items-center
                                gap-3
@@ -667,22 +532,12 @@
                                font-medium
                             {{ request()->routeIs('admin.students.*')
                                 ? 'bg-blue-600 text-white'
-                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-                    >
+                                : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="1.8">
 
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M15 19.128a9.38 9.38 0 0 0
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0
                                    2.625.372 9.337 9.337 0 0 0
                                    4.121-.952 4.125 4.125 0 0 0
                                    -7.533-2.493M15 19.128v-.003
@@ -695,8 +550,7 @@
                                    -6.75 0 3.375 3.375 0 0 1
                                    6.75 0Zm8.25 2.25a2.625
                                    2.625 0 1 1-5.25 0
-                                   2.625 2.625 0 0 1 5.25 0Z"
-                            />
+                                   2.625 2.625 0 0 1 5.25 0Z" />
 
                         </svg>
 
@@ -706,7 +560,6 @@
                         </span>
 
                     </a>
-
                 @endif
 
             </div>
@@ -719,19 +572,8 @@
             SCHEDULE
         ====================================================== --}}
 
-        @if (
-            $loggedInUser
-            &&
-            $loggedInUser
-                ->hasPermission(
-                    'section_offerings.view'
-                )
-        )
-
-            <a
-                href="{{ route(
-                    'admin.schedule.index'
-                ) }}"
+        @if ($loggedInUser && $loggedInUser->hasPermission('section_offerings.view'))
+            <a href="{{ route('admin.schedule.index') }}"
                 class="mt-1
                        flex
                        items-center
@@ -742,31 +584,16 @@
                        font-medium
                     {{ request()->routeIs('admin.schedule.*')
                         ? 'bg-blue-600 text-white'
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-            >
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    class="h-5 w-5"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" class="h-5 w-5">
 
-                    <rect
-                        x="3"
-                        y="5"
-                        width="18"
-                        height="16"
-                        rx="2"
-                    />
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
 
-                    <path
-                        d="M16 3v4
+                    <path d="M16 3v4
                            M8 3v4
-                           M3 10h18"
-                    />
+                           M3 10h18" />
 
                 </svg>
 
@@ -776,7 +603,6 @@
                 </span>
 
             </a>
-
         @endif
 
 
@@ -785,23 +611,8 @@
             ATTENDANCE
         ====================================================== --}}
 
-        @if (
-            Route::has(
-                'admin.attendance.index'
-            )
-            &&
-            $loggedInUser
-            &&
-            $loggedInUser
-                ->hasPermission(
-                    'enrolments.view'
-                )
-        )
-
-            <a
-                href="{{ route(
-                    'admin.attendance.index'
-                ) }}"
+        @if (Route::has('admin.attendance.index') && $loggedInUser && $loggedInUser->hasPermission('enrolments.view'))
+            <a href="{{ route('admin.attendance.index') }}"
                 class="flex
                        items-center
                        gap-3
@@ -811,22 +622,12 @@
                        font-medium
                     {{ request()->routeIs('admin.attendance.*')
                         ? 'bg-blue-600 text-white'
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-            >
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    class="h-5 w-5"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" class="h-5 w-5">
 
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M6.75 3v2.25
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25
                            M17.25 3v2.25
                            M3.75 9.75h16.5
                            M5.25 5.25h13.5
@@ -837,14 +638,9 @@
                            a1.5 1.5 0 0 1
                            -1.5-1.5v-12
                            a1.5 1.5 0 0 1
-                           1.5-1.5Z"
-                    />
+                           1.5-1.5Z" />
 
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="m9 15 2 2 4-4"
-                    />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m9 15 2 2 4-4" />
 
                 </svg>
 
@@ -854,7 +650,6 @@
                 </span>
 
             </a>
-
         @endif
 
 
@@ -863,19 +658,8 @@
             LEAVE MANAGEMENT
         ====================================================== --}}
 
-        @if (
-            $loggedInUser
-            &&
-            $loggedInUser
-                ->hasPermission(
-                    'leave.view'
-                )
-        )
-
-            <a
-                href="{{ route(
-                    'admin.leave.index'
-                ) }}"
+        @if ($loggedInUser && $loggedInUser->hasPermission('leave.view'))
+            <a href="{{ route('admin.leave.index') }}"
                 class="flex
                        items-center
                        gap-3
@@ -886,35 +670,20 @@
                        transition
                     {{ request()->routeIs('admin.leave.*')
                         ? 'bg-blue-600 text-white'
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-            >
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    class="h-5 w-5"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" class="h-5 w-5">
 
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M8.25 6.75V5.25
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75V5.25
                            A2.25 2.25 0 0 1 10.5 3h3
                            a2.25 2.25 0 0 1 2.25 2.25v1.5
                            M3.75 8.25h16.5
                            v10.5A2.25 2.25 0 0 1 18 21H6
-                           a2.25 2.25 0 0 1-2.25-2.25V8.25Z"
-                    />
+                           a2.25 2.25 0 0 1-2.25-2.25V8.25Z" />
 
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M12 11.25v4.5
-                           M9.75 13.5h4.5"
-                    />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 11.25v4.5
+                           M9.75 13.5h4.5" />
 
                 </svg>
 
@@ -924,7 +693,6 @@
                 </span>
 
             </a>
-
         @endif
 
 
@@ -933,19 +701,8 @@
             WISHLIST
         ====================================================== --}}
 
-        @if (
-            $loggedInUser
-            &&
-            $loggedInUser
-                ->hasPermission(
-                    'wishlist.view'
-                )
-        )
-
-            <a
-                href="{{ route(
-                    'admin.wishlist.index'
-                ) }}"
+        @if ($loggedInUser && $loggedInUser->hasPermission('wishlist.view'))
+            <a href="{{ route('admin.wishlist.index') }}"
                 class="flex
                        items-center
                        gap-3
@@ -956,26 +713,15 @@
                        transition
                     {{ request()->routeIs('admin.wishlist.*')
                         ? 'bg-blue-600 text-white'
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}"
-            >
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
 
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    class="h-5 w-5"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" class="h-5 w-5">
 
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M12 21s-7-4.35-7-10
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21s-7-4.35-7-10
                            a4 4 0 0 1 7-2.65
                            A4 4 0 0 1 19 11
-                           c0 5.65-7 10-7 10Z"
-                    />
+                           c0 5.65-7 10-7 10Z" />
 
                 </svg>
 
@@ -985,7 +731,6 @@
                 </span>
 
             </a>
-
         @endif
 
     </nav>
@@ -1004,15 +749,12 @@
                border-t
                border-slate-700
                bg-slate-900
-               p-4"
-    >
+               p-4">
 
-        <div
-            class="mb-3
+        <div class="mb-3
                    flex
                    items-center
-                   gap-3"
-        >
+                   gap-3">
 
             <div
                 class="flex
@@ -1022,75 +764,41 @@
                        rounded-full
                        bg-blue-600
                        text-sm
-                       font-bold"
-            >
-                {{
-                    strtoupper(
-                        substr(
-                            $loggedInUser->name
-                                ?? 'A',
-                            0,
-                            1
-                        )
-                    )
-                }}
+                       font-bold">
+                {{ strtoupper(substr($loggedInUser->name ?? 'A', 0, 1)) }}
             </div>
 
 
             <div class="min-w-0">
 
-                <p
-                    class="truncate
+                <p class="truncate
                            text-sm
-                           font-semibold"
-                >
-                    {{
-                        $loggedInUser->name
-                            ?? 'User'
-                    }}
+                           font-semibold">
+                    {{ $loggedInUser->name ?? 'User' }}
                 </p>
 
 
-                <p
-                    class="truncate
+                <p class="truncate
                            text-xs
-                           text-slate-400"
-                >
-                    {{
-                        $loggedInUser->email
-                            ?? ''
-                    }}
+                           text-slate-400">
+                    {{ $loggedInUser->email ?? '' }}
                 </p>
 
 
-                @if (
-                    $loggedInUser
-                    &&
-                    $loggedInUser->role
-                )
-
+                @if ($loggedInUser && $loggedInUser->role)
                     <p
                         class="truncate
                                text-xs
-                               text-blue-300"
-                    >
-                        {{
-                            $loggedInUser
-                                ->role
-                                ->role_name
-                        }}
+                               text-blue-300">
+                        {{ $loggedInUser->role->role_name }}
                     </p>
-
                 @else
-
                     <p
                         class="truncate
                                text-xs
-                               text-amber-300"
-                    >
+                               text-amber-300">
                         Role not assigned
                     </p>
-
                 @endif
 
             </div>
@@ -1099,16 +807,12 @@
 
 
 
-        <form
-            method="POST"
-            action="{{ route('logout') }}"
-        >
+        <form method="POST" action="{{ route('logout') }}">
 
             @csrf
 
 
-            <button
-                type="submit"
+            <button type="submit"
                 class="flex
                        w-full
                        items-center
@@ -1119,28 +823,17 @@
                        font-medium
                        text-slate-300
                        hover:bg-red-600
-                       hover:text-white"
-            >
+                       hover:text-white">
 
-                <svg
-                    class="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M17 16l4-4m0
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0
                            0l-4-4m4 4H7m6
                            4v1a3 3 0
                            01-3 3H6a3 3 0
                            01-3-3V7a3 3 0
                            013-3h4a3 3 0
-                           013 3v1"
-                    />
+                           013 3v1" />
 
                 </svg>
 

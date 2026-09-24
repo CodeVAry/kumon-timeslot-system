@@ -283,7 +283,7 @@
                            font-medium
                            text-gray-800"
                 >
-                    {{ $studentData['external_id'] }}
+                    {{ $studentData['external_id'] ?: 'Not added yet' }}
                 </p>
 
             </div>
@@ -371,7 +371,7 @@
                 >
                     Select one time for each class.
                     Confirmed enrolments use a seat;
-                    wishlist selections do not.
+                    Waitlist selections do not.
                 </p>
 
 
@@ -386,14 +386,14 @@
                            text-blue-700"
                 >
                     <strong>
-                        Math:
+                        Sub-sections:
                     </strong>
 
-                    choose 3A, B-D or E+ before
-                    selecting Enrol or Wishlist.
+                    choose the required sub-section before
+                    selecting Enrol or Waitlist.
 
-                    All Math sub-sections share the same
-                    41-seat capacity.
+                    Math uses 3A, B-D and E+.
+                    Interactive uses English and Math.
                 </div>
 
             </div>
@@ -441,7 +441,7 @@
                             class="h-11
                                    w-full
                                    rounded-xl
-                                   border-gray-300
+                                   border-slate-500
                                    bg-white
                                    text-sm"
                         >
@@ -492,7 +492,7 @@
                             class="h-11
                                    w-full
                                    rounded-xl
-                                   border-gray-300
+                                   border-slate-500
                                    bg-white
                                    text-sm"
                         >
@@ -548,7 +548,7 @@
                             class="h-11
                                    w-full
                                    rounded-xl
-                                   border-gray-300
+                                   border-slate-500
                                    bg-white
                                    text-sm"
                         >
@@ -599,7 +599,7 @@
                             class="h-11
                                    w-full
                                    rounded-xl
-                                   border-gray-300
+                                   border-slate-500
                                    bg-white
                                    text-sm"
                         >
@@ -646,7 +646,7 @@
                                    justify-center
                                    rounded-xl
                                    border
-                                   border-gray-300
+                                   border-slate-500
                                    bg-white
                                    px-5
                                    text-sm
@@ -805,7 +805,7 @@
                                        uppercase
                                        text-gray-500"
                             >
-                                Wishlist
+                                Waitlist
                             </th>
 
                         </tr>
@@ -880,6 +880,10 @@
                                     $offering
                                         ->start_time
                                 }}"
+                                data-end-time="{{
+                                    $offering
+                                        ->end_time
+                                }}"
                             >
 
 
@@ -903,13 +907,18 @@
 
 
                                     @if (
-                                        strtolower(
-                                            $offering
-                                                ->section
-                                                ->section_name
+                                        in_array(
+                                            strtolower(
+                                                $offering
+                                                    ->section
+                                                    ->section_name
+                                            ),
+                                            [
+                                                'math',
+                                                'interactive',
+                                            ],
+                                            true
                                         )
-                                        ===
-                                        'math'
                                     )
 
                                         <p
@@ -930,7 +939,7 @@
 
 
 
-                                {{-- Sub-section --}}
+                                {{-- Subject / Sub-section --}}
                                 <td
                                     class="min-w-44
                                            px-5 py-4"
@@ -950,7 +959,7 @@
                                                    h-10
                                                    w-full
                                                    rounded-lg
-                                                   border-gray-300
+                                                   border-slate-500
                                                    bg-white
                                                    text-sm
                                                    focus:border-blue-500
@@ -962,7 +971,17 @@
                                         >
 
                                             <option value="">
-                                                Select...
+                                                {{
+                                                    strtolower(
+                                                        $offering
+                                                            ->section
+                                                            ->section_name
+                                                    )
+                                                    ===
+                                                    'interactive'
+                                                        ? 'Select subject...'
+                                                        : 'Select...'
+                                                }}
                                             </option>
 
 
@@ -1002,7 +1021,23 @@
                                                    text-xs
                                                    text-gray-400"
                                         >
-                                            Required for Math
+                                            @if (
+                                                strtolower(
+                                                    $offering
+                                                        ->section
+                                                        ->section_name
+                                                )
+                                                ===
+                                                'interactive'
+                                            )
+
+                                                Required Interactive subject
+
+                                            @else
+
+                                                Required for this class
+
+                                            @endif
                                         </p>
 
                                     @else
@@ -1176,7 +1211,7 @@
                                                confirmed-checkbox
                                                h-4 w-4
                                                rounded
-                                               border-gray-300
+                                               border-slate-700
                                                text-blue-600"
                                         data-offering="{{
                                             $offering
@@ -1190,6 +1225,23 @@
                                             $offering
                                                 ->section
                                                 ->section_name
+                                        }}"
+                                        data-day="{{
+                                            $offering
+                                                ->day_id
+                                        }}"
+                                        data-day-name="{{
+                                            $offering
+                                                ->day
+                                                ->day_name
+                                        }}"
+                                        data-start-time="{{
+                                            $offering
+                                                ->start_time
+                                        }}"
+                                        data-end-time="{{
+                                            $offering
+                                                ->end_time
                                         }}"
                                         data-has-sub-sections="{{
                                             $offering
@@ -1231,7 +1283,7 @@
                                                wishlist-checkbox
                                                h-4 w-4
                                                rounded
-                                               border-gray-300
+                                               border-slate-700
                                                text-purple-600"
                                         data-offering="{{
                                             $offering
@@ -1245,6 +1297,23 @@
                                             $offering
                                                 ->section
                                                 ->section_name
+                                        }}"
+                                        data-day="{{
+                                            $offering
+                                                ->day_id
+                                        }}"
+                                        data-day-name="{{
+                                            $offering
+                                                ->day
+                                                ->day_name
+                                        }}"
+                                        data-start-time="{{
+                                            $offering
+                                                ->start_time
+                                        }}"
+                                        data-end-time="{{
+                                            $offering
+                                                ->end_time
                                         }}"
                                         data-has-sub-sections="{{
                                             $offering
@@ -1356,7 +1425,7 @@
                     ) }}"
                     class="rounded-xl
                            border
-                           border-gray-300
+                           border-slate-500
                            bg-white
                            px-5 py-2.5
                            text-center
@@ -1600,7 +1669,7 @@ document.addEventListener(
 
 
                 showError(
-                    'Please select a Math sub-section before choosing Enrol or Wishlist.'
+                    'Please select a sub-section before choosing Enrol or Waitlist.'
                 );
 
 
@@ -1620,81 +1689,108 @@ document.addEventListener(
 
         /*
         |--------------------------------------------------------------------------
-        | Only One Offering Per Main Class
+        | Prevent Overlapping Class Times
         |--------------------------------------------------------------------------
         */
 
-        function getExistingSelection(
-            sectionId,
-            currentCheckbox
-        ) {
-            return Array
-                .from(
-                    allSelections
-                )
-                .find(
-                    function (
-                        checkbox
-                    ) {
-                        return (
-                            checkbox
-                                !==
-                                currentCheckbox
-                            &&
-                            checkbox
-                                .checked
-                            &&
-                            checkbox
-                                .dataset
-                                .section
-                            ===
-                            sectionId
-                        );
-                    }
-                );
+        function timeToMinutes(value)
+        {
+            if (!value) {
+                return null;
+            }
+
+            const parts = value.split(':');
+
+            return (
+                parseInt(parts[0], 10) * 60
+                +
+                parseInt(parts[1], 10)
+            );
         }
 
 
-        function enforceOnePerClass(
-            checkbox
-        ) {
+        function selectionsOverlap(first, second)
+        {
+            if (
+                first.dataset.day
+                !==
+                second.dataset.day
+            ) {
+                return false;
+            }
+
+            const firstStart =
+                timeToMinutes(
+                    first.dataset.startTime
+                );
+
+            const firstEnd =
+                timeToMinutes(
+                    first.dataset.endTime
+                );
+
+            const secondStart =
+                timeToMinutes(
+                    second.dataset.startTime
+                );
+
+            const secondEnd =
+                timeToMinutes(
+                    second.dataset.endTime
+                );
+
+            return (
+                firstStart < secondEnd
+                &&
+                secondStart < firstEnd
+            );
+        }
+
+
+        function enforceNoTimeConflict(checkbox)
+        {
             if (!checkbox.checked) {
                 return true;
             }
 
+            const conflict =
+                Array.from(allSelections)
+                    .find(
+                        existing =>
+                            existing !== checkbox
+                            &&
+                            existing.checked
+                            &&
+                            selectionsOverlap(
+                                checkbox,
+                                existing
+                            )
+                    );
 
-            const existing =
-                getExistingSelection(
-                    checkbox
-                        .dataset
-                        .section,
-                    checkbox
-                );
-
-
-            if (existing) {
-                checkbox.checked =
-                    false;
-
-
-                showError(
-                    'Only one class time can be selected for '
-                    +
-                    checkbox
-                        .dataset
-                        .sectionName
-                    +
-                    '.'
-                );
-
-
-                return false;
+            if (!conflict) {
+                return true;
             }
 
+            checkbox.checked = false;
 
-            return true;
+            showError(
+                'Schedule conflict: '
+                +
+                checkbox.dataset.sectionName
+                +
+                ' overlaps with '
+                +
+                conflict.dataset.sectionName
+                +
+                ' on '
+                +
+                checkbox.dataset.dayName
+                +
+                '. Please choose a different time.'
+            );
+
+            return false;
         }
-
 
 
         /*
@@ -1770,7 +1866,7 @@ document.addEventListener(
 
 
                                 if (
-                                    !enforceOnePerClass(
+                                    !enforceNoTimeConflict(
                                         checkbox
                                     )
                                 ) {
@@ -1835,7 +1931,7 @@ document.addEventListener(
 
 
                                 if (
-                                    !enforceOnePerClass(
+                                    !enforceNoTimeConflict(
                                         checkbox
                                     )
                                 ) {
@@ -2210,7 +2306,7 @@ document.addEventListener(
                 +
                 wishlist
                 +
-                ' wishlist';
+                ' Waitlist';
         }
 
 
@@ -2226,10 +2322,6 @@ document.addEventListener(
             function (event) {
 
                 clearError();
-
-
-                const selectedBySection =
-                    {};
 
 
                 for (
@@ -2256,44 +2348,6 @@ document.addEventListener(
 
                         return;
                     }
-
-
-                    /*
-                     * One offering per main class.
-                     */
-                    const sectionId =
-                        checkbox
-                            .dataset
-                            .section;
-
-
-                    if (
-                        selectedBySection[
-                            sectionId
-                        ]
-                    ) {
-                        event.preventDefault();
-
-
-                        showError(
-                            'Only one class time can be selected for '
-                            +
-                            checkbox
-                                .dataset
-                                .sectionName
-                            +
-                            '.'
-                        );
-
-
-                        return;
-                    }
-
-
-                    selectedBySection[
-                        sectionId
-                    ] =
-                        true;
                 }
             }
         );

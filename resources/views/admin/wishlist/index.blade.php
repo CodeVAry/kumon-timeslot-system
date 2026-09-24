@@ -9,7 +9,7 @@
 
     $breadcrumbs = [
         [
-            'label' => 'Wishlist',
+            'label' => 'Waitlist',
             'url' => null,
         ],
     ];
@@ -459,6 +459,11 @@
                                     ->wishlistForEnrolment
                                     ?->sectionOffering;
 
+                            $currentSubSection =
+                                $wishlist
+                                    ->wishlistForEnrolment
+                                    ?->subSection;
+
 
                             /*
                             |--------------------------------------------------------------------------
@@ -469,6 +474,14 @@
                             $requested =
                                 $wishlist
                                     ->sectionOffering;
+
+                            $requestedSubSection =
+                                $wishlist
+                                    ->subSection
+                                ??
+                                $wishlist
+                                    ->wishlistForEnrolment
+                                    ?->subSection;
 
 
                             /*
@@ -581,6 +594,12 @@
                                             ?->section_name
                                         ?? '—'
                                     }}
+
+                                    @if ($currentSubSection)
+                                        <span class="text-blue-700">
+                                            ({{ $currentSubSection->sub_section_name }})
+                                        </span>
+                                    @endif
                                 </p>
 
 
@@ -652,6 +671,12 @@
                                             ?->section_name
                                         ?? '—'
                                     }}
+
+                                    @if ($requestedSubSection)
+                                        <span class="text-blue-700">
+                                            ({{ $requestedSubSection->sub_section_name }})
+                                        </span>
+                                    @endif
                                 </p>
 
 
@@ -999,60 +1024,6 @@
 
                                         @endif
 
-
-
-                                        {{-- =====================================
-                                            CANCEL
-                                        ====================================== --}}
-
-                                        @if (
-                                            auth()
-                                                ->user()
-                                                ->hasPermission(
-                                                    'wishlist.edit'
-                                                )
-                                        )
-
-                                            <form
-                                                method="POST"
-                                                action="{{ route(
-                                                    'admin.wishlist.cancel',
-                                                    $wishlist
-                                                ) }}"
-                                                onsubmit="
-                                                    return confirm(
-                                                        'Cancel this waitlist request?'
-                                                    );
-                                                "
-                                            >
-
-                                                @csrf
-                                                @method('PATCH')
-
-
-                                                <button
-                                                    type="submit"
-                                                    class="inline-flex
-                                                           h-9
-                                                           items-center
-                                                           justify-center
-                                                           rounded-lg
-                                                           border
-                                                           border-slate-300
-                                                           bg-white
-                                                           px-4
-                                                           text-xs
-                                                           font-semibold
-                                                           text-slate-600
-                                                           transition
-                                                           hover:bg-slate-50"
-                                                >
-                                                    Cancel
-                                                </button>
-
-                                            </form>
-
-                                        @endif
 
 
                                     @else

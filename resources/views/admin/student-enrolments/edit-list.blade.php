@@ -147,6 +147,19 @@
                                         ?->section_name
                                     ?? '—'
                                 }}
+
+                                @if ($enrolment->subSection)
+
+                                    <div
+                                        class="mt-1
+                                               text-xs
+                                               font-medium
+                                               text-blue-600"
+                                    >
+                                        {{ $enrolment->subSection->sub_section_name }}
+                                    </div>
+
+                                @endif
                             </td>
 
 

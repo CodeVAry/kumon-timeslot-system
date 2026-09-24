@@ -46,60 +46,93 @@
                    bg-white"
         >
 
+
             {{-- =====================================================
                 HEADER
             ====================================================== --}}
 
             <header
-                class="flex
-                       items-center
-                       justify-between
-                       border-b
+                class="border-b
                        border-slate-200
-                       px-6 py-5
+                       bg-white
+                       px-6 py-4
                        sm:px-10"
             >
 
-                <div>
+                <div
+                    class="flex
+                           items-center
+                           gap-4
+                           sm:gap-5"
+                >
 
-                    <p
-                        class="text-xs
-                               font-bold
-                               uppercase
-                               tracking-[0.18em]
-                               text-cyan-600"
+
+                    {{-- =================================================
+                        KUMON LOGO
+                    ================================================== --}}
+
+                    <div
+                        class="flex
+                               flex-shrink-0
+                               items-center"
                     >
-                        Kumon North Hobart
-                    </p>
+
+                        <img
+                            src="{{ asset('images/kumon-logo.png') }}"
+                            alt="Kumon Logo"
+                            class="h-10
+                                   w-auto
+                                   object-contain
+                                   sm:h-12"
+                        >
+
+                    </div>
 
 
-                    <h1
-                        class="mt-1
-                               text-lg
-                               font-bold
-                               text-slate-800
-                               sm:text-xl"
-                    >
-                        Time Scheduling System
-                    </h1>
+                    {{-- =================================================
+                        VERTICAL DIVIDER
+                    ================================================== --}}
+
+                    <div
+                        class="hidden
+                               h-11
+                               w-px
+                               bg-slate-300
+                               sm:block"
+                    ></div>
+
+
+                    {{-- =================================================
+                        SYSTEM NAME
+                    ================================================== --}}
+
+                    <div>
+
+                        <p
+                            class="text-[11px]
+                                   font-bold
+                                   uppercase
+                                   tracking-[0.20em]
+                                   text-cyan-600
+                                   sm:text-xs"
+                        >
+                            Kumon North Hobart
+                        </p>
+
+
+                        <h1
+                            class="mt-1
+                                   text-base
+                                   font-bold
+                                   text-slate-900
+                                   sm:text-xl"
+                        >
+                            Time Scheduling System
+                        </h1>
+
+                    </div>
 
                 </div>
-
-
-                <a
-                    href="{{ route('login') }}"
-                    class="rounded-xl
-                           border
-                           border-cyan-500
-                           px-5 py-2.5
-                           text-sm
-                           font-semibold
-                           text-cyan-700
-                           transition
-                           hover:bg-cyan-50"
-                >
-                    Admin Sign In
-                </a>
 
             </header>
 
@@ -110,17 +143,78 @@
             ====================================================== --}}
 
             <section
-                class="flex
+                class="relative
+                       flex
                        flex-1
                        flex-col
                        items-center
                        justify-between
-                       px-5 py-10
+                       overflow-hidden
+                       px-5
+                       py-10
                        sm:px-10
                        sm:py-14"
             >
 
-                <div class="w-full">
+
+                {{-- =================================================
+                    SOFT BACKGROUND DECORATION
+                ================================================== --}}
+
+                <div
+                    class="pointer-events-none
+                           absolute
+                           -left-28
+                           top-28
+                           h-72
+                           w-72
+                           rounded-full
+                           bg-cyan-50"
+                ></div>
+
+
+                <div
+                    class="pointer-events-none
+                           absolute
+                           -right-24
+                           top-20
+                           h-72
+                           w-72
+                           rounded-full
+                           bg-sky-50"
+                ></div>
+
+
+                <div
+                    class="pointer-events-none
+                           absolute
+                           bottom-24
+                           left-[8%]
+                           h-10
+                           w-10
+                           rounded-full
+                           bg-cyan-50"
+                ></div>
+
+
+                <div
+                    class="pointer-events-none
+                           absolute
+                           right-[8%]
+                           top-[45%]
+                           h-12
+                           w-12
+                           rounded-full
+                           bg-sky-50"
+                ></div>
+
+
+
+                <div
+                    class="relative
+                           z-10
+                           w-full"
+                >
 
 
                     {{-- =================================================
@@ -131,10 +225,11 @@
 
                         <h2
                             class="text-3xl
-                                   font-semibold
+                                   font-bold
                                    tracking-tight
                                    text-cyan-950
-                                   sm:text-4xl"
+                                   sm:text-4xl
+                                   lg:text-5xl"
                         >
                             Tell us who you are
                         </h2>
@@ -151,6 +246,41 @@
                             Select your account type to continue.
                         </p>
 
+
+                        {{-- Small decorative line --}}
+
+                        <div
+                            class="mx-auto
+                                   mt-5
+                                   flex
+                                   items-center
+                                   justify-center
+                                   gap-1"
+                        >
+
+                            <span
+                                class="h-1.5
+                                       w-12
+                                       rounded-full
+                                       bg-cyan-400"
+                            ></span>
+
+                            <span
+                                class="h-1.5
+                                       w-4
+                                       rounded-full
+                                       bg-cyan-200"
+                            ></span>
+
+                            <span
+                                class="h-1.5
+                                       w-2
+                                       rounded-full
+                                       bg-cyan-100"
+                            ></span>
+
+                        </div>
+
                     </div>
 
 
@@ -161,12 +291,13 @@
 
                     <div
                         class="mx-auto
-                               mt-12
+                               mt-10
                                grid
                                max-w-3xl
-                               gap-8
+                               gap-7
                                sm:grid-cols-2
-                               sm:gap-12"
+                               sm:gap-8
+                               lg:mt-12"
                     >
 
 
@@ -178,35 +309,48 @@
                             href="{{ route('login') }}"
                             class="group
                                    flex
-                                   min-h-[335px]
+                                   min-h-[380px]
                                    flex-col
                                    items-center
                                    justify-center
                                    rounded-3xl
-                                   border-2
-                                   border-transparent
-                                   bg-slate-50
+                                   border
+                                   border-slate-200
+                                   bg-white
                                    p-8
                                    text-center
+                                   shadow-sm
                                    transition
-                                   duration-200
+                                   duration-300
                                    hover:-translate-y-1
-                                   hover:border-cyan-400
-                                   hover:bg-cyan-50
+                                   hover:border-cyan-300
                                    hover:shadow-xl"
                         >
 
+
+                            {{-- Admin Icon Background --}}
+
                             <div
                                 class="flex
-                                       h-48 w-48
+                                       h-44
+                                       w-44
                                        items-center
-                                       justify-center"
+                                       justify-center
+                                       rounded-full
+                                       bg-cyan-50
+                                       transition
+                                       duration-300
+                                       group-hover:bg-cyan-100"
                             >
+
+
+                                {{-- Admin SVG --}}
 
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     viewBox="0 0 200 220"
-                                    class="h-full w-full"
+                                    class="h-36
+                                           w-36"
                                 >
 
                                     {{-- Hair --}}
@@ -260,6 +404,7 @@
                                     />
 
 
+                                    {{-- Badge triangle --}}
                                     <path
                                         d="M100 154 L113 184 H87 Z"
                                         fill="#123B4A"
@@ -270,10 +415,11 @@
                             </div>
 
 
+
                             <h3
-                                class="mt-3
+                                class="mt-5
                                        text-3xl
-                                       font-medium
+                                       font-bold
                                        text-cyan-950
                                        transition
                                        group-hover:text-cyan-700"
@@ -290,6 +436,42 @@
                                 Centre staff access
                             </p>
 
+
+                            {{-- Arrow Button --}}
+
+                            <div
+                                class="mt-5
+                                       flex
+                                       h-11
+                                       w-11
+                                       items-center
+                                       justify-center
+                                       rounded-full
+                                       bg-cyan-50
+                                       text-cyan-600
+                                       transition
+                                       duration-300
+                                       group-hover:bg-cyan-500
+                                       group-hover:text-white"
+                            >
+
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="2.5"
+                                    stroke="currentColor"
+                                    class="h-5 w-5"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                                    />
+                                </svg>
+
+                            </div>
+
                         </a>
 
 
@@ -302,35 +484,48 @@
                             href="{{ route('parent.login') }}"
                             class="group
                                    flex
-                                   min-h-[335px]
+                                   min-h-[380px]
                                    flex-col
                                    items-center
                                    justify-center
                                    rounded-3xl
-                                   border-2
-                                   border-transparent
-                                   bg-slate-50
+                                   border
+                                   border-slate-200
+                                   bg-white
                                    p-8
                                    text-center
+                                   shadow-sm
                                    transition
-                                   duration-200
+                                   duration-300
                                    hover:-translate-y-1
-                                   hover:border-violet-400
-                                   hover:bg-violet-50
+                                   hover:border-violet-300
                                    hover:shadow-xl"
                         >
 
+
+                            {{-- Parent Icon Background --}}
+
                             <div
                                 class="flex
-                                       h-48 w-48
+                                       h-44
+                                       w-44
                                        items-center
-                                       justify-center"
+                                       justify-center
+                                       rounded-full
+                                       bg-violet-50
+                                       transition
+                                       duration-300
+                                       group-hover:bg-violet-100"
                             >
+
+
+                                {{-- Parent SVG --}}
 
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     viewBox="0 0 200 220"
-                                    class="h-full w-full"
+                                    class="h-36
+                                           w-36"
                                 >
 
                                     {{-- Parent head --}}
@@ -387,10 +582,11 @@
                             </div>
 
 
+
                             <h3
-                                class="mt-3
+                                class="mt-5
                                        text-3xl
-                                       font-medium
+                                       font-bold
                                        text-cyan-950
                                        transition
                                        group-hover:text-violet-700"
@@ -407,6 +603,42 @@
                                 Parent Portal access
                             </p>
 
+
+                            {{-- Arrow Button --}}
+
+                            <div
+                                class="mt-5
+                                       flex
+                                       h-11
+                                       w-11
+                                       items-center
+                                       justify-center
+                                       rounded-full
+                                       bg-violet-50
+                                       text-violet-600
+                                       transition
+                                       duration-300
+                                       group-hover:bg-violet-500
+                                       group-hover:text-white"
+                            >
+
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="2.5"
+                                    stroke="currentColor"
+                                    class="h-5 w-5"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                                    />
+                                </svg>
+
+                            </div>
+
                         </a>
 
                     </div>
@@ -420,7 +652,9 @@
                 ================================================== --}}
 
                 <footer
-                    class="mt-14
+                    class="relative
+                           z-10
+                           mt-14
                            text-center
                            text-sm
                            text-slate-500"
@@ -430,8 +664,9 @@
 
                     <a
                         href="mailto:admin@kumonhobart.com"
-                        class="font-medium
+                        class="font-semibold
                                text-cyan-500
+                               transition
                                hover:text-cyan-700"
                     >
                         Kumon North Hobart.

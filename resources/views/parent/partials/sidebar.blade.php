@@ -16,56 +16,106 @@
 
 
 <aside
-    class="fixed
-           left-0
-           top-0
-           z-40
-           h-screen
-           w-64
-           bg-slate-900
-           text-white">
+    style="
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 40;
+        width: 256px;
+        height: 100vh;
+        background-color: #0f172a;
+        color: #ffffff;
+    ">
 
-    {{-- =====================================================
-        LOGO
-    ====================================================== --}}
+    {{-- =========================================================
+    SYSTEM LOGO
+========================================================== --}}
 
     <div
-        class="flex
-               h-16
-               items-center
-               border-b
-               border-slate-700
-               px-5">
+        style="
+        height: 80px;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        background-color: #ffffff;
+        border-bottom: 1px solid #d1d5db;
+    ">
 
-        <a href="{{ route('parent.dashboard') }}" class="flex
-                   items-center
-                   gap-3">
+        <a href="{{ route('dashboard') }}"
+            style="
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        ">
 
+            {{-- KUMON LOGO --}}
             <div
-                class="flex
-                       h-10 w-10
-                       items-center
-                       justify-center
-                       rounded-lg
-                       bg-violet-600
-                       text-lg
-                       font-bold">
-                K
+                style="
+                width: 88px;
+                height: 48px;
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #ffffff;
+                border-radius: 8px;
+                padding: 6px 8px;
+                box-sizing: border-box;
+            ">
+
+                <img src="{{ asset('images/kumon-logo.png') }}" alt="Kumon Logo"
+                    style="
+                    display: block;
+                    max-width: 100%;
+                    max-height: 34px;
+                    width: auto;
+                    height: auto;
+                    object-fit: contain;
+                ">
+
             </div>
 
 
-            <div>
+            {{-- DIVIDER --}}
+            <div
+                style="
+                width: 1px;
+                height: 40px;
+                flex-shrink: 0;
+                background-color: #cbd5e1;
+            ">
+            </div>
 
-                <h1 class="text-sm
-                           font-bold">
+
+            {{-- SYSTEM NAME --}}
+            <div style="
+                min-width: 0;
+                line-height: 1.25;
+            ">
+
+                <div
+                    style="
+                    color: #0f172a;
+                    font-size: 14px;
+                    font-weight: 700;
+                    white-space: nowrap;
+                ">
                     Kumon
-                </h1>
+                </div>
 
 
-                <p class="text-xs
-                           text-slate-400">
-                    Parent Portal
-                </p>
+                <div
+                    style="
+                    margin-top: 4px;
+                    color: #64748b;
+                    font-size: 12px;
+                    font-weight: 400;
+                    white-space: nowrap;
+                ">
+                    Timeslot System
+                </div>
 
             </div>
 

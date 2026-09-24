@@ -26,7 +26,6 @@
         Verify Account | Kumon Time Scheduling System
     </title>
 
-
     @vite([
         'resources/css/app.css',
         'resources/js/app.js'
@@ -44,7 +43,10 @@
            bg-slate-900"
 >
 
-    {{-- Background --}}
+    {{-- =====================================================
+        BACKGROUND
+    ====================================================== --}}
+
     <div
         class="absolute
                inset-0
@@ -58,12 +60,15 @@
     ></div>
 
 
-    {{-- Overlay --}}
+    {{-- =====================================================
+        OVERLAY
+    ====================================================== --}}
+
     <div
         class="absolute
                inset-0
                bg-gradient-to-r
-               from-slate-950/60
+               from-slate-950/65
                via-slate-900/20
                to-slate-900/10"
     ></div>
@@ -76,13 +81,19 @@
     ></div>
 
 
+
+    {{-- =====================================================
+        PAGE
+    ====================================================== --}}
+
     <main
         class="relative
                z-10
                flex
                min-h-screen
                items-center
-               px-5 py-8
+               px-5
+               py-8
                sm:px-8
                lg:px-14
                xl:px-20"
@@ -100,44 +111,120 @@
         >
 
 
-            {{-- Left --}}
+            {{-- =================================================
+                LEFT SIDE
+            ================================================== --}}
+
             <section
                 class="hidden
                        max-w-2xl
                        lg:block"
             >
 
-                <p
-                    class="text-sm
-                           font-semibold
-                           uppercase
-                           tracking-[0.15em]
-                           text-cyan-200"
-                >
-                    Kumon North Hobart
-                </p>
 
+                {{-- =============================================
+                    BRAND
+                ============================================== --}}
+
+                <div
+                    class="flex
+                           items-center
+                           gap-5"
+                >
+
+
+                    {{-- EXACT LOGO STYLE --}}
+                    <div
+                        class="flex
+                               items-center
+                               justify-center"
+                    >
+
+                        <img
+                            src="{{ asset('images/kumon-logo.png') }}"
+                            alt="Kumon Logo"
+                            class="h-14
+                                   w-auto
+                                   object-contain
+                                   xl:h-16"
+                        >
+
+                    </div>
+
+
+
+                    {{-- Divider --}}
+                    <div
+                        class="h-12
+                               w-px
+                               bg-white/40"
+                    ></div>
+
+
+
+                    {{-- Centre Name --}}
+                    <div>
+
+                        <p
+                            class="text-xs
+                                   font-bold
+                                   uppercase
+                                   tracking-[0.20em]
+                                   text-cyan-200"
+                        >
+                            Kumon North Hobart
+                        </p>
+
+
+                        <p
+                            class="mt-1
+                                   text-lg
+                                   font-semibold
+                                   text-white"
+                        >
+                            Time Scheduling System
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                {{-- =============================================
+                    HEADING
+                ============================================== --}}
 
                 <h1
-                    class="mt-8
-                           max-w-2xl
+                    class="mt-12
+                           max-w-[680px]
                            text-5xl
                            font-bold
-                           leading-[1.15]
+                           leading-[1.08]
+                           tracking-tight
                            text-white
-                           xl:text-6xl"
+                           xl:text-[60px]"
                 >
-                    Verify your email to finish creating your account.
+                    Verify your email
+                    <br>
+                    to finish creating
+                    <br>
+                    your account.
                 </h1>
 
 
+
+                {{-- =============================================
+                    DESCRIPTION
+                ============================================== --}}
+
                 <p
-                    class="mt-10
+                    class="mt-7
                            max-w-xl
-                           text-xl
+                           text-lg
                            leading-relaxed
                            text-white/90
-                           xl:text-2xl"
+                           xl:text-xl"
                 >
                     We sent a secure 6-digit verification
                     code to your email address.
@@ -147,7 +234,10 @@
 
 
 
-            {{-- OTP Card --}}
+            {{-- =================================================
+                OTP CARD
+            ================================================== --}}
+
             <section
                 class="mx-auto
                        w-full
@@ -158,7 +248,7 @@
                     class="rounded-[34px]
                            border
                            border-white/60
-                           bg-white/75
+                           bg-white/80
                            p-7
                            shadow-2xl
                            shadow-slate-900/25
@@ -168,12 +258,88 @@
                 >
 
 
-                    {{-- Badge --}}
+                    {{-- =========================================
+                        MOBILE BRAND
+                    ========================================== --}}
+
+                    <div
+                        class="mb-7
+                               lg:hidden"
+                    >
+
+                        <div
+                            class="flex
+                                   items-center
+                                   gap-4"
+                        >
+
+
+                            <div
+                                class="flex
+                                       items-center
+                                       justify-center"
+                            >
+
+                                <img
+                                    src="{{ asset('images/kumon-logo.png') }}"
+                                    alt="Kumon Logo"
+                                    class="h-10
+                                           w-auto
+                                           object-contain"
+                                >
+
+                            </div>
+
+
+
+                            <div
+                                class="h-9
+                                       w-px
+                                       bg-slate-300"
+                            ></div>
+
+
+
+                            <div>
+
+                                <p
+                                    class="text-[10px]
+                                           font-bold
+                                           uppercase
+                                           tracking-[0.18em]
+                                           text-cyan-700"
+                                >
+                                    Kumon North Hobart
+                                </p>
+
+
+                                <p
+                                    class="mt-1
+                                           text-sm
+                                           font-semibold
+                                           text-slate-800"
+                                >
+                                    Time Scheduling System
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+
+                    {{-- =========================================
+                        BADGE
+                    ========================================== --}}
+
                     <span
                         class="inline-flex
                                rounded-full
                                bg-cyan-100/80
-                               px-5 py-2
+                               px-5
+                               py-2
                                text-xs
                                font-bold
                                uppercase
@@ -185,7 +351,10 @@
 
 
 
-                    {{-- Heading --}}
+                    {{-- =========================================
+                        HEADING
+                    ========================================== --}}
+
                     <div class="mt-7">
 
                         <h2
@@ -232,12 +401,11 @@
 
 
 
-                    {{-- Success --}}
-                    @if (
-                        session(
-                            'success'
-                        )
-                    )
+                    {{-- =========================================
+                        SUCCESS
+                    ========================================== --}}
+
+                    @if (session('success'))
 
                         <div
                             class="mt-6
@@ -245,27 +413,23 @@
                                    border
                                    border-green-200
                                    bg-green-50
-                                   px-4 py-3
+                                   px-4
+                                   py-3
                                    text-sm
                                    text-green-700"
                         >
-                            {{
-                                session(
-                                    'success'
-                                )
-                            }}
+                            {{ session('success') }}
                         </div>
 
                     @endif
 
 
 
-                    {{-- Error --}}
-                    @if (
-                        session(
-                            'error'
-                        )
-                    )
+                    {{-- =========================================
+                        ERROR
+                    ========================================== --}}
+
+                    @if (session('error'))
 
                         <div
                             class="mt-6
@@ -273,27 +437,25 @@
                                    border
                                    border-red-200
                                    bg-red-50
-                                   px-4 py-3
+                                   px-4
+                                   py-3
                                    text-sm
                                    text-red-700"
                         >
-                            {{
-                                session(
-                                    'error'
-                                )
-                            }}
+                            {{ session('error') }}
                         </div>
 
                     @endif
 
 
 
-                    {{-- Verify --}}
+                    {{-- =========================================
+                        VERIFY FORM
+                    ========================================== --}}
+
                     <form
                         method="POST"
-                        action="{{ route(
-                            'register.otp.verify'
-                        ) }}"
+                        action="{{ route('register.otp.verify') }}"
                         class="mt-8"
                     >
 
@@ -316,6 +478,7 @@
                             id="otp"
                             type="text"
                             name="otp"
+                            value="{{ old('otp') }}"
                             inputmode="numeric"
                             maxlength="6"
                             pattern="[0-9]{6}"
@@ -329,7 +492,7 @@
                                    rounded-2xl
                                    border
                                    border-cyan-300
-                                   bg-white/55
+                                   bg-white/70
                                    px-5
                                    text-center
                                    text-3xl
@@ -338,6 +501,7 @@
                                    text-slate-800
                                    shadow-sm
                                    outline-none
+                                   transition
                                    placeholder:text-slate-300
                                    focus:border-cyan-500
                                    focus:ring-4
@@ -358,6 +522,10 @@
                         @enderror
 
 
+
+                        {{-- =====================================
+                            VERIFY BUTTON
+                        ====================================== --}}
 
                         <button
                             type="submit"
@@ -391,12 +559,13 @@
 
 
 
-                    {{-- Resend --}}
+                    {{-- =========================================
+                        RESEND
+                    ========================================== --}}
+
                     <form
                         method="POST"
-                        action="{{ route(
-                            'register.otp.resend'
-                        ) }}"
+                        action="{{ route('register.otp.resend') }}"
                         class="mt-4"
                     >
 
@@ -427,12 +596,13 @@
 
 
 
-                    {{-- Cancel --}}
+                    {{-- =========================================
+                        CANCEL
+                    ========================================== --}}
+
                     <form
                         method="POST"
-                        action="{{ route(
-                            'register.otp.cancel'
-                        ) }}"
+                        action="{{ route('register.otp.cancel') }}"
                         class="mt-3"
                     >
 
@@ -449,6 +619,7 @@
                                    text-sm
                                    font-semibold
                                    text-slate-500
+                                   transition
                                    hover:text-slate-800"
                         >
                             ← Change registration details
@@ -467,6 +638,11 @@
 </div>
 
 
+
+{{-- =========================================================
+    OTP DIGITS ONLY
+========================================================== --}}
+
 <script>
 
 document.addEventListener(
@@ -480,14 +656,10 @@ document.addEventListener(
 
 
         if (!otpInput) {
-
             return;
         }
 
 
-        /*
-         * Allow digits only.
-         */
         otpInput.addEventListener(
             'input',
             function () {
@@ -502,6 +674,7 @@ document.addEventListener(
                             0,
                             6
                         );
+
             }
         );
 

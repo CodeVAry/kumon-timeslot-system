@@ -12,10 +12,11 @@ return new class extends Migration {
     {
         Schema::create('students', function (Blueprint $table) {
             $table->id();
-            $table->string('external_id', 50)->unique();
+            $table->string('external_id', 50)->unique()->nullable();
             $table->foreignId('student_status_id')->constrained('student_statuses')->restrictOnDelete();
             $table->string('first_name', 100);
             $table->string('last_name', 100);
+            $table->string('nickname', 100)->nullable();
             $table->string('email', 150);
             $table->string('phone', 30);
             $table->date('date_of_birth');

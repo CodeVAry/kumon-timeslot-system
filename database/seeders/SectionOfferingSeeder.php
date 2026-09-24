@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Admin\Day;
 use App\Models\Admin\Section;
 use App\Models\Admin\SectionOffering;
+use App\Models\Admin\SubSection;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
@@ -26,6 +27,47 @@ class SectionOfferingSeeder extends Seeder
             'section_name',
             'Interactive'
         )->firstOrFail();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Interactive Sub-sections
+        |--------------------------------------------------------------------------
+        |
+        | Interactive has one combined capacity of five seats. Every student
+        | enrolled in an Interactive offering must be identified as either
+        | English or Math. updateOrCreate keeps this seeder safe to run again.
+        |--------------------------------------------------------------------------
+        */
+
+        $interactiveSubSectionIds =
+            collect([
+                'English',
+                'Math',
+            ])
+                ->map(
+                    function ($name) use (
+                        $interactive
+                    ) {
+
+                        return SubSection::updateOrCreate(
+                            [
+                                'section_id' =>
+                                    $interactive->id,
+
+                                'sub_section_name' =>
+                                    $name,
+                            ],
+                            [
+                                'description' =>
+                                    'Interactive ' . $name,
+
+                                'is_active' =>
+                                    true,
+                            ]
+                        )->id;
+                    }
+                );
 
 
         /*
@@ -172,13 +214,25 @@ class SectionOfferingSeeder extends Seeder
 
             foreach ($times as $time) {
 
-                $this->createOffering(
-                    $day->id,
-                    $interactive->id,
-                    $time,
-                    20,
-                    5
-                );
+                $interactiveOffering =
+                    $this->createOffering(
+                        $day->id,
+                        $interactive->id,
+                        $time,
+                        20,
+                        5
+                    );
+
+
+                /*
+                 * Interactive is divided into
+                 * English and Math sub-sections.
+                 */
+                $interactiveOffering
+                    ->subSections()
+                    ->sync(
+                        $interactiveSubSectionIds
+                    );
             }
         }
     }

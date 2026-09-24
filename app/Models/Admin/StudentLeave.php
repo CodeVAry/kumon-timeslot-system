@@ -44,6 +44,9 @@ class StudentLeave extends Model
         'expected_return_date',
         'actual_return_date',
         'returned_early',
+        'is_actioned',
+        'actioned_at',
+        'actioned_by_user_id',
         'homework_requirement',
         'reason',
         'notes',
@@ -63,6 +66,8 @@ class StudentLeave extends Model
         'actual_return_date' => 'date',
         'returned_early' => 'boolean',
         'reviewed_at' => 'datetime',
+        'is_actioned' => 'boolean',
+        'actioned_at' => 'datetime',
     ];
 
 
@@ -76,6 +81,14 @@ class StudentLeave extends Model
     {
         return $this->belongsTo(
             Student::class
+        );
+    }
+
+    public function actionedBy()
+    {
+        return $this->belongsTo(
+            User::class,
+            'actioned_by_user_id'
         );
     }
 
@@ -184,9 +197,7 @@ class StudentLeave extends Model
                 $date
             )
             ->where(
-                function ($query) use (
-                    $date
-                ) {
+                function ($query) use ($date) {
 
                     /*
                      * Student has not returned yet.

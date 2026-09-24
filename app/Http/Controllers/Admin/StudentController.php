@@ -10,7 +10,9 @@ use App\Models\Admin\Student;
 use App\Models\Admin\StudentLeave;
 use App\Models\Admin\StudentStatus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class StudentController extends Controller
 {
@@ -251,18 +253,71 @@ class StudentController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Sort Students
+        |--------------------------------------------------------------------------
+        */
+
+        $sort =
+            $request->input(
+                'sort',
+                'latest'
+            );
+
+
+        if (
+            !in_array(
+                $sort,
+                [
+                    'latest',
+                    'earliest',
+                ],
+                true
+            )
+        ) {
+
+            $sort =
+                'latest';
+        }
+
+
+        if (
+            $sort
+            ===
+            'earliest'
+        ) {
+
+            $studentsQuery
+                ->orderBy(
+                    'created_at',
+                    'asc'
+                )
+                ->orderBy(
+                    'id',
+                    'asc'
+                );
+
+        } else {
+
+            $studentsQuery
+                ->orderBy(
+                    'created_at',
+                    'desc'
+                )
+                ->orderBy(
+                    'id',
+                    'desc'
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
         | Pagination
         |--------------------------------------------------------------------------
         */
 
         $students =
             $studentsQuery
-                ->orderBy(
-                    'first_name'
-                )
-                ->orderBy(
-                    'last_name'
-                )
                 ->paginate(20)
                 ->withQueryString();
 
@@ -373,7 +428,8 @@ class StudentController extends Controller
                 'days',
                 'sections',
                 'timeslots',
-                'vacationStudentIds'
+                'vacationStudentIds',
+                'sort'
             )
         );
     }
@@ -578,7 +634,7 @@ class StudentController extends Controller
             $validated =
                 $request->validate([
                     'external_id' => [
-                        'required',
+                        'nullable',
                         'string',
                         'max:50',
 
@@ -602,6 +658,12 @@ class StudentController extends Controller
                         'max:100',
                     ],
 
+                    'nickname' => [
+                        'nullable',
+                        'string',
+                        'max:100',
+                    ],
+
                     'date_of_birth' => [
                         'required',
                         'date',
@@ -613,10 +675,8 @@ class StudentController extends Controller
             $student->update([
                 'external_id' =>
                     trim(
-                        $validated[
-                            'external_id'
-                        ]
-                    ),
+                        $validated['external_id'] ?? ''
+                    ) ?: null,
 
                 'first_name' =>
                     trim(
@@ -631,6 +691,11 @@ class StudentController extends Controller
                             'last_name'
                         ]
                     ),
+
+                'nickname' =>
+                    trim(
+                        $validated['nickname'] ?? ''
+                    ) ?: null,
 
                 'date_of_birth' =>
                     $validated[
@@ -870,6 +935,123 @@ class StudentController extends Controller
     /*
     |--------------------------------------------------------------------------
     | Delete
+    |--------------------------------------------------------------------------
+    */
+
+    public function bulkDestroy(
+        Request $request
+    ) {
+        $validated =
+            $request->validate([
+                'student_ids' => [
+                    'required',
+                    'array',
+                    'min:1',
+                    'max:100',
+                ],
+
+                'student_ids.*' => [
+                    'required',
+                    'integer',
+                    'distinct',
+                    Rule::exists(
+                        'students',
+                        'id'
+                    ),
+                ],
+            ]);
+
+
+        $studentIds =
+            collect(
+                $validated[
+                    'student_ids'
+                ]
+            )
+                ->map(
+                    fn ($id) =>
+                        (int) $id
+                )
+                ->unique()
+                ->values();
+
+
+        try {
+
+            $deletedCount =
+                DB::transaction(
+                    function () use (
+                        $studentIds
+                    ) {
+
+                        $students =
+                            Student::whereIn(
+                                'id',
+                                $studentIds
+                            )
+                                ->lockForUpdate()
+                                ->get();
+
+
+                        if (
+                            $students->count()
+                            !==
+                            $studentIds->count()
+                        ) {
+
+                            throw ValidationException::withMessages([
+                                'student_ids' =>
+                                    'One or more selected students no longer exist. Refresh the page and try again.',
+                            ]);
+                        }
+
+
+                        foreach (
+                            $students
+                            as $student
+                        ) {
+
+                            $student->delete();
+                        }
+
+
+                        return $students->count();
+                    }
+                );
+
+
+            return redirect()
+                ->route(
+                    'admin.students.index'
+                )
+                ->with(
+                    'success',
+                    $deletedCount === 1
+                        ? '1 student has been deleted successfully.'
+                        : $deletedCount . ' students have been deleted successfully.'
+                );
+
+        } catch (ValidationException $e) {
+
+            throw $e;
+
+        } catch (\Throwable $e) {
+
+            return redirect()
+                ->route(
+                    'admin.students.index'
+                )
+                ->with(
+                    'error',
+                    'The selected students could not be deleted because one or more related records still exist. No students were deleted.'
+                );
+        }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete One Student
     |--------------------------------------------------------------------------
     */
 

@@ -7,115 +7,99 @@
 
 @php
 
-    /*
-    |--------------------------------------------------------------------------
-    | Current Offering
-    |--------------------------------------------------------------------------
-    */
+    $currentOffering =
+        $enrolment
+            ->sectionOffering;
 
-    $currentOffering = $enrolment->sectionOffering;
 
     $currentOfferingId =
-        $enrolment->section_offering_id;
+        (int)
+        $enrolment
+            ->section_offering_id;
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Selected Offering
-    |--------------------------------------------------------------------------
-    |
-    | If validation fails, old() keeps the staff member's selection.
-    |
-    */
-
-    $selectedOfferingId = old(
-        'section_offering_id',
-        $currentOfferingId
-    );
+    $currentSubSectionId =
+        $enrolment
+            ->sub_section_id
+            ? (int) $enrolment->sub_section_id
+            : null;
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Primary Guardian
-    |--------------------------------------------------------------------------
-    */
-
-    $primaryGuardian = null;
-
-    foreach ($student->guardians as $guardian) {
-
-        if ($guardian->pivot->is_primary) {
-
-            $primaryGuardian = $guardian;
-
-            break;
-        }
-    }
+    $selectedOfferingId =
+        (int)
+        old(
+            'section_offering_id',
+            $currentOfferingId
+        );
 
 
-    /*
-     * If no guardian is marked primary,
-     * use the first linked guardian.
-     */
-    if (!$primaryGuardian) {
-
-        $primaryGuardian =
-            $student->guardians->first();
-    }
+    $selectedSubSectionId =
+        old(
+            'sub_section_id',
+            $currentSubSectionId
+        );
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Prepare Offerings For JavaScript
-    |--------------------------------------------------------------------------
-    |
-    | We prepare a simple PHP array first.
-    | This avoids the Blade @json parsing problem.
-    |
-    */
+    $offeringsData =
+        $offerings
+            ->map(
+                function ($offering) {
 
-    $offeringsData = [];
+                    return [
+                        'id' =>
+                            (int) $offering->id,
 
-    foreach ($offerings as $offering) {
+                        'section_id' =>
+                            (int) $offering->section_id,
 
-        $offeringsData[] = [
+                        'section_name' =>
+                            $offering
+                                ->section
+                                ?->section_name,
 
-            'id' =>
-                $offering->id,
+                        'day_id' =>
+                            (int) $offering->day_id,
 
-            'section_id' =>
-                $offering->section_id,
+                        'day_name' =>
+                            $offering
+                                ->day
+                                ?->day_name,
 
-            'section_name' =>
-                $offering->section
-                    ? $offering->section->section_name
-                    : null,
+                        'start_time' =>
+                            $offering->start_time,
 
-            'day_id' =>
-                $offering->day_id,
+                        'end_time' =>
+                            $offering->end_time,
 
-            'day_name' =>
-                $offering->day
-                    ? $offering->day->day_name
-                    : null,
+                        'max_seats' =>
+                            (int) $offering->max_seats,
 
-            'start_time' =>
-                $offering->start_time,
+                        'allocated_seats' =>
+                            (int) $offering->allocated_seats,
 
-            'end_time' =>
-                $offering->end_time,
+                        'sub_sections' =>
+                            $offering
+                                ->subSections
+                                ->map(
+                                    function ($subSection) {
 
-            'duration_minutes' =>
-                $offering->duration_minutes,
+                                        return [
+                                            'id' =>
+                                                (int) $subSection->id,
 
-            'max_seats' =>
-                $offering->max_seats,
-
-            'allocated_seats' =>
-                $offering->allocated_seats,
-
-        ];
-    }
+                                            'name' =>
+                                                $subSection
+                                                    ->sub_section_name,
+                                        ];
+                                    }
+                                )
+                                ->values()
+                                ->all(),
+                    ];
+                }
+            )
+            ->values()
+            ->all();
 
 @endphp
 
@@ -124,10 +108,6 @@
 
 <div class="space-y-6">
 
-
-    {{-- =========================================================
-        BACK
-    ========================================================== --}}
     <div>
 
         <a
@@ -135,198 +115,68 @@
                 'admin.student-enrolments.edit-list',
                 $student
             ) }}"
-            class="inline-flex items-center gap-2
-                   text-sm font-semibold
-                   text-blue-600
-                   hover:text-blue-800"
+            class="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800"
         >
-
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                class="h-4 w-4"
-            >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M10.5 19.5 3 12m0 0
-                       7.5-7.5M3 12h18"
-                />
-            </svg>
-
-            Back to Current Classes
-
+            ← Back to Current Classes
         </a>
 
     </div>
 
 
+    <section class="rounded-2xl border border-cyan-100 bg-cyan-50 px-6 py-6">
 
-    {{-- =========================================================
-        CURRENT CLASS PANEL
-    ========================================================== --}}
-    <section
-        class="rounded-2xl
-               border border-cyan-100
-               bg-cyan-50
-               px-6 py-6"
-    >
-
-        <p
-            class="text-sm
-                   font-bold
-                   text-cyan-700"
-        >
+        <p class="text-sm font-bold text-cyan-700">
             Current Class
         </p>
 
 
         @if ($currentOffering)
 
-            <h2
-                class="mt-4
-                       text-2xl
-                       font-bold
-                       text-slate-900"
-            >
+            <h2 class="mt-3 text-2xl font-bold text-slate-900">
 
-                {{
-                    $currentOffering->section
-                        ? $currentOffering
-                            ->section
-                            ->section_name
-                        : '—'
-                }}
+                {{ $currentOffering->section?->section_name ?? '—' }}
+
+                @if ($enrolment->subSection)
+
+                    — {{ $enrolment->subSection->sub_section_name }}
+
+                @endif
+
+                · {{ $currentOffering->day?->day_name ?? '—' }}
 
                 ·
-
-                {{
-                    $currentOffering->day
-                        ? $currentOffering
-                            ->day
-                            ->day_name
-                        : '—'
-                }}
-
-                ·
-
-                {{
-                    \Carbon\Carbon::parse(
-                        $currentOffering->start_time
-                    )->format('g:i A')
-                }}
-
+                {{ \Carbon\Carbon::parse($currentOffering->start_time)->format('g:i A') }}
                 –
+                {{ \Carbon\Carbon::parse($currentOffering->end_time)->format('g:i A') }}
 
-                {{
-                    \Carbon\Carbon::parse(
-                        $currentOffering->end_time
-                    )->format('g:i A')
-                }}
-
-                ({{ $currentOffering->duration_minutes }} min)
-
-            </h2>
-
-
-        @else
-
-            <h2
-                class="mt-4
-                       text-xl
-                       font-bold
-                       text-slate-900"
-            >
-                Class information unavailable
             </h2>
 
         @endif
 
 
-        <div
-            class="mt-3 flex
-                   flex-wrap items-center
-                   gap-x-2 gap-y-1
-                   text-sm
-                   text-slate-500"
-        >
-
-            <span>
-                Student:
-            </span>
-
-            <span
-                class="font-medium
-                       text-slate-700"
-            >
-                {{ $student->first_name }}
-                {{ $student->last_name }}
-            </span>
-
-
-            @if ($primaryGuardian)
-
-                <span>
-                    ·
-                </span>
-
-                <span>
-                    Guardian:
-                </span>
-
-                <span
-                    class="font-medium
-                           text-slate-700"
-                >
-                    {{ $primaryGuardian->first_name }}
-                    {{ $primaryGuardian->last_name }}
-                </span>
-
-            @endif
-
-        </div>
+        <p class="mt-3 text-sm text-slate-600">
+            Student:
+            <strong>
+                {{ $student->first_name }} {{ $student->last_name }}
+            </strong>
+        </p>
 
     </section>
 
 
-
-    {{-- =========================================================
-        ERRORS
-    ========================================================== --}}
     @if ($errors->any())
 
-        <div
-            class="rounded-xl
-                   border border-red-200
-                   bg-red-50
-                   px-5 py-4"
-        >
+        <div class="rounded-xl border border-red-200 bg-red-50 px-5 py-4">
 
-            <p
-                class="font-semibold
-                       text-red-700"
-            >
+            <p class="font-semibold text-red-700">
                 Please check the selected schedule.
             </p>
 
-
-            <ul
-                class="mt-2
-                       list-disc
-                       space-y-1
-                       pl-5
-                       text-sm
-                       text-red-600"
-            >
+            <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-600">
 
                 @foreach ($errors->all() as $error)
 
-                    <li>
-                        {{ $error }}
-                    </li>
+                    <li>{{ $error }}</li>
 
                 @endforeach
 
@@ -337,10 +187,6 @@
     @endif
 
 
-
-    {{-- =========================================================
-        EDIT FORM
-    ========================================================== --}}
     <form
         method="POST"
         action="{{ route(
@@ -357,10 +203,6 @@
         @method('PATCH')
 
 
-        {{--
-            Only this value is submitted
-            to the controller.
-        --}}
         <input
             type="hidden"
             name="section_offering_id"
@@ -369,342 +211,155 @@
         >
 
 
-        <section
-            class="rounded-2xl
-                   border border-slate-200
-                   bg-white
-                   shadow-sm"
-        >
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
 
+            <div class="border-b border-slate-100 px-7 py-5">
 
-            {{-- =================================================
-                FORM TITLE
-            ================================================== --}}
-            <div
-                class="border-b
-                       border-slate-100
-                       px-7 py-5"
-            >
-
-                <h2
-                    class="text-lg
-                           font-bold
-                           text-slate-900"
-                >
+                <h2 class="text-lg font-bold text-slate-900">
                     Change Schedule
                 </h2>
 
+                <p class="mt-1 text-sm text-slate-500">
+                    Choose class, day and time. If that offering has sub-sections,
+                    choose the correct sub-section as well.
+                </p>
 
-                <p
-                    class="mt-1
-                           text-sm
-                           text-slate-500"
-                >
-                    Select the class first,
-                    then choose an available
-                    day and time.
+                <p class="mt-2 text-sm font-medium text-cyan-700">
+                    Interactive students must be assigned to English or Math.
+                    Both subjects share one maximum capacity of 5 students.
                 </p>
 
             </div>
 
 
+            <div class="grid gap-6 p-7 md:grid-cols-2 xl:grid-cols-4">
 
-            {{-- =================================================
-                DROPDOWNS
-            ================================================== --}}
-            <div
-                class="grid gap-6
-                       p-7
-                       lg:grid-cols-3"
-            >
-
-
-                {{-- =============================================
-                    CLASS / SECTION
-                ============================================== --}}
                 <div>
 
                     <label
                         for="section"
-                        class="mb-2
-                               block
-                               text-sm
-                               font-semibold
-                               text-slate-800"
+                        class="mb-2 block text-sm font-semibold text-slate-800"
                     >
                         Class / Section
                     </label>
 
-
                     <select
                         id="section"
-                        class="w-full
-                               rounded-xl
-                               border-slate-300
-                               bg-white
-                               px-4 py-3
-                               text-sm
-                               text-slate-800
-                               shadow-sm
-                               focus:border-cyan-500
-                               focus:ring-cyan-500"
+                        class="w-full rounded-xl border-2 border-slate-400 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm focus:border-cyan-600 focus:ring-cyan-500"
                     >
-
                         <option value="">
                             Select Class / Section
                         </option>
-
                     </select>
-
-
-                    <p
-                        class="mt-2
-                               text-xs
-                               text-slate-400"
-                    >
-                        Choose the class the
-                        student will attend.
-                    </p>
 
                 </div>
 
 
-
-                {{-- =============================================
-                    DAY
-                ============================================== --}}
                 <div>
 
                     <label
                         for="day"
-                        class="mb-2
-                               block
-                               text-sm
-                               font-semibold
-                               text-slate-800"
+                        class="mb-2 block text-sm font-semibold text-slate-800"
                     >
                         Day
                     </label>
 
-
                     <select
                         id="day"
                         disabled
-                        class="w-full
-                               rounded-xl
-                               border-slate-300
-                               bg-white
-                               px-4 py-3
-                               text-sm
-                               text-slate-800
-                               shadow-sm
-                               disabled:cursor-not-allowed
-                               disabled:bg-slate-100
-                               disabled:text-slate-400
-                               focus:border-cyan-500
-                               focus:ring-cyan-500"
+                        class="w-full rounded-xl border-2 border-slate-400 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-cyan-600 focus:ring-cyan-500"
                     >
-
                         <option value="">
                             Select Day
                         </option>
-
                     </select>
-
-
-                    <p
-                        class="mt-2
-                               text-xs
-                               text-slate-400"
-                    >
-                        Only days available
-                        for the selected class
-                        are displayed.
-                    </p>
 
                 </div>
 
 
-
-                {{-- =============================================
-                    TIME
-                ============================================== --}}
                 <div>
 
                     <label
                         for="time"
-                        class="mb-2
-                               block
-                               text-sm
-                               font-semibold
-                               text-slate-800"
+                        class="mb-2 block text-sm font-semibold text-slate-800"
                     >
                         Time
                     </label>
 
-
                     <select
                         id="time"
                         disabled
-                        class="w-full
-                               rounded-xl
-                               border-slate-300
-                               bg-white
-                               px-4 py-3
-                               text-sm
-                               text-slate-800
-                               shadow-sm
-                               disabled:cursor-not-allowed
-                               disabled:bg-slate-100
-                               disabled:text-slate-400
-                               focus:border-cyan-500
-                               focus:ring-cyan-500"
+                        class="w-full rounded-xl border-2 border-slate-400 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-cyan-600 focus:ring-cyan-500"
                     >
-
                         <option value="">
                             Select Time
                         </option>
-
                     </select>
 
+                </div>
 
-                    <p
-                        class="mt-2
-                               text-xs
-                               text-slate-400"
+
+                <div>
+
+                    <label
+                        for="sub_section_id"
+                        class="mb-2 block text-sm font-semibold text-slate-800"
                     >
-                        Full times are disabled.
-                    </p>
+                        Subject / Sub-section
+                    </label>
+
+                    <select
+                        id="sub_section_id"
+                        name="sub_section_id"
+                        disabled
+                        class="w-full rounded-xl border-2 border-slate-400 bg-white px-4 py-3 text-sm text-slate-800 shadow-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 focus:border-cyan-600 focus:ring-cyan-500"
+                    >
+                        <option value="">
+                            Not required
+                        </option>
+                    </select>
 
                 </div>
 
             </div>
 
 
-
-            {{-- =================================================
-                SELECTED SCHEDULE
-            ================================================== --}}
             <div
                 id="selectedClassBox"
-                class="mx-7 mb-7 hidden
-                       rounded-xl
-                       border
-                       border-cyan-100
-                       bg-cyan-50
-                       px-5 py-4"
+                class="mx-7 mb-7 hidden rounded-xl border border-cyan-200 bg-cyan-50 px-5 py-4"
             >
 
-                <div
-                    class="flex flex-col
-                           gap-4
-                           sm:flex-row
-                           sm:items-center
-                           sm:justify-between"
-                >
+                <p class="text-xs font-semibold uppercase tracking-wide text-cyan-700">
+                    Selected Schedule
+                </p>
 
-                    <div>
+                <p
+                    id="selectedClassName"
+                    class="mt-1 font-semibold text-slate-900"
+                ></p>
 
-                        <p
-                            class="text-xs
-                                   font-semibold
-                                   uppercase
-                                   tracking-wide
-                                   text-cyan-700"
-                        >
-                            Selected Schedule
-                        </p>
-
-
-                        <p
-                            id="selectedClassName"
-                            class="mt-1
-                                   font-semibold
-                                   text-slate-900"
-                        >
-                        </p>
-
-                    </div>
-
-
-                    <div>
-
-                        <span
-                            id="seatStatus"
-                            class="inline-flex
-                                   rounded-full
-                                   px-3 py-1.5
-                                   text-xs
-                                   font-semibold"
-                        >
-                        </span>
-
-                    </div>
-
-                </div>
+                <span
+                    id="seatStatus"
+                    class="mt-3 inline-flex rounded-full px-3 py-1.5 text-xs font-semibold"
+                ></span>
 
             </div>
 
 
-
-            {{-- =================================================
-                BUTTONS
-            ================================================== --}}
-            <div
-                class="flex flex-col
-                       justify-end gap-3
-                       border-t
-                       border-slate-100
-                       bg-slate-50/50
-                       px-7 py-6
-                       sm:flex-row"
-            >
+            <div class="flex flex-col justify-end gap-3 border-t border-slate-100 bg-slate-50/50 px-7 py-6 sm:flex-row">
 
                 <a
-                    href="{{ route(
-                        'admin.students.show',
-                        $student
-                    ) }}"
-                    class="inline-flex
-                           min-w-[150px]
-                           items-center
-                           justify-center
-                           rounded-xl
-                           border
-                           border-slate-300
-                           bg-white
-                           px-6 py-3
-                           text-sm
-                           font-semibold
-                           text-slate-700
-                           transition
-                           hover:bg-slate-100"
+                    href="{{ route('admin.students.show', $student) }}"
+                    class="inline-flex min-w-[150px] items-center justify-center rounded-xl border-2 border-slate-400 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
                 >
                     Cancel
                 </a>
-
 
                 <button
                     type="submit"
                     id="saveButton"
                     disabled
-                    class="inline-flex
-                           min-w-[180px]
-                           items-center
-                           justify-center
-                           rounded-xl
-                           bg-cyan-500
-                           px-6 py-3
-                           text-sm
-                           font-semibold
-                           text-white
-                           shadow-sm
-                           transition
-                           hover:bg-cyan-600
-                           disabled:cursor-not-allowed
-                           disabled:bg-slate-300
-                           disabled:text-slate-500
-                           disabled:shadow-none"
+                    class="inline-flex min-w-[180px] items-center justify-center rounded-xl bg-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
                 >
                     Save Schedule
                 </button>
@@ -720,7 +375,6 @@
 @endsection
 
 
-
 @push('scripts')
 
 <script>
@@ -729,47 +383,19 @@ document.addEventListener(
     'DOMContentLoaded',
     function () {
 
-        /*
-        |--------------------------------------------------------------------------
-        | DATA FROM LARAVEL
-        |--------------------------------------------------------------------------
-        */
-
         const offerings =
             @json($offeringsData);
 
 
-        /*
-         * Original enrolment.
-         *
-         * This is used to identify
-         * the real current class.
-         */
-        const currentOfferingId =
-            Number(
-                @json($currentOfferingId)
-            );
-
-
-        /*
-         * Selected value.
-         *
-         * Normally this is the current
-         * offering, but after validation
-         * failure it can contain old().
-         */
-        const initialSelectedOfferingId =
+        const initialOfferingId =
             Number(
                 @json($selectedOfferingId)
             );
 
 
+        const initialSubSectionId =
+            @json($selectedSubSectionId);
 
-        /*
-        |--------------------------------------------------------------------------
-        | ELEMENTS
-        |--------------------------------------------------------------------------
-        */
 
         const sectionSelect =
             document.getElementById(
@@ -786,6 +412,12 @@ document.addEventListener(
         const timeSelect =
             document.getElementById(
                 'time'
+            );
+
+
+        const subSectionSelect =
+            document.getElementById(
+                'sub_section_id'
             );
 
 
@@ -819,22 +451,10 @@ document.addEventListener(
             );
 
 
-        const scheduleForm =
-            document.getElementById(
-                'scheduleForm'
-            );
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | FORMAT TIME
-        |--------------------------------------------------------------------------
-        */
-
-        function formatTime(time) {
-
+        function formatTime(time)
+        {
             if (!time) {
+
                 return '';
             }
 
@@ -845,7 +465,9 @@ document.addEventListener(
 
 
             let hour =
-                Number(parts[0]);
+                Number(
+                    parts[0]
+                );
 
 
             const minute =
@@ -862,9 +484,14 @@ document.addEventListener(
                 hour % 12;
 
 
-            if (hour === 0) {
+            if (
+                hour
+                ===
+                0
+            ) {
 
-                hour = 12;
+                hour =
+                    12;
             }
 
 
@@ -881,13 +508,6 @@ document.addEventListener(
             );
         }
 
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | RESET SELECT
-        |--------------------------------------------------------------------------
-        */
 
         function resetSelect(
             select,
@@ -918,117 +538,55 @@ document.addEventListener(
         }
 
 
+        function uniqueBy(
+            items,
+            key
+        ) {
 
-        /*
-        |--------------------------------------------------------------------------
-        | CLEAR FINAL SELECTION
-        |--------------------------------------------------------------------------
-        */
-
-        function clearSelectedSchedule() {
-
-            offeringInput.value =
-                '';
+            const map =
+                new Map();
 
 
-            selectedClassBox
-                .classList
-                .add('hidden');
+            items.forEach(
+                function (item) {
 
-
-            selectedClassName
-                .textContent =
-                '';
-
-
-            seatStatus
-                .textContent =
-                '';
-
-
-            saveButton.disabled =
-                true;
-        }
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | LOAD UNIQUE CLASSES / SECTIONS
-        |--------------------------------------------------------------------------
-        |
-        | This is the FIRST dropdown.
-        |
-        */
-
-        function loadSections() {
-
-            resetSelect(
-                sectionSelect,
-                'Select Class / Section'
-            );
-
-
-            const sections =
-                [];
-
-
-            offerings.forEach(
-                function (offering) {
-
-                    const alreadyExists =
-                        sections.some(
-                            function (section) {
-
-                                return (
-                                    Number(
-                                        section.id
-                                    )
-                                    ===
-                                    Number(
-                                        offering.section_id
-                                    )
-                                );
-                            }
-                        );
-
-
-                    if (!alreadyExists) {
-
-                        sections.push({
-
-                            id:
-                                offering.section_id,
-
-                            name:
-                                offering.section_name,
-
-                        });
-                    }
-                }
-            );
-
-
-            /*
-             * Sort section names
-             * alphabetically.
-             */
-            sections.sort(
-                function (a, b) {
-
-                    return String(
-                        a.name
-                    ).localeCompare(
-                        String(
-                            b.name
-                        )
+                    map.set(
+                        item[key],
+                        item
                     );
                 }
             );
 
 
+            return Array.from(
+                map.values()
+            );
+        }
+
+
+        function populateSections()
+        {
+            const sections =
+                uniqueBy(
+                    offerings,
+                    'section_id'
+                )
+                    .sort(
+                        function (a, b) {
+
+                            return String(
+                                a.section_name
+                            ).localeCompare(
+                                String(
+                                    b.section_name
+                                )
+                            );
+                        }
+                    );
+
+
             sections.forEach(
-                function (section) {
+                function (item) {
 
                     const option =
                         document.createElement(
@@ -1037,11 +595,11 @@ document.addEventListener(
 
 
                     option.value =
-                        section.id;
+                        item.section_id;
 
 
                     option.textContent =
-                        section.name;
+                        item.section_name;
 
 
                     sectionSelect.appendChild(
@@ -1052,23 +610,11 @@ document.addEventListener(
         }
 
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | LOAD DAYS FOR SELECTED CLASS
-        |--------------------------------------------------------------------------
-        |
-        | Class / Section
-        |       ↓
-        |      Day
-        |
-        */
-
-        function loadDays(
-            selectedSectionId,
+        function populateDays(
+            sectionId,
             selectedDayId = null
-        ) {
-
+        )
+        {
             resetSelect(
                 daySelect,
                 'Select Day'
@@ -1081,34 +627,54 @@ document.addEventListener(
             );
 
 
-            clearSelectedSchedule();
+            resetSelect(
+                subSectionSelect,
+                'Not required'
+            );
 
 
             daySelect.disabled =
-                true;
+                !sectionId;
 
 
             timeSelect.disabled =
                 true;
 
 
-            if (!selectedSectionId) {
+            subSectionSelect.disabled =
+                true;
+
+
+            offeringInput.value =
+                '';
+
+
+            saveButton.disabled =
+                true;
+
+
+            selectedClassBox.classList.add(
+                'hidden'
+            );
+
+
+            if (!sectionId) {
 
                 return;
             }
 
 
-            const sectionOfferings =
+            const matching =
                 offerings.filter(
-                    function (offering) {
+                    function (item) {
 
                         return (
                             Number(
-                                offering.section_id
+                                item.section_id
                             )
                             ===
                             Number(
-                                selectedSectionId
+                                sectionId
                             )
                         );
                     }
@@ -1116,47 +682,14 @@ document.addEventListener(
 
 
             const days =
-                [];
-
-
-            sectionOfferings.forEach(
-                function (offering) {
-
-                    const alreadyExists =
-                        days.some(
-                            function (day) {
-
-                                return (
-                                    Number(
-                                        day.id
-                                    )
-                                    ===
-                                    Number(
-                                        offering.day_id
-                                    )
-                                );
-                            }
-                        );
-
-
-                    if (!alreadyExists) {
-
-                        days.push({
-
-                            id:
-                                offering.day_id,
-
-                            name:
-                                offering.day_name,
-
-                        });
-                    }
-                }
-            );
+                uniqueBy(
+                    matching,
+                    'day_id'
+                );
 
 
             days.forEach(
-                function (day) {
+                function (item) {
 
                     const option =
                         document.createElement(
@@ -1165,11 +698,11 @@ document.addEventListener(
 
 
                     option.value =
-                        day.id;
+                        item.day_id;
 
 
                     option.textContent =
-                        day.name;
+                        item.day_name;
 
 
                     daySelect.appendChild(
@@ -1177,13 +710,6 @@ document.addEventListener(
                     );
                 }
             );
-
-
-            if (days.length > 0) {
-
-                daySelect.disabled =
-                    false;
-            }
 
 
             if (selectedDayId) {
@@ -1196,133 +722,82 @@ document.addEventListener(
         }
 
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | LOAD TIMES
-        |--------------------------------------------------------------------------
-        |
-        | Class / Section
-        |       ↓
-        |      Day
-        |       ↓
-        |      Time
-        |
-        */
-
-        function loadTimes(
-            selectedSectionId,
-            selectedDayId,
+        function populateTimes(
+            sectionId,
+            dayId,
             selectedOfferingId = null
-        ) {
-
+        )
+        {
             resetSelect(
                 timeSelect,
                 'Select Time'
             );
 
 
-            clearSelectedSchedule();
+            resetSelect(
+                subSectionSelect,
+                'Not required'
+            );
 
 
             timeSelect.disabled =
+                !dayId;
+
+
+            subSectionSelect.disabled =
                 true;
 
 
+            offeringInput.value =
+                '';
+
+
+            saveButton.disabled =
+                true;
+
+
+            selectedClassBox.classList.add(
+                'hidden'
+            );
+
+
             if (
-                !selectedSectionId ||
-                !selectedDayId
+                !sectionId
+                ||
+                !dayId
             ) {
 
                 return;
             }
 
 
-            const matchingOfferings =
+            const matching =
                 offerings.filter(
-                    function (offering) {
+                    function (item) {
 
                         return (
                             Number(
-                                offering.section_id
+                                item.section_id
                             )
                             ===
                             Number(
-                                selectedSectionId
+                                sectionId
                             )
                             &&
                             Number(
-                                offering.day_id
+                                item.day_id
                             )
                             ===
                             Number(
-                                selectedDayId
+                                dayId
                             )
                         );
                     }
                 );
 
 
-            /*
-             * Sort by start time.
-             */
-            matchingOfferings.sort(
-                function (a, b) {
-
-                    return String(
-                        a.start_time
-                    ).localeCompare(
-                        String(
-                            b.start_time
-                        )
-                    );
-                }
-            );
-
-
-            matchingOfferings.forEach(
-                function (offering) {
-
-                    const allocatedSeats =
-                        Number(
-                            offering.allocated_seats
-                        );
-
-
-                    const maximumSeats =
-                        Number(
-                            offering.max_seats
-                        );
-
-
-                    const availableSeats =
-                        Math.max(
-                            0,
-                            maximumSeats
-                            -
-                            allocatedSeats
-                        );
-
-
-                    const isCurrent =
-                        Number(
-                            offering.id
-                        )
-                        ===
-                        Number(
-                            currentOfferingId
-                        );
-
-
-                    /*
-                     * Current class must remain
-                     * selectable even when full.
-                     */
-                    const isFull =
-                        !isCurrent
-                        &&
-                        availableSeats <= 0;
-
+            matching.forEach(
+                function (item) {
 
                     const option =
                         document.createElement(
@@ -1331,72 +806,52 @@ document.addEventListener(
 
 
                     option.value =
-                        offering.id;
+                        item.id;
 
 
-                    let optionText =
+                    option.textContent =
                         formatTime(
-                            offering.start_time
+                            item.start_time
                         )
                         +
                         ' – '
                         +
                         formatTime(
-                            offering.end_time
+                            item.end_time
                         );
 
 
-                    /*
-                     * Add duration.
-                     */
-                    optionText +=
-                        ' ('
-                        +
-                        offering.duration_minutes
-                        +
-                        ' min)';
+                    const isCurrent =
+                        Number(
+                            item.id
+                        )
+                        ===
+                        Number(
+                            initialOfferingId
+                        );
 
 
-                    /*
-                     * Availability.
-                     */
-                    if (isCurrent) {
+                    const full =
+                        Number(
+                            item.allocated_seats
+                        )
+                        >=
+                        Number(
+                            item.max_seats
+                        )
+                        &&
+                        !isCurrent;
 
-                        optionText +=
-                            ' — Current';
 
+                    if (full) {
+
+                        option.disabled =
+                            true;
+
+
+                        option.textContent +=
+                            ' (Full)';
                     }
-                    else if (isFull) {
-
-                        optionText +=
-                            ' — Full';
-
-                    }
-                    else {
-
-                        optionText +=
-                            ' — '
-                            +
-                            availableSeats
-                            +
-                            (
-                                availableSeats === 1
-                                    ? ' seat available'
-                                    : ' seats available'
-                            );
-                    }
-
-
-                    option.textContent =
-                        optionText;
-
-
-                    /*
-                     * Full class cannot
-                     * be selected.
-                     */
-                    option.disabled =
-                        isFull;
 
 
                     timeSelect.appendChild(
@@ -1406,58 +861,21 @@ document.addEventListener(
             );
 
 
-            if (
-                matchingOfferings.length > 0
-            ) {
-
-                timeSelect.disabled =
-                    false;
-            }
-
-
             if (selectedOfferingId) {
 
                 timeSelect.value =
                     String(
                         selectedOfferingId
                     );
-
-
-                /*
-                 * Check whether selected
-                 * option was actually loaded.
-                 */
-                if (timeSelect.value) {
-
-                    updateSelectedOffering();
-                }
             }
         }
 
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | FINAL SELECTED OFFERING
-        |--------------------------------------------------------------------------
-        */
-
-        function updateSelectedOffering() {
-
-            const selectedOfferingId =
-                Number(
-                    timeSelect.value
-                );
-
-
-            if (!selectedOfferingId) {
-
-                clearSelectedSchedule();
-
-                return;
-            }
-
-
+        function applyOffering(
+            offeringId,
+            preferredSubSectionId = null
+        )
+        {
             const offering =
                 offerings.find(
                     function (item) {
@@ -1468,7 +886,7 @@ document.addEventListener(
                             )
                             ===
                             Number(
-                                selectedOfferingId
+                                offeringId
                             )
                         );
                     }
@@ -1477,53 +895,98 @@ document.addEventListener(
 
             if (!offering) {
 
-                clearSelectedSchedule();
+                offeringInput.value =
+                    '';
+
+
+                saveButton.disabled =
+                    true;
+
+
+                selectedClassBox.classList.add(
+                    'hidden'
+                );
+
+
+                resetSelect(
+                    subSectionSelect,
+                    'Not required'
+                );
+
+
+                subSectionSelect.disabled =
+                    true;
+
 
                 return;
             }
 
 
-            const allocatedSeats =
-                Number(
-                    offering.allocated_seats
-                );
-
-
-            const maximumSeats =
-                Number(
-                    offering.max_seats
-                );
-
-
-            const availableSeats =
-                Math.max(
-                    0,
-                    maximumSeats
-                    -
-                    allocatedSeats
-                );
-
-
-            const isCurrent =
-                Number(
-                    offering.id
-                )
-                ===
-                Number(
-                    currentOfferingId
-                );
-
-
-            /*
-             * Store actual offering ID.
-             */
             offeringInput.value =
                 offering.id;
 
 
-            /*
-             * Show selected schedule.
-             */
+            resetSelect(
+                subSectionSelect,
+                (
+                    offering.sub_sections.length
+                    >
+                    0
+                )
+                    ? 'Select Sub-section'
+                    : 'Not required'
+            );
+
+
+            if (
+                offering.sub_sections.length
+                >
+                0
+            ) {
+
+                subSectionSelect.disabled =
+                    false;
+
+
+                offering.sub_sections.forEach(
+                    function (subSection) {
+
+                        const option =
+                            document.createElement(
+                                'option'
+                            );
+
+
+                        option.value =
+                            subSection.id;
+
+
+                        option.textContent =
+                            subSection.name;
+
+
+                        subSectionSelect.appendChild(
+                            option
+                        );
+                    }
+                );
+
+
+                if (preferredSubSectionId) {
+
+                    subSectionSelect.value =
+                        String(
+                            preferredSubSectionId
+                        );
+                }
+
+            } else {
+
+                subSectionSelect.disabled =
+                    true;
+            }
+
+
             selectedClassName.textContent =
                 offering.section_name
                 +
@@ -1535,337 +998,207 @@ document.addEventListener(
                 +
                 formatTime(
                     offering.start_time
-                )
-                +
-                ' – '
-                +
-                formatTime(
-                    offering.end_time
-                )
-                +
-                ' · '
-                +
-                offering.duration_minutes
-                +
-                ' min';
-
-
-            /*
-             * Reset badge classes.
-             */
-            seatStatus.className =
-                'inline-flex rounded-full '
-                +
-                'px-3 py-1.5 '
-                +
-                'text-xs font-semibold';
-
-
-            /*
-             * Current class.
-             */
-            if (isCurrent) {
-
-                seatStatus.textContent =
-                    'Current Class';
-
-
-                seatStatus.classList.add(
-                    'bg-blue-100',
-                    'text-blue-700'
                 );
 
 
-                saveButton.disabled =
-                    false;
-            }
+            const isCurrent =
+                Number(
+                    offering.id
+                )
+                ===
+                Number(
+                    initialOfferingId
+                );
 
 
-            /*
-             * Available class.
-             */
-            else if (
-                availableSeats > 0
-            ) {
-
-                seatStatus.textContent =
-                    availableSeats
+            const available =
+                Math.max(
+                    0,
+                    Number(
+                        offering.max_seats
+                    )
+                    -
+                    Number(
+                        offering.allocated_seats
+                    )
                     +
                     (
-                        availableSeats === 1
-                            ? ' seat available'
-                            : ' seats available'
-                    );
-
-
-                seatStatus.classList.add(
-                    'bg-green-100',
-                    'text-green-700'
+                        isCurrent
+                            ? 1
+                            : 0
+                    )
                 );
 
 
-                saveButton.disabled =
-                    false;
-            }
+            seatStatus.textContent =
+                available
+                +
+                ' seat'
+                +
+                (
+                    available
+                    ===
+                    1
+                        ? ''
+                        : 's'
+                )
+                +
+                ' available';
 
 
-            /*
-             * Full class.
-             */
-            else {
-
-                seatStatus.textContent =
-                    'Class Full';
-
-
-                seatStatus.classList.add(
-                    'bg-red-100',
-                    'text-red-700'
+            seatStatus.className =
+                'mt-3 inline-flex rounded-full px-3 py-1.5 text-xs font-semibold '
+                +
+                (
+                    available
+                    >
+                    0
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
                 );
 
 
-                saveButton.disabled =
-                    true;
-            }
+            selectedClassBox.classList.remove(
+                'hidden'
+            );
 
 
-            selectedClassBox
-                .classList
-                .remove('hidden');
+            updateSaveState();
         }
 
 
+        function updateSaveState()
+        {
+            const offering =
+                offerings.find(
+                    function (item) {
 
-        /*
-        |--------------------------------------------------------------------------
-        | CLASS / SECTION CHANGED
-        |--------------------------------------------------------------------------
-        */
+                        return (
+                            Number(
+                                item.id
+                            )
+                            ===
+                            Number(
+                                offeringInput.value
+                            )
+                        );
+                    }
+                );
+
+
+            if (!offering) {
+
+                saveButton.disabled =
+                    true;
+
+
+                return;
+            }
+
+
+            if (
+                offering.sub_sections.length
+                >
+                0
+            ) {
+
+                saveButton.disabled =
+                    !subSectionSelect.value;
+
+            } else {
+
+                saveButton.disabled =
+                    false;
+            }
+        }
+
 
         sectionSelect.addEventListener(
             'change',
             function () {
 
-                loadDays(
-                    this.value
+                populateDays(
+                    sectionSelect.value
                 );
             }
         );
 
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | DAY CHANGED
-        |--------------------------------------------------------------------------
-        */
 
         daySelect.addEventListener(
             'change',
             function () {
 
-                loadTimes(
+                populateTimes(
                     sectionSelect.value,
-                    this.value
+                    daySelect.value
                 );
             }
         );
 
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | TIME CHANGED
-        |--------------------------------------------------------------------------
-        */
-
         timeSelect.addEventListener(
             'change',
             function () {
 
-                updateSelectedOffering();
+                applyOffering(
+                    timeSelect.value
+                );
             }
         );
 
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | INITIAL PAGE LOAD
-        |--------------------------------------------------------------------------
-        */
-
-        /*
-         * First load all classes.
-         */
-        loadSections();
+        subSectionSelect.addEventListener(
+            'change',
+            updateSaveState
+        );
 
 
-        /*
-         * Find selected offering.
-         *
-         * Usually current offering.
-         * If validation failed,
-         * this can be old selection.
-         */
-        let initialOffering =
+        populateSections();
+
+
+        const initialOffering =
             offerings.find(
-                function (offering) {
+                function (item) {
 
                     return (
                         Number(
-                            offering.id
+                            item.id
                         )
                         ===
                         Number(
-                            initialSelectedOfferingId
+                            initialOfferingId
                         )
                     );
                 }
             );
 
 
-        /*
-         * If old selection is not found,
-         * fall back to current offering.
-         */
-        if (!initialOffering) {
-
-            initialOffering =
-                offerings.find(
-                    function (offering) {
-
-                        return (
-                            Number(
-                                offering.id
-                            )
-                            ===
-                            Number(
-                                currentOfferingId
-                            )
-                        );
-                    }
-                );
-        }
-
-
-        /*
-         * Load:
-         *
-         * Class
-         * ↓
-         * Day
-         * ↓
-         * Time
-         */
         if (initialOffering) {
 
-            /*
-             * CLASS
-             */
             sectionSelect.value =
                 String(
                     initialOffering.section_id
                 );
 
 
-            /*
-             * DAY
-             */
-            loadDays(
+            populateDays(
                 initialOffering.section_id,
                 initialOffering.day_id
             );
 
 
-            /*
-             * TIME
-             */
-            loadTimes(
+            populateTimes(
                 initialOffering.section_id,
                 initialOffering.day_id,
                 initialOffering.id
             );
+
+
+            applyOffering(
+                initialOffering.id,
+                initialSubSectionId
+            );
         }
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | FORM VALIDATION
-        |--------------------------------------------------------------------------
-        */
-
-        scheduleForm.addEventListener(
-            'submit',
-            function (event) {
-
-                /*
-                 * Class required.
-                 */
-                if (
-                    !sectionSelect.value
-                ) {
-
-                    event.preventDefault();
-
-
-                    alert(
-                        'Please select a class or section.'
-                    );
-
-
-                    sectionSelect.focus();
-
-                    return;
-                }
-
-
-                /*
-                 * Day required.
-                 */
-                if (
-                    !daySelect.value
-                ) {
-
-                    event.preventDefault();
-
-
-                    alert(
-                        'Please select a day.'
-                    );
-
-
-                    daySelect.focus();
-
-                    return;
-                }
-
-
-                /*
-                 * Time required.
-                 */
-                if (
-                    !timeSelect.value
-                    ||
-                    !offeringInput.value
-                ) {
-
-                    event.preventDefault();
-
-
-                    alert(
-                        'Please select a time.'
-                    );
-
-
-                    timeSelect.focus();
-
-                    return;
-                }
-            }
-        );
-
     }
 );
 

@@ -978,7 +978,7 @@
                                        tracking-wide
                                        text-cyan-800"
                             >
-                                Total students
+                                Total students in a class
                             </th>
 
 
@@ -2379,8 +2379,8 @@
 
                                         {{
                                             $wishlistCount === 1
-                                                ? '1 active wishlist request needs review'
-                                                : $wishlistCount . ' active wishlist requests need review'
+                                                ? '1 active waitlist request needs review'
+                                                : $wishlistCount . ' active waitlist requests need review'
                                         }}
 
                                     @else

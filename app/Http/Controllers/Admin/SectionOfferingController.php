@@ -152,6 +152,19 @@ class SectionOfferingController extends Controller
 
 
         /*
+         * Interactive sub-sections:
+         *
+         * English
+         * Math
+         *
+         * Both use one shared capacity of five seats.
+         */
+        $interactiveSubSections =
+            $interactiveSection?->subSections
+            ?? collect();
+
+
+        /*
         |--------------------------------------------------------------------------
         | Load Offerings
         |--------------------------------------------------------------------------
@@ -364,8 +377,38 @@ class SectionOfferingController extends Controller
                     'section_id',
                     $interactiveSection->id
                 )
-                ->map(function ($offering) {
-                    $allocated =
+                ->map(
+                    function ($offering) use (
+                        $interactiveSubSections
+                    ) {
+                    $interactiveAllocations = [];
+
+
+                    foreach (
+                        $interactiveSubSections
+                        as $subSection
+                    ) {
+
+                        $interactiveAllocations[
+                            $subSection->id
+                        ] = $offering
+                            ->enrolments
+                            ->where(
+                                'sub_section_id',
+                                $subSection->id
+                            )
+                            ->count();
+                    }
+
+
+                    /*
+                     * Shared Interactive total.
+                     *
+                     * Do not filter by sub_section_id here.
+                     * Interactive English + Interactive Math
+                     * must remain within the same maximum of five.
+                     */
+                    $interactiveTotal =
                         $offering
                             ->enrolments
                             ->count();
@@ -385,7 +428,10 @@ class SectionOfferingController extends Controller
                             )->format('g:i A'),
 
                         'allocated' =>
-                            $allocated,
+                            $interactiveTotal,
+
+                        'interactive_allocations' =>
+                            $interactiveAllocations,
 
                         'maximum' =>
                             (int)
@@ -394,6 +440,16 @@ class SectionOfferingController extends Controller
                         'wishlist_count' =>
                             (int)
                             $offering->wishlist_count,
+
+                        'available_sub_sections' =>
+                            $offering
+                                ->subSections
+                                ->pluck('id')
+                                ->map(
+                                    fn ($id) =>
+                                        (int) $id
+                                )
+                                ->toArray(),
                     ];
                 })
                 ->values();
@@ -439,6 +495,7 @@ class SectionOfferingController extends Controller
                 'mathSection',
                 'interactiveSection',
                 'mathSubSections',
+                'interactiveSubSections',
 
                 'englishCapacity',
                 'mathCapacity',

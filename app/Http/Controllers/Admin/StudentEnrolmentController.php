@@ -54,6 +54,7 @@ class StudentEnrolmentController extends Controller
             SectionOffering::with([
                 'section',
                 'day',
+                'subSections',
             ])
                 ->withCount([
                     'enrolments as allocated_seats' =>
@@ -148,6 +149,21 @@ class StudentEnrolmentController extends Controller
                     ),
                 ],
 
+                /*
+                 * Key = section offering ID
+                 * Value = selected sub-section ID
+                 */
+                'sub_section_ids' => [
+                    'nullable',
+                    'array',
+                ],
+
+                'sub_section_ids.*' => [
+                    'nullable',
+                    'integer',
+                    'exists:sub_sections,id',
+                ],
+
                 'enrolment_type' => [
                     'required',
 
@@ -215,14 +231,20 @@ class StudentEnrolmentController extends Controller
             function () use (
                 $selectedOfferingIds,
                 $student,
-                $isWishlist
+                $isWishlist,
+                $validated
             ) {
 
                 $offerings =
-                    SectionOffering::whereIn(
-                        'id',
-                        $selectedOfferingIds
-                    )
+                    SectionOffering::with([
+                        'section',
+                        'day',
+                        'subSections',
+                    ])
+                        ->whereIn(
+                            'id',
+                            $selectedOfferingIds
+                        )
                         ->where(
                             'is_active',
                             true
@@ -246,6 +268,255 @@ class StudentEnrolmentController extends Controller
                     ]);
                 }
 
+
+                /*
+                |--------------------------------------------------------------------------
+                | Validate Sub-sections
+                |--------------------------------------------------------------------------
+                */
+
+                $selectedSubSections =
+                    collect(
+                        $validated[
+                            'sub_section_ids'
+                        ]
+                        ??
+                        []
+                    );
+
+
+                foreach (
+                    $offerings
+                    as $offering
+                ) {
+
+                    $subSectionId =
+                        $selectedSubSections
+                            ->get(
+                                (string) $offering->id
+                            )
+                        ??
+                        $selectedSubSections
+                            ->get(
+                                $offering->id
+                            );
+
+
+                    if (
+                        $offering
+                            ->subSections
+                            ->isNotEmpty()
+                    ) {
+
+                        if (!$subSectionId) {
+
+                            throw ValidationException::withMessages([
+                                'sub_section_ids' =>
+                                    'Please select a sub-section for '
+                                    .
+                                    (
+                                        $offering
+                                            ->section
+                                            ?->section_name
+                                        ??
+                                        'the selected class'
+                                    )
+                                    .
+                                    '.',
+                            ]);
+                        }
+
+
+                        if (
+                            !$offering
+                                ->subSections
+                                ->contains(
+                                    'id',
+                                    (int) $subSectionId
+                                )
+                        ) {
+
+                            throw ValidationException::withMessages([
+                                'sub_section_ids' =>
+                                    'The selected sub-section is not available for one of the selected classes.',
+                            ]);
+                        }
+
+                    } else {
+
+                        $subSectionId =
+                            null;
+                    }
+
+
+                    $offering->setAttribute(
+                        'selected_sub_section_id',
+                        $subSectionId
+                            ? (int) $subSectionId
+                            : null
+                    );
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | One Confirmed Class Per Day and Sub-section
+                |--------------------------------------------------------------------------
+                |
+                | A student may select the same main section on the same day when the
+                | sub-sections differ (for example Interactive English and Interactive
+                | Math). The same section/sub-section combination is allowed only once.
+                |--------------------------------------------------------------------------
+                */
+
+                if (!$isWishlist) {
+
+                    $classKey = function ($offering) {
+
+                        return
+                            (int) $offering->section_id
+                            . ':' .
+                            (int) $offering->day_id
+                            . ':' .
+                            (int) ($offering->getAttribute('selected_sub_section_id') ?? 0);
+                    };
+
+                    $classLabel = function ($offering) {
+
+                        $label =
+                            $offering->section?->section_name
+                            ?? 'Selected class';
+
+                        $subSectionId =
+                            (int) ($offering->getAttribute('selected_sub_section_id') ?? 0);
+
+                        $subSectionName = $subSectionId
+                            ? $offering->subSections
+                                ->firstWhere('id', $subSectionId)
+                                ?->sub_section_name
+                            : null;
+
+                        return $subSectionName
+                            ? $label . ' - ' . $subSectionName
+                            : $label;
+                    };
+
+                    $duplicateGroup =
+                        $offerings
+                            ->groupBy($classKey)
+                            ->first(fn ($group) => $group->count() > 1);
+
+                    if ($duplicateGroup) {
+
+                        $duplicateOffering = $duplicateGroup->first();
+                        $dayName =
+                            $duplicateOffering->day?->day_name
+                            ?? 'the selected day';
+
+                        throw ValidationException::withMessages([
+                            'section_offering_ids' =>
+                                $classLabel($duplicateOffering)
+                                . ' can only be selected once on '
+                                . $dayName
+                                . '. Choose another day, time, or sub-section.',
+                        ]);
+                    }
+
+                    $existingConfirmedEnrolments =
+                        Enrolment::with([
+                            'sectionOffering.section',
+                            'sectionOffering.day',
+                        ])
+                            ->where('student_id', $student->id)
+                            ->where('is_active', true)
+                            ->where('is_wishlist', false)
+                            ->get();
+
+                    foreach ($offerings as $newOffering) {
+
+                        $sameClassDaySubSection =
+                            $existingConfirmedEnrolments
+                                ->first(function ($existingEnrolment) use ($newOffering) {
+
+                                    $existingOffering = $existingEnrolment->sectionOffering;
+
+                                    return
+                                        $existingOffering
+                                        && (int) $existingOffering->section_id === (int) $newOffering->section_id
+                                        && (int) $existingOffering->day_id === (int) $newOffering->day_id
+                                        && (int) ($existingEnrolment->sub_section_id ?? 0)
+                                            === (int) ($newOffering->getAttribute('selected_sub_section_id') ?? 0);
+                                });
+
+                        if ($sameClassDaySubSection) {
+
+                            $dayName =
+                                $newOffering->day?->day_name
+                                ?? 'the selected day';
+
+                            throw ValidationException::withMessages([
+                                'section_offering_ids' =>
+                                    'This student already has '
+                                    . $classLabel($newOffering)
+                                    . ' on '
+                                    . $dayName
+                                    . '. Choose another day, time, or sub-section.',
+                            ]);
+                        }
+                    }
+
+                    $allConfirmedOfferings =
+                        $existingConfirmedEnrolments
+                            ->map(fn ($enrolment) => $enrolment->sectionOffering)
+                            ->filter();
+
+                    foreach ($offerings as $index => $newOffering) {
+
+                        $otherOfferings =
+                            $allConfirmedOfferings
+                                ->concat($offerings->slice($index + 1));
+
+                        $newStart = \Carbon\Carbon::parse($newOffering->start_time);
+                        $newEnd = \Carbon\Carbon::parse($newOffering->end_time);
+
+                        $conflict = $otherOfferings->first(function ($otherOffering) use (
+                            $newOffering,
+                            $newStart,
+                            $newEnd
+                        ) {
+                            if ((int) $otherOffering->day_id !== (int) $newOffering->day_id) {
+                                return false;
+                            }
+
+                            $otherStart = \Carbon\Carbon::parse($otherOffering->start_time);
+                            $otherEnd = \Carbon\Carbon::parse($otherOffering->end_time);
+
+                            return $newStart->lt($otherEnd) && $otherStart->lt($newEnd);
+                        });
+
+                        if ($conflict) {
+
+                            throw ValidationException::withMessages([
+                                'section_offering_ids' =>
+                                    'Schedule conflict on '
+                                    . ($newOffering->day?->day_name ?? 'the selected day')
+                                    . ': '
+                                    . ($newOffering->section?->section_name ?? 'Selected class')
+                                    . ' (' . $newStart->format('g:i A') . ' - ' . $newEnd->format('g:i A') . ') overlaps with '
+                                    . ($conflict->section?->section_name ?? 'another class')
+                                    . ' (' . \Carbon\Carbon::parse($conflict->start_time)->format('g:i A')
+                                    . ' - ' . \Carbon\Carbon::parse($conflict->end_time)->format('g:i A') . ').',
+                            ]);
+                        }
+                    }
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Capacity
+                |--------------------------------------------------------------------------
+                */
 
                 if (!$isWishlist) {
 
@@ -275,12 +546,6 @@ class StudentEnrolmentController extends Controller
                             >=
                             $offering->max_seats
                         ) {
-
-                            $offering->loadMissing([
-                                'section',
-                                'day',
-                            ]);
-
 
                             $className =
                                 $offering
@@ -315,6 +580,12 @@ class StudentEnrolmentController extends Controller
                 }
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Create Enrolments
+                |--------------------------------------------------------------------------
+                */
+
                 foreach (
                     $offerings
                     as $offering
@@ -326,6 +597,12 @@ class StudentEnrolmentController extends Controller
 
                         'section_offering_id' =>
                             $offering->id,
+
+                        'sub_section_id' =>
+                            $offering
+                                ->getAttribute(
+                                    'selected_sub_section_id'
+                                ),
 
                         'wishlist_for_enrolment_id' =>
                             null,
@@ -400,6 +677,7 @@ class StudentEnrolmentController extends Controller
                         );
                 },
 
+            'enrolments.subSection',
             'enrolments.sectionOffering.section',
             'enrolments.sectionOffering.day',
         ]);
@@ -467,8 +745,10 @@ class StudentEnrolmentController extends Controller
 
 
         $enrolment->load([
+            'subSection',
             'sectionOffering.section',
             'sectionOffering.day',
+            'sectionOffering.subSections',
         ]);
 
 
@@ -508,6 +788,7 @@ class StudentEnrolmentController extends Controller
             SectionOffering::with([
                 'section',
                 'day',
+                'subSections',
             ])
                 ->withCount([
                     'enrolments as allocated_seats' =>
@@ -563,16 +844,10 @@ class StudentEnrolmentController extends Controller
         Student $student,
         Enrolment $enrolment
     ) {
-        /*
-         * Must belong to student.
-         */
         if (
-            (int)
-            $enrolment
-                ->student_id
+            (int) $enrolment->student_id
             !==
-            (int)
-            $student->id
+            (int) $student->id
         ) {
 
             abort(404);
@@ -580,11 +855,9 @@ class StudentEnrolmentController extends Controller
 
 
         if (
-            !$enrolment
-                ->is_active
+            !$enrolment->is_active
             ||
-            $enrolment
-                ->is_wishlist
+            $enrolment->is_wishlist
         ) {
 
             abort(404);
@@ -610,41 +883,18 @@ class StudentEnrolmentController extends Controller
                         }
                     ),
                 ],
+
+                'sub_section_id' => [
+                    'nullable',
+                    'integer',
+                    'exists:sub_sections,id',
+                ],
             ]);
 
 
         /*
         |--------------------------------------------------------------------------
-        | No Change
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            (int)
-            $validated[
-                'section_offering_id'
-            ]
-            ===
-            (int)
-            $enrolment
-                ->section_offering_id
-        ) {
-
-            return redirect()
-                ->route(
-                    'admin.students.show',
-                    $student
-                )
-                ->with(
-                    'success',
-                    'Schedule has not changed.'
-                );
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Prevent Duplicate
+        | Prevent Duplicate Offering
         |--------------------------------------------------------------------------
         */
 
@@ -683,22 +933,21 @@ class StudentEnrolmentController extends Controller
         DB::transaction(
             function () use (
                 $validated,
-                $enrolment
+                $enrolment,
+                $student
             ) {
 
-                /*
-                |--------------------------------------------------------------------------
-                | Lock New Offering
-                |--------------------------------------------------------------------------
-                */
-
                 $newOffering =
-                    SectionOffering::where(
-                        'id',
-                        $validated[
-                            'section_offering_id'
-                        ]
-                    )
+                    SectionOffering::with([
+                        'section',
+                        'subSections',
+                    ])
+                        ->where(
+                            'id',
+                            $validated[
+                                'section_offering_id'
+                            ]
+                        )
                         ->where(
                             'is_active',
                             true
@@ -709,49 +958,293 @@ class StudentEnrolmentController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Capacity
+                | Validate Sub-section
                 |--------------------------------------------------------------------------
                 */
 
-                $allocatedSeats =
-                    Enrolment::where(
-                        'section_offering_id',
-                        $newOffering->id
-                    )
-                        ->where(
-                            'is_active',
-                            true
-                        )
-                        ->where(
-                            'is_wishlist',
-                            false
-                        )
-                        ->count();
+                $subSectionId =
+                    $validated[
+                        'sub_section_id'
+                    ]
+                    ??
+                    null;
 
 
                 if (
-                    $allocatedSeats
-                    >=
                     $newOffering
-                        ->max_seats
+                        ->subSections
+                        ->isNotEmpty()
                 ) {
 
-                    throw ValidationException::withMessages([
-                        'section_offering_id' =>
-                            'The selected class is full. Please select another class.',
-                    ]);
+                    if (!$subSectionId) {
+
+                        throw ValidationException::withMessages([
+                            'sub_section_id' =>
+                                'Please select a sub-section for '
+                                .
+                                (
+                                    $newOffering
+                                        ->section
+                                        ?->section_name
+                                    ??
+                                    'the selected class'
+                                )
+                                .
+                                '.',
+                        ]);
+                    }
+
+
+                    if (
+                        !$newOffering
+                            ->subSections
+                            ->contains(
+                                'id',
+                                (int) $subSectionId
+                            )
+                    ) {
+
+                        throw ValidationException::withMessages([
+                            'sub_section_id' =>
+                                'The selected sub-section is not available for this class.',
+                        ]);
+                    }
+
+                } else {
+
+                    $subSectionId =
+                        null;
                 }
 
 
                 /*
                 |--------------------------------------------------------------------------
-                | Move Enrolment
+                | No Change
                 |--------------------------------------------------------------------------
                 */
+
+                if (
+                    (int) $newOffering->id
+                    ===
+                    (int) $enrolment->section_offering_id
+                    &&
+                    (
+                        $subSectionId
+                            ? (int) $subSectionId
+                            : null
+                    )
+                    ===
+                    (
+                        $enrolment->sub_section_id
+                            ? (int) $enrolment->sub_section_id
+                            : null
+                    )
+                ) {
+
+                    return;
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Prevent Overlapping Class Times
+                |--------------------------------------------------------------------------
+                |
+                | Compare the new offering with every other active confirmed class for
+                | this student. The enrolment currently being edited must be excluded.
+                | Classes that only touch at an endpoint (for example 5:15-6:00 and
+                | 6:00-6:45) are allowed.
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    (int) $newOffering->id
+                    !==
+                    (int) $enrolment->section_offering_id
+                ) {
+
+                    $otherEnrolments =
+                        Enrolment::with([
+                            'sectionOffering.section',
+                            'sectionOffering.day',
+                        ])
+                            ->where(
+                                'student_id',
+                                $student->id
+                            )
+                            ->where(
+                                'id',
+                                '!=',
+                                $enrolment->id
+                            )
+                            ->where(
+                                'is_active',
+                                true
+                            )
+                            ->where(
+                                'is_wishlist',
+                                false
+                            )
+                            ->get();
+
+
+                    $newStart =
+                        \Carbon\Carbon::parse(
+                            $newOffering->start_time
+                        );
+
+                    $newEnd =
+                        \Carbon\Carbon::parse(
+                            $newOffering->end_time
+                        );
+
+
+                    $conflictingEnrolment =
+                        $otherEnrolments
+                            ->first(
+                                function ($otherEnrolment) use (
+                                    $newOffering,
+                                    $newStart,
+                                    $newEnd
+                                ) {
+
+                                    $otherOffering =
+                                        $otherEnrolment
+                                            ->sectionOffering;
+
+
+                                    if (
+                                        !$otherOffering
+                                        ||
+                                        (int) $otherOffering->day_id
+                                        !==
+                                        (int) $newOffering->day_id
+                                    ) {
+
+                                        return false;
+                                    }
+
+
+                                    $otherStart =
+                                        \Carbon\Carbon::parse(
+                                            $otherOffering->start_time
+                                        );
+
+                                    $otherEnd =
+                                        \Carbon\Carbon::parse(
+                                            $otherOffering->end_time
+                                        );
+
+
+                                    return
+                                        $newStart->lt($otherEnd)
+                                        &&
+                                        $otherStart->lt($newEnd);
+                                }
+                            );
+
+
+                    if ($conflictingEnrolment) {
+
+                        $conflictingOffering =
+                            $conflictingEnrolment
+                                ->sectionOffering;
+
+                        $newSectionName =
+                            $newOffering
+                                ->section
+                                ?->section_name
+                            ??
+                            'Selected class';
+
+                        $conflictingSectionName =
+                            $conflictingOffering
+                                ->section
+                                ?->section_name
+                            ??
+                            'Existing class';
+
+                        $dayName =
+                            $conflictingOffering
+                                ->day
+                                ?->day_name
+                            ??
+                            'the selected day';
+
+
+                        throw ValidationException::withMessages([
+                            'section_offering_id' =>
+                                'Schedule conflict: '
+                                . $newSectionName
+                                . ' ('
+                                . $newStart->format('g:i A')
+                                . ' - '
+                                . $newEnd->format('g:i A')
+                                . ') overlaps with '
+                                . $conflictingSectionName
+                                . ' ('
+                                . \Carbon\Carbon::parse($conflictingOffering->start_time)->format('g:i A')
+                                . ' - '
+                                . \Carbon\Carbon::parse($conflictingOffering->end_time)->format('g:i A')
+                                . ') on '
+                                . $dayName
+                                . '. Please choose a different time.',
+                        ]);
+                    }
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Capacity
+                |--------------------------------------------------------------------------
+                |
+                | Only check capacity when moving to a different offering.
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    (int) $newOffering->id
+                    !==
+                    (int) $enrolment->section_offering_id
+                ) {
+
+                    $allocatedSeats =
+                        Enrolment::where(
+                            'section_offering_id',
+                            $newOffering->id
+                        )
+                            ->where(
+                                'is_active',
+                                true
+                            )
+                            ->where(
+                                'is_wishlist',
+                                false
+                            )
+                            ->count();
+
+
+                    if (
+                        $allocatedSeats
+                        >=
+                        $newOffering->max_seats
+                    ) {
+
+                        throw ValidationException::withMessages([
+                            'section_offering_id' =>
+                                'The selected class is full. Please select another class.',
+                        ]);
+                    }
+                }
+
 
                 $enrolment->update([
                     'section_offering_id' =>
                         $newOffering->id,
+
+                    'sub_section_id' =>
+                        $subSectionId,
 
                     'is_wishlist' =>
                         false,
@@ -804,6 +1297,7 @@ class StudentEnrolmentController extends Controller
 
             'enrolments.sectionOffering.section',
             'enrolments.sectionOffering.day',
+            'enrolments.subSection',
         ]);
 
 

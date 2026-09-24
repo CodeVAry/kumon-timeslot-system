@@ -137,6 +137,9 @@
                                    text-sm font-semibold"
                         >
                             Student ID
+                            <span class="font-normal text-slate-400">
+                                (Optional)
+                            </span>
                         </label>
 
                         <input
@@ -149,7 +152,6 @@
                             class="w-full
                                    rounded-xl
                                    border-slate-300"
-                            required
                         >
 
                         @error('external_id')
@@ -226,6 +228,32 @@
                                 {{ $message }}
                             </p>
 
+                        @enderror
+
+                    </div>
+
+
+                    {{-- Date of Birth --}}
+                    {{-- Nickname --}}
+                    <div>
+
+                        <label
+                            class="mb-2 block text-sm font-semibold"
+                        >
+                            Nickname
+                            <span class="font-normal text-slate-400">(Optional)</span>
+                        </label>
+
+                        <input
+                            type="text"
+                            name="nickname"
+                            value="{{ old('nickname', $student->nickname) }}"
+                            maxlength="100"
+                            class="w-full rounded-xl border-slate-300"
+                        >
+
+                        @error('nickname')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
 
                     </div>
