@@ -248,7 +248,7 @@
             @endif
 
 
-            <button
+            {{-- <button
                 type="button"
                 onclick="window.print()"
                 class="inline-flex
@@ -263,7 +263,7 @@
                        hover:bg-blue-700"
             >
                 Print daily list
-            </button>
+            </button> --}}
 
         </div>
 
