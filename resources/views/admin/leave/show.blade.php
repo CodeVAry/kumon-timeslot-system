@@ -199,15 +199,13 @@
     */
 
     $canEdit =
-        in_array(
-            $leave->status,
-            [
-                'pending',
-                'approved',
-            ]
-        )
+        $leave->status === 'approved'
         &&
-        !$leave->actual_return_date;
+        (
+            !$leave->actual_return_date
+            ||
+            $leave->actual_return_date->copy()->startOfDay()->gte($today)
+        );
 
 
     /*
@@ -542,11 +540,8 @@
                         )
                 )
 
-                    <a
-                        href="{{ route(
-                            'admin.leave.edit',
-                            $leave
-                        ) }}"
+                    <button type="button"
+                        onclick="document.getElementById('edit-leave').open = true; document.getElementById('edit-leave').scrollIntoView({ behavior: 'smooth' });"
                         class="inline-flex
                                h-10
                                items-center
@@ -570,7 +565,7 @@
                                 : 'Edit / Extend'
                         }}
 
-                    </a>
+                    </button>
 
                 @endif
 
@@ -579,6 +574,88 @@
         </div>
 
     </section>
+
+
+
+    @if ($canEdit && auth()->user()->hasPermission('leave.edit'))
+        <details id="edit-leave" class="rounded-2xl border border-blue-200 bg-white p-6 shadow-sm"
+            @if (old('start_date') !== null || old('expected_return_date') !== null) open @endif>
+            <summary class="cursor-pointer text-lg font-bold text-slate-900">
+                Edit / Extend Leave
+            </summary>
+
+            <form method="POST" action="{{ route('admin.leave.update', $leave) }}" class="mt-6 space-y-5">
+                @csrf
+                @method('PATCH')
+
+                <div class="grid gap-5 md:grid-cols-2">
+                    <div>
+                        <label for="edit_start_date" class="mb-2 block text-sm font-semibold text-slate-700">Start Date</label>
+                        <input id="edit_start_date" name="start_date" type="date" required
+                            value="{{ old('start_date', $leave->start_date->format('Y-m-d')) }}"
+                            class="h-11 w-full rounded-xl border-slate-300">
+                    </div>
+
+                    <div>
+                        <label for="edit_expected_return_date" class="mb-2 block text-sm font-semibold text-slate-700">Expected Return Date</label>
+                        <input id="edit_expected_return_date" name="expected_return_date" type="date" required
+                            value="{{ old('expected_return_date', $leave->expected_return_date->format('Y-m-d')) }}"
+                            class="h-11 w-full rounded-xl border-slate-300">
+                    </div>
+
+                    <div>
+                        <label for="edit_homework_requirement" class="mb-2 block text-sm font-semibold text-slate-700">Homework Required</label>
+                        <select id="edit_homework_requirement" name="homework_requirement" required
+                            class="h-11 w-full rounded-xl border-slate-300">
+                            @foreach ($homeworkLabels as $value => $label)
+                                <option value="{{ $value }}"
+                                    @selected(old('homework_requirement', $leave->homework_requirement) === $value)>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="edit_reason" class="mb-2 block text-sm font-semibold text-slate-700">Leave Reason</label>
+                        <input id="edit_reason" name="reason" type="text" maxlength="255"
+                            value="{{ old('reason', $leave->reason) }}"
+                            class="h-11 w-full rounded-xl border-slate-300">
+                    </div>
+                </div>
+
+                @if ($leave->requested_by_guardian_id)
+                    <input type="hidden" name="notes" value="{{ $leave->notes }}">
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700">
+                        <span class="font-semibold">Parent note (read only):</span>
+                        <span class="whitespace-pre-line">{{ $leave->notes ?: 'No parent note provided.' }}</span>
+                    </div>
+                @else
+                    <div>
+                        <label for="edit_notes" class="mb-2 block text-sm font-semibold text-slate-700">Leave Note</label>
+                        <textarea id="edit_notes" name="notes" rows="3" maxlength="2000"
+                            class="w-full rounded-xl border-slate-300">{{ old('notes', $leave->notes) }}</textarea>
+                    </div>
+                @endif
+
+                <div>
+                    <label for="edit_review_note" class="mb-2 block text-sm font-semibold text-slate-700">Centre Homework Instructions</label>
+                    <textarea id="edit_review_note" name="review_note" rows="3" maxlength="2000"
+                        class="w-full rounded-xl border-slate-300">{{ old('review_note', $leave->review_note) }}</textarea>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('edit-leave').open = false"
+                        class="rounded-xl border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700">
+                        Cancel
+                    </button>
+                    <button type="submit" class="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </details>
+    @endif
 
 
 
@@ -2118,11 +2195,8 @@
                 )
         )
 
-            <a
-                href="{{ route(
-                    'admin.leave.edit',
-                    $leave
-                ) }}"
+            <button type="button"
+                onclick="document.getElementById('edit-leave').open = true; document.getElementById('edit-leave').scrollIntoView({ behavior: 'smooth' });"
                 class="inline-flex
                        h-11
                        items-center
@@ -2146,7 +2220,7 @@
                         : 'Edit / Extend Leave'
                 }}
 
-            </a>
+            </button>
 
         @endif
 
