@@ -568,6 +568,24 @@
                 </div>
 
 
+                {{-- Subsection --}}
+                <div>
+                    <label for="sub_section_id" class="mb-2 block text-xs font-semibold text-slate-600">
+                        Subsection
+                    </label>
+                    <select id="sub_section_id" name="sub_section_id"
+                        class="h-12 w-full rounded-xl border-slate-300">
+                        <option value="">Any Subsection</option>
+                        @foreach ($subSections as $subSection)
+                            <option value="{{ $subSection->id }}"
+                                data-section-id="{{ $subSection->section_id }}"
+                                @selected(request('sub_section_id') == $subSection->id)>
+                                {{ $subSection->section?->section_name }} ({{ $subSection->sub_section_name }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
                 {{-- Sort Order --}}
 
                 <div>
@@ -1516,6 +1534,28 @@
 document.addEventListener(
     'DOMContentLoaded',
     function () {
+
+        const classFilter = document.getElementById('section_id');
+        const subsectionFilter = document.getElementById('sub_section_id');
+
+        function updateSubsections() {
+            const sectionId = classFilter?.value || '';
+
+            Array.from(subsectionFilter?.options || []).forEach(function (option) {
+                if (!option.value) return;
+
+                const available = !sectionId || option.dataset.sectionId === sectionId;
+                option.disabled = !available;
+                option.hidden = !available;
+            });
+
+            if (subsectionFilter?.selectedOptions[0]?.disabled) {
+                subsectionFilter.value = '';
+            }
+        }
+
+        classFilter?.addEventListener('change', updateSubsections);
+        updateSubsections();
 
         const selectAll =
             document.getElementById(

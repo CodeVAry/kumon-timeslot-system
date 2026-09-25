@@ -437,6 +437,7 @@
                                 </label>
 
                                 <input type="date" name="start_date" id="start_date" value="{{ old('start_date') }}"
+                                    min="{{ today()->toDateString() }}"
                                     required
                                     class="w-full
                                        rounded-xl
@@ -458,7 +459,8 @@
                                 </label>
 
                                 <input type="date" name="expected_return_date" id="expected_return_date"
-                                    value="{{ old('expected_return_date') }}" required
+                                    value="{{ old('expected_return_date') }}"
+                                    min="{{ today()->addDay()->toDateString() }}" required
                                     class="w-full
                                        rounded-xl
                                        border-slate-300">

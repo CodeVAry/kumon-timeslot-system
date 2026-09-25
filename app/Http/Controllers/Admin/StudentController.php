@@ -9,6 +9,7 @@ use App\Models\Admin\SectionOffering;
 use App\Models\Admin\Student;
 use App\Models\Admin\StudentLeave;
 use App\Models\Admin\StudentStatus;
+use App\Models\Admin\SubSection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -187,7 +188,7 @@ class StudentController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Day / Time / Section Filters
+        | Day / Time / Section / Subsection Filters
         |--------------------------------------------------------------------------
         */
 
@@ -197,6 +198,8 @@ class StudentController extends Controller
             $request->filled('timeslot')
             ||
             $request->filled('section_id')
+            ||
+            $request->filled('sub_section_id')
         ) {
 
             $studentsQuery->whereHas(
@@ -211,7 +214,16 @@ class StudentController extends Controller
                         ->where(
                             'is_wishlist',
                             false
-                        )
+                        );
+
+                    if ($request->filled('sub_section_id')) {
+                        $enrolmentQuery->where(
+                            'sub_section_id',
+                            $request->input('sub_section_id')
+                        );
+                    }
+
+                    $enrolmentQuery
                         ->whereHas(
                             'sectionOffering',
                             function ($offeringQuery) use ($request) {
@@ -417,6 +429,15 @@ class StudentController extends Controller
                 )
                 ->get();
 
+        $subSections =
+            SubSection::with('section')
+                ->where('is_active', true)
+                ->whereHas('section', function ($query) {
+                    $query->where('is_active', true);
+                })
+                ->orderBy('sub_section_name')
+                ->get();
+
 
         $timeslots =
             SectionOffering::where(
@@ -442,6 +463,7 @@ class StudentController extends Controller
                 'studentStatuses',
                 'days',
                 'sections',
+                'subSections',
                 'timeslots',
                 'vacationStudentIds',
                 'sort'
