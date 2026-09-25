@@ -80,22 +80,37 @@ class StudentController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Student Status Filter
+        | Displayed Student Status Filter
+        |--------------------------------------------------------------------------
+        |
+        | Vacation is a temporary status from an active leave. It does not
+        | replace the student's stored student_status_id.
         |--------------------------------------------------------------------------
         */
 
-        if (
-            $request->filled(
-                'student_status_id'
-            )
-        ) {
+        if ($request->filled('student_status_id')) {
+            $selectedStatus = $request->input('student_status_id');
 
-            $studentsQuery->where(
-                'student_status_id',
-                $request->input(
-                    'student_status_id'
-                )
-            );
+            $isVacationFilter =
+                $selectedStatus === 'vacation'
+                || (
+                    ctype_digit((string) $selectedStatus)
+                    && StudentStatus::whereKey($selectedStatus)
+                        ->whereRaw('LOWER(status_name) = ?', ['vacation'])
+                        ->exists()
+                );
+
+            $vacationStudentQuery = StudentLeave::activeOnDate(
+                now()->toDateString()
+            )->select('student_id');
+
+            if ($isVacationFilter) {
+                $studentsQuery->whereIn('id', $vacationStudentQuery);
+            } else {
+                $studentsQuery
+                    ->where('student_status_id', $selectedStatus)
+                    ->whereNotIn('id', $vacationStudentQuery);
+            }
         }
 
 

@@ -73,13 +73,14 @@
     |--------------------------------------------------------------------------
     */
 
-        $canEdit = $leave->status === 'approved';
+        $canEdit = $leave->status === 'approved' &&
+            (!$leave->actual_return_date || $leave->actual_return_date->gt($today));
 
         $canCancel = $canEdit;
 
         $canDelete = in_array($leave->status, ['rejected', 'cancelled']);
 
-        $canReturnEarly = $leave->status === 'approved' && $leave->start_date->copy()->startOfDay()->lte($today);
+        $canReturnEarly = $canEdit && $leave->start_date->copy()->startOfDay()->lte($today);
 
         /*
     |--------------------------------------------------------------------------
@@ -137,12 +138,18 @@
             $displayStatusClass = 'bg-slate-200 text-slate-600';
 
             $headerBorder = 'border-slate-200';
-        } elseif ($leave->actual_return_date) {
+        } elseif ($leave->actual_return_date && $leave->actual_return_date->lte($today)) {
             $displayStatus = $leave->returned_early ? 'Returned Early' : 'Completed';
 
             $displayStatusClass = 'bg-green-100 text-green-700';
 
             $headerBorder = 'border-green-200';
+        } elseif ($leave->actual_return_date) {
+            $displayStatus = $leave->returned_early ? 'Early Return Scheduled' : 'Return Scheduled';
+
+            $displayStatusClass = 'bg-cyan-100 text-cyan-700';
+
+            $headerBorder = 'border-cyan-200';
         } elseif ($leave->start_date->copy()->startOfDay()->gt($today)) {
             $displayStatus = 'Upcoming Leave';
 
@@ -510,7 +517,7 @@
                                    uppercase
                                    tracking-wide
                                    text-slate-400">
-                                Actual Return
+                                {{ $leave->actual_return_date && $leave->actual_return_date->gt($today) ? 'Scheduled Return' : 'Actual Return' }}
                             </p>
 
 
@@ -1097,7 +1104,7 @@
                         </p>
 
                     </section>
-                @elseif ($leave->status === 'approved' && !$leave->actual_return_date)
+                @elseif ($leave->status === 'approved' && $canEdit)
                     <section
                         class="rounded-[26px]
                            border
@@ -1281,7 +1288,7 @@
                 COMPLETED
             ================================================== --}}
 
-                @if ($leave->status === 'approved' && $leave->actual_return_date)
+                @if ($leave->status === 'approved' && $leave->actual_return_date && $leave->actual_return_date->lte($today))
                     <section
                         class="rounded-[26px]
                            border

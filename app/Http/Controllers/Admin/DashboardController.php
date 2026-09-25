@@ -1064,84 +1064,66 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Admin Reminder 2
-        | 30-Day Absence Review
+        | New Leave Notifications
+        |--------------------------------------------------------------------------
+        |
+        | Both parent and admin created leaves are recorded as approved.
+        | Show recently added leaves that have not ended, so the dashboard
+        | gives the admin a link to each new leave record.
         |--------------------------------------------------------------------------
         */
 
-        $activeStatus =
-            StudentStatus::whereRaw(
-                'LOWER(status_name) = ?',
-                [
-                    'active',
-                ]
-            )
+        $newLeaves =
+            StudentLeave::with([
+                'student',
+            ])
                 ->where(
-                    'is_active',
-                    true
+                    'status',
+                    'approved'
                 )
-                ->first();
+                ->where(
+                    'created_at',
+                    '>=',
+                    $now->copy()->subDays(7)
+                )
+                ->whereDate(
+                    'expected_return_date',
+                    '>=',
+                    $now->toDateString()
+                )
+                ->where(function ($query) use ($now) {
+                    $query->whereNull('actual_return_date')
+                        ->orWhereDate(
+                            'actual_return_date',
+                            '>=',
+                            $now->toDateString()
+                        );
+                })
+                ->latest('created_at')
+                ->limit(10)
+                ->get();
 
-
-        $absenceReviewCount =
-            0;
-
-
-        if ($activeStatus) {
-
-            $activeStudents =
-                Student::with([
-                    'enrolments',
-                ])
-                    ->where(
-                        'student_status_id',
-                        $activeStatus->id
-                    )
-                    ->where(
-                        'is_active',
-                        true
-                    )
-                    ->get();
-
-
-            foreach (
-                $activeStudents
-                as $student
-            ) {
-
-                if (
-                    $reviewService
-                        ->requiresAbsenceReview(
-                            $student
-                        )
-                ) {
-
-                    $absenceReviewCount++;
-                }
+        foreach ($newLeaves as $leave) {
+            if (!$leave->student) {
+                continue;
             }
-        }
 
-
-        if (
-            $absenceReviewCount > 0
-        ) {
+            $studentName = trim(
+                $leave->student->first_name
+                . ' '
+                . $leave->student->last_name
+            );
 
             $adminReminders->push([
-                'type' =>
-                    'absence',
-
-                'title' =>
-                    'Student removal review required',
-
-                'message' =>
-                    $absenceReviewCount
-                    .
-                    ' student(s) have been absent for at least 30 days.',
-
-                'url' =>
-                    route(
-                        'admin.student-reviews.index'
-                    ),
+                'type' => 'leave',
+                'title' => 'New student leave recorded',
+                'message' => $studentName
+                    . ' has leave from '
+                    . $leave->start_date->format('d M Y')
+                    . ' to '
+                    . $leave->expected_return_date->format('d M Y')
+                    . '.',
+                'url' => route('admin.leave.show', $leave),
             ]);
         }
 

@@ -321,10 +321,18 @@
                         </option>
 
 
+                        <option
+                            value="vacation"
+                            @selected(request('student_status_id') === 'vacation')
+                        >
+                            Vacation
+                        </option>
+
                         @foreach (
                             $studentStatuses
                             as $studentStatus
                         )
+                            @continue(strcasecmp(trim($studentStatus->status_name), 'Vacation') === 0)
 
                             <option
                                 value="{{

@@ -661,17 +661,6 @@
                                 '';
 
 
-                            if (
-                                $tab === 'upcoming'
-                                &&
-                                $leave->is_actioned
-                            ) {
-
-                                $rowStyle =
-                                    'background-color: #f0fdf4;';
-                            }
-
-
                             /*
                             |--------------------------------------------------------------------------
                             | Returned Early
@@ -685,7 +674,9 @@
                             ) {
 
                                 $returnBadge =
-                                    'Returned Early';
+                                    $leave->actual_return_date->gt(today())
+                                        ? 'Early Return Scheduled'
+                                        : 'Returned Early';
 
 
                                 $returnBadgeStyle =
@@ -717,8 +708,6 @@
                                     'background-color: #dcfce7; color: #15803d;';
 
 
-                                $rowStyle =
-                                    'background-color: #f0fdf4;';
                             }
 
 
@@ -750,8 +739,6 @@
                                     'background-color: #d1fae5; color: #047857;';
 
 
-                                $rowStyle =
-                                    'background-color: #ecfdf5;';
                             }
 
 
@@ -795,6 +782,10 @@
                             | Enrolled Classes
                             |--------------------------------------------------------------------------
                             */
+
+                            if ($tab === 'upcoming' && $leave->is_actioned) {
+                                $rowStyle = 'background-color: #f0fdf4;';
+                            }
 
                             $classNames =
                                 $student
@@ -998,7 +989,7 @@
                                                 class="flex flex-wrap items-center justify-center gap-2"
                                                 onsubmit="
                                                     return confirm(
-                                                        'Record this student as returned on the selected date?'
+                                                        'Record this student as returned today?'
                                                     );
                                                 "
                                             >
@@ -1015,14 +1006,9 @@
 
 
                                                 <input
-                                                    type="date"
+                                                    type="hidden"
                                                     name="actual_return_date"
                                                     value="{{ today()->toDateString() }}"
-                                                    min="{{ $leave->start_date->toDateString() }}"
-                                                    max="{{ today()->toDateString() }}"
-                                                    required
-                                                    aria-label="Actual return date"
-                                                    class="h-10 rounded-xl border-slate-300 px-2 text-xs text-slate-700"
                                                 >
 
 
@@ -1078,7 +1064,7 @@
                                                     ) }}"
                                                     onsubmit="
                                                         return confirm(
-                                                            'Mark this upcoming leave as planned/completed?'
+                                                            'Mark planning for this leave as completed?'
                                                         );
                                                     "
                                                 >
@@ -1096,13 +1082,13 @@
                                                                justify-center
                                                                rounded-xl
                                                                border
-                                                               border-green-400
+                                                               border-slate-300
                                                                bg-white
                                                                px-4
                                                                text-xs
                                                                font-semibold
-                                                               text-green-700
-                                                               hover:bg-green-50"
+                                                               text-slate-700
+                                                               hover:bg-slate-50"
                                                     >
                                                         Completed
                                                     </button>

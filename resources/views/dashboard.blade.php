@@ -37,10 +37,6 @@
         $currentlyAttending
         ?? 0;
 
-    $absentToday =
-        $absentToday
-        ?? 0;
-
     $wishlistCount =
         $wishlistCount
         ?? 0;
@@ -65,13 +61,17 @@
         $todayClasses
         ?? collect();
 
-    $absentStudents =
-        $absentStudents
-        ?? collect();
-
     $adminReminders =
         $adminReminders
         ?? collect();
+
+    $leaveNotifications = $adminReminders
+        ->filter(fn ($reminder) => in_array(data_get($reminder, 'type'), ['leave', 'early-return'], true))
+        ->values();
+
+    $adminReminders = $adminReminders
+        ->reject(fn ($reminder) => in_array(data_get($reminder, 'type'), ['leave', 'early-return'], true))
+        ->values();
 
 @endphp
 
@@ -548,73 +548,26 @@
 
 
 
-        {{-- Absent --}}
-        <div
-            class="rounded-[24px]
-                   border
-                   border-red-100
-                   bg-red-50
-                   p-6"
+        {{-- Newly recorded leaves --}}
+        <a
+            href="{{ route('admin.leave.index') }}"
+            class="block rounded-[24px] border border-emerald-100 bg-emerald-50 p-6 transition hover:border-emerald-300 hover:shadow-sm"
         >
-
-            <div
-                class="flex
-                       items-start
-                       justify-between
-                       gap-4"
-            >
-
+            <div class="flex items-start justify-between gap-4">
                 <div>
-
-                    <p
-                        class="text-sm
-                               font-semibold
-                               text-slate-600"
-                    >
-                        @if ($isToday)
-                            Absent today
-                        @else
-                            Absent
-                        @endif
+                    <p class="text-sm font-semibold text-slate-600">Leave notifications</p>
+                    <p class="mt-4 text-4xl font-bold text-emerald-700">
+                        {{ number_format($leaveNotifications->count()) }}
                     </p>
-
-
-                    <p
-                        class="mt-4
-                               text-4xl
-                               font-bold
-                               text-red-500"
-                    >
-                        {{ number_format($absentToday) }}
+                    <p class="mt-3 text-sm text-slate-500">
+                        {{ $leaveNotifications->isEmpty() ? 'No leave updates to review' : 'View leave updates' }}
                     </p>
-
-
-                    <p
-                        class="mt-3
-                               text-sm
-                               text-slate-500"
-                    >
-                        Review absence records
-                    </p>
-
                 </div>
-
-
-                <div
-                    class="flex
-                           h-12 w-12
-                           items-center
-                           justify-center
-                           rounded-2xl
-                           bg-white/80
-                           text-red-500"
-                >
-                    !
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/80 text-emerald-700">
+                    +
                 </div>
-
             </div>
-
-        </div>
+        </a>
 
     </div>
 
@@ -1460,189 +1413,49 @@
 
 
             {{-- =================================================
-                ABSENT STUDENTS
+                LEAVE NOTIFICATIONS
             ================================================== --}}
-
-            <section
-                class="rounded-[26px]
-                       border
-                       border-cyan-100
-                       bg-white
-                       p-6
-                       shadow-sm"
-            >
-
-                <h2
-                    class="text-2xl
-                           font-bold
-                           text-slate-900"
-                >
-
-                    @if ($isToday)
-                        Absent today
-                    @else
-                        Absent on {{ $dashboardDate->format('j M') }}
-                    @endif
-
-                </h2>
-
-
-                <p
-                    class="mt-1
-                           text-sm
-                           text-slate-500"
-                >
-                    {{ number_format($absentToday) }}
-
-                    {{
-                        $absentToday === 1
-                            ? 'student'
-                            : 'students'
-                    }}
-                </p>
-
-
-
-                <div class="mt-5">
-
-                    @forelse (
-                        $absentStudents
-                        as $student
-                    )
-
-                        <div
-                            class="flex
-                                   items-start
-                                   justify-between
-                                   gap-4
-                                   border-b
-                                   border-slate-100
-                                   py-4
-                                   last:border-0"
-                        >
-
-                            <div>
-
-                                <p
-                                    class="font-semibold
-                                           text-slate-800"
-                                >
-                                    {{ $student->first_name ?? '' }}
-                                    {{ $student->last_name ?? '' }}
-                                </p>
-
-
-                                <p
-                                    class="mt-1
-                                           text-xs
-                                           text-slate-500"
-                                >
-                                    Student ID:
-                                    {{ $student->external_id ?? '—' }}
-                                </p>
-
-                            </div>
-
-
-                            @if (
-                                Route::has(
-                                    'admin.students.show'
-                                )
-                            )
-
-                                <a
-                                    href="{{ route(
-                                        'admin.students.show',
-                                        $student
-                                    ) }}"
-                                    class="text-xs
-                                           font-semibold
-                                           text-cyan-700
-                                           hover:text-cyan-900"
-                                >
-                                    View
-                                </a>
-
-                            @endif
-
-                        </div>
-
-
-                    @empty
-
-                        <div
-                            class="py-9
-                                   text-center"
-                        >
-
-                            <div
-                                class="mx-auto
-                                       flex
-                                       h-12 w-12
-                                       items-center
-                                       justify-center
-                                       rounded-full
-                                       bg-green-50
-                                       text-green-600"
-                            >
-                                ✓
-                            </div>
-
-
-                            <p
-                                class="mt-3
-                                       text-sm
-                                       font-semibold
-                                       text-slate-700"
-                            >
-                                No absence information
-                            </p>
-
-
-                            <p
-                                class="mt-1
-                                       text-xs
-                                       text-slate-500"
-                            >
-                                Absence records will appear here.
-                            </p>
-
-                        </div>
-
-                    @endforelse
-
+            <section class="rounded-[26px] border border-emerald-100 bg-white p-6 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">Leave Notifications</h2>
+                        <p class="mt-1 text-sm text-slate-500">Recently recorded leave and early returns</p>
+                    </div>
+                    <span class="inline-flex min-w-8 items-center justify-center rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-800">
+                        {{ $leaveNotifications->count() > 99 ? '99+' : $leaveNotifications->count() }}
+                    </span>
                 </div>
 
+                <div class="mt-5 space-y-3">
+                    @forelse ($leaveNotifications as $notification)
+                        @php
+                            $earlyReturn = data_get($notification, 'type') === 'early-return';
+                        @endphp
+                        <a
+                            href="{{ $notification['url'] }}"
+                            class="group block rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:shadow-md {{ $earlyReturn ? 'border-blue-200 bg-blue-50' : 'border-emerald-200 bg-emerald-50' }}"
+                        >
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold {{ $earlyReturn ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700' }}">{{ $earlyReturn ? '↩' : '+' }}</span>
+                                <div class="min-w-0 flex-1">
+                                    <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide {{ $earlyReturn ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700' }}">{{ $earlyReturn ? 'Early Return' : 'New Leave' }}</span>
+                                    <p class="mt-2 font-bold {{ $earlyReturn ? 'text-blue-800' : 'text-emerald-800' }}">{{ $notification['title'] }}</p>
+                                    <p class="mt-1 text-sm leading-6 {{ $earlyReturn ? 'text-blue-700' : 'text-emerald-700' }}">{{ $notification['message'] }}</p>
+                                    <span class="mt-2 inline-block text-xs font-semibold {{ $earlyReturn ? 'text-blue-800' : 'text-emerald-800' }}">View Leave Details →</span>
+                                </div>
+                            </div>
+                        </a>
+                    @empty
+                        <div class="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-8 text-center">
+                            <p class="text-sm font-semibold text-emerald-800">No new leave notifications</p>
+                            <p class="mt-1 text-xs text-emerald-700">Newly recorded leave will appear here.</p>
+                        </div>
+                    @endforelse
+                </div>
 
-                @if (
-                    Route::has(
-                        'admin.attendance.index'
-                    )
-                )
-
-                    <a
-                        href="{{ route(
-                            'admin.attendance.index'
-                        ) }}"
-                        class="mt-4
-                               inline-flex
-                               h-11 w-full
-                               items-center
-                               justify-center
-                               rounded-xl
-                               border
-                               border-cyan-300
-                               bg-cyan-50
-                               text-sm
-                               font-semibold
-                               text-cyan-800
-                               hover:bg-cyan-100"
-                    >
-                        Review Attendance
-                    </a>
-
-                @endif
-
+                <a href="{{ route('admin.leave.index') }}" class="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 text-sm font-semibold text-emerald-800 hover:bg-emerald-100">
+                    Open Leave Management
+                </a>
             </section>
 
 
@@ -1674,7 +1487,7 @@
                                    font-bold
                                    text-slate-900"
                         >
-                            Admin Notifications
+                            Admin Reviews
                         </h2>
 
 
@@ -1810,29 +1623,29 @@
                             } elseif (
                                 $reminderType
                                 ===
-                                'absence'
+                                'leave'
                             ) {
 
                                 $reminderCardStyle =
-                                    'border-red-200 bg-red-50';
+                                    'border-emerald-200 bg-emerald-50';
 
                                 $reminderIconStyle =
-                                    'bg-red-100 text-red-700';
+                                    'bg-emerald-100 text-emerald-700';
 
                                 $reminderTitleStyle =
-                                    'text-red-800';
+                                    'text-emerald-800';
 
                                 $reminderTextStyle =
-                                    'text-red-600';
+                                    'text-emerald-700';
 
                                 $reminderIcon =
-                                    '!';
+                                    '＋';
 
                                 $reminderLabel =
-                                    'Absence Review';
+                                    'New Leave';
 
                                 $reminderLabelStyle =
-                                    'bg-red-100 text-red-700';
+                                    'bg-emerald-100 text-emerald-700';
 
                             } elseif (
                                 $reminderType

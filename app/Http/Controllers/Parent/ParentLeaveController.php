@@ -629,6 +629,12 @@ class ParentLeaveController extends Controller
             $leave->status
             !==
             'approved'
+            ||
+            (
+                $leave->actual_return_date
+                &&
+                $leave->actual_return_date->lte(today())
+            )
         ) {
 
             return redirect()
@@ -675,6 +681,12 @@ class ParentLeaveController extends Controller
             $leave->status
             !==
             'approved'
+            ||
+            (
+                $leave->actual_return_date
+                &&
+                $leave->actual_return_date->lte(today())
+            )
         ) {
 
             return redirect()
@@ -768,6 +780,14 @@ class ParentLeaveController extends Controller
         }
 
 
+        $expectedReturnChanged =
+            $leave->expected_return_date->toDateString()
+            !==
+            Carbon::parse(
+                $validated['expected_return_date']
+            )->toDateString();
+
+
         $leave->update([
             'start_date' =>
                 $validated[
@@ -798,6 +818,16 @@ class ParentLeaveController extends Controller
                 ??
                 null,
         ]);
+
+
+        if ($expectedReturnChanged) {
+            // A newly planned return supersedes any previously scheduled return.
+            // Update directly so model fillable settings cannot leave stale dates.
+            StudentLeave::whereKey($leave->getKey())->update([
+                'actual_return_date' => null,
+                'returned_early' => false,
+            ]);
+        }
 
 
         return redirect()

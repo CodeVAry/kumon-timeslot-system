@@ -1025,13 +1025,20 @@ class LeaveController extends Controller
             $actualReturnDate->gt(
                 today()
             )
+            &&
+            $actualReturnDate->gt(
+                $leave
+                    ->expected_return_date
+                    ->copy()
+                    ->startOfDay()
+            )
         ) {
 
             return back()
                 ->withInput()
                 ->withErrors([
                     'actual_return_date' =>
-                        'Return date cannot be in the future.',
+                        'A scheduled return date cannot be after the expected return date.',
                 ]);
         }
 
@@ -1074,9 +1081,11 @@ class LeaveController extends Controller
         return $redirect
             ->with(
                 'success',
-                $returnedEarly
-                ? 'Student early return recorded successfully.'
-                : 'Student return recorded successfully.'
+                $actualReturnDate->gt(today())
+                    ? 'Student return scheduled successfully.'
+                    : ($returnedEarly
+                        ? 'Student early return recorded successfully.'
+                        : 'Student return recorded successfully.')
             );
     }
 
