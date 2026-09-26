@@ -1010,6 +1010,9 @@ class ScheduleController extends Controller
                 'include_attendance_status'
             );
 
+        // The first submission only renders HTML. No PDF/XLSX is created.
+        $downloadRequested = $request->boolean('download');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -1242,6 +1245,15 @@ class ScheduleController extends Controller
                     'Y-m-d'
                 );
 
+            if (!$downloadRequested) {
+                return view('admin.schedule.export-preview', [
+                    'daySchedules' => $daySchedules,
+                    'filters' => $validated,
+                    'selectedDay' => null,
+                    'preferredFormat' => $validated['format'],
+                ]);
+            }
+
 
             /*
             |--------------------------------------------------------------------------
@@ -1287,7 +1299,7 @@ class ScheduleController extends Controller
                 )
                     ->setPaper(
                         'a4',
-                        'landscape'
+                        'portrait'
                     );
 
 
@@ -1351,6 +1363,20 @@ class ScheduleController extends Controller
                 'Y-m-d'
             );
 
+        if (!$downloadRequested) {
+            return view('admin.schedule.export-preview', [
+                'daySchedules' => collect([
+                    [
+                        'date' => $date,
+                        'rows' => $rows,
+                    ],
+                ]),
+                'filters' => $validated,
+                'selectedDay' => $selectedDay,
+                'preferredFormat' => $validated['format'],
+            ]);
+        }
+
 
         if (
             $validated[
@@ -1398,7 +1424,7 @@ class ScheduleController extends Controller
             )
                 ->setPaper(
                     'a4',
-                    'landscape'
+                    'portrait'
                 );
 
 

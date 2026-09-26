@@ -1,526 +1,189 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <title>
-        Kumon Centre Schedule
-    </title>
-
-
+    <title>Student Schedule List</title>
     <style>
-
-        @page {
-            size: A4 portrait;
-            margin: 12px;
-        }
-
-
-        * {
-            box-sizing: border-box;
-        }
-
-
-        body {
-            margin: 0;
-            font-family: DejaVu Sans, sans-serif;
-            color: #111827;
-        }
-
-
-        .page {
-            width: 100%;
-            page-break-after: always;
-        }
-
-
-        .page:last-child {
-            page-break-after: auto;
-        }
-
-
-        .title {
-            margin: 0;
-            padding: 6px;
-            border: 1px solid #000;
-            background: #d9ead3;
-            font-size: 14px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-
-        .day-title {
-            margin: 4px 0 6px;
-            padding: 5px;
-            border: 1px solid #000;
-            background: #e2f0d9;
-            font-size: 10px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-
-        .columns {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-
-
-        .columns > tbody > tr > td {
-            border: 0;
-            vertical-align: top;
-        }
-
-
-        .panel {
-            width: 49%;
-        }
-
-
-        .gap {
-            width: 2%;
-        }
-
-
-        .schedule {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-
-
-        .schedule th,
-        .schedule td {
-            border: 1px solid #000;
-        }
-
-
-        .schedule th {
-            padding: 3px 2px;
-            background: #f3f4f6;
-            font-size: 7px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-
-        .time-column {
-            width: 15%;
-        }
-
-
-        .detail-column {
-            width: 85%;
-        }
-
-
-        .time-cell {
-            padding: 0;
-            text-align: center;
-            vertical-align: middle;
-        }
-
-
-        .time-text {
-            display: inline-block;
-            white-space: nowrap;
-            font-weight: bold;
-            transform: rotate(-90deg);
-            transform-origin: center center;
-        }
-
-
-        .subject-row {
-            padding: 2px 3px;
-            background: #eaf2f8;
-            font-weight: bold;
-            text-align: center;
-        }
-
-
-        .student-row {
-            padding: 1.5px 4px;
-            line-height: 1.1;
-            text-align: left;
-        }
-
-
-        .student-highlight {
-            font-weight: bold;
-        }
-
-
-        .empty {
-            padding: 30px;
-            border: 1px solid #000;
-            color: #64748b;
-            text-align: center;
-            font-size: 10px;
-        }
-
+        @page { size: A4 portrait; margin: 8mm; }
+        body { margin: 0; background: #ffffff; font-family: DejaVu Sans, sans-serif; color: #182338; font-size: 9px; }
+        .sheet { border: 1px solid #cbd5e1; background: #ffffff; padding: 12px; }
+        .next-sheet { page-break-before: always; }
+        .masthead { width: 100%; border-collapse: collapse; background: #ffffff; color: #182338; }
+        .masthead td { padding: 8px 6px; vertical-align: middle; }
+        .brand { width: 70%; font-size: 16px; font-weight: bold; }
+        .brand img { display: block; max-width: 115px; max-height: 35px; margin-bottom: 3px; background: #ffffff; }
+        .centre { display: block; margin-top: 3px; font-size: 8px; font-weight: normal; }
+        .printed { text-align: right; font-size: 8px; line-height: 1.5; }
+        h1 { margin: 0; padding: 12px 10px; color: #182338; text-align: center; font-size: 15px; }
+        .panel { background: #ffffff; color: #182338; padding: 10px; }
+        .date-bar { margin: 0 0 8px; padding: 8px 10px; background: #eff6fa; color: #182338; font-size: 9px; border-left: 3px solid #0891b2; }
+        .date-bar strong { color: #182338; }
+        .date-bar .count { float: right; font-size: 8px; color: #475569; }
+        .list { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 5px 3px; }
+        .list td { width: 50%; padding: 4px 7px; vertical-align: middle; }
+        .list td.group { background: #e4eff5; color: #164e63; font-weight: bold; font-size: 8px; }
+        .list td.name { background: #ffffff; color: #182338; border: 1px solid #e2e8f0; font-size: 9px; }
+        .list td.blank { background: #ffffff; }
+        .small-count { float: right; font-weight: normal; }
+        .footer { margin-top: 8px; padding: 5px 2px 0; font-size: 8px; color: #64748b; text-align: right; }
+        .none { padding: 20px; color: #64748b; text-align: center; }
     </style>
-
 </head>
-
-
 <body>
-
 @php
+    $schedules = !empty($multiDay)
+        ? $daySchedules
+        : collect([['date' => $date, 'rows' => $rows]]);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Single Day + All Days
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-        isset(
-            $multiDay
-        )
-        &&
-        $multiDay
-    ) {
-
-        $schedules =
-            $daySchedules;
-
-    } else {
-
-        $schedules =
-            collect([
-                [
-                    'date' =>
-                        $date,
-
-                    'rows' =>
-                        $rows,
-                ],
-            ]);
+    $logoPath = public_path('kumon-logo.png');
+    if (!is_file($logoPath)) {
+        $logoPath = public_path('images/kumon-logo.png');
     }
 
+    $firstSheet = true;
 @endphp
 
-
-@foreach (
-    $schedules
-    as $schedule
-)
-
+@forelse ($schedules as $schedule)
     @php
+        $exportRows = collect($schedule['rows'])->values();
+        $lines = collect();
 
-        $scheduleRows =
-            $schedule[
-                'rows'
-            ];
+        foreach ($exportRows->groupBy(function ($row) {
+            return ($row['start_time'] ?? '') . '|' . ($row['class_display'] ?? $row['section'] ?? '');
+        }) as $group) {
+            $first = $group->first();
+            $time = $first['start_time'] ?? '';
+            $subject = $first['class_display'] ?? $first['section'] ?? '';
 
+            $lines->push([
+                'type' => 'group',
+                'time' => $time,
+                'subject' => $subject,
+                'count' => $group->count(),
+            ]);
 
-        $scheduleDate =
-            $schedule[
-                'date'
-            ];
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Build Blocks
-        |--------------------------------------------------------------------------
-        */
-
-        $blocks =
-            collect();
-
-
-        $timeGroups =
-            $scheduleRows
-                ->groupBy(
-                    'start_time'
-                );
-
-
-        foreach (
-            $timeGroups
-            as $time =>
-                $timeRows
-        ) {
-
-            $subjectGroups =
-                $timeRows
-                    ->groupBy(
-                        'class_display'
-                    );
-
-
-            foreach (
-                $subjectGroups
-                as $subjectName =>
-                    $subjectRows
-            ) {
-
-                $blocks->push([
-                    'time' =>
-                        $time,
-
-                    'subject_name' =>
-                        $subjectName,
-
-                    'rows' =>
-                        $subjectRows
-                            ->values(),
-
-                    'height' =>
-                        1
-                        +
-                        $subjectRows
-                            ->count(),
+            foreach ($group as $row) {
+                $lines->push([
+                    'type' => 'student',
+                    'time' => $time,
+                    'subject' => $subject,
+                    'row' => $row,
                 ]);
             }
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Split Into Two Balanced Columns
-        |--------------------------------------------------------------------------
-        */
-
-        $totalHeight =
-            $blocks
-                ->sum(
-                    'height'
-                );
-
-
-        $targetHeight =
-            max(
-                1,
-                (int)
-                ceil(
-                    $totalHeight
-                    /
-                    2
-                )
-            );
-
-
-        $leftBlocks =
-            collect();
-
-
-        $rightBlocks =
-            collect();
-
-
-        $leftHeight =
-            0;
-
-
-        foreach (
-            $blocks
-            as $block
-        ) {
-
-            if (
-                $leftHeight
-                <
-                $targetHeight
-            ) {
-
-                $leftBlocks->push(
-                    $block
-                );
-
-
-                $leftHeight +=
-                    $block[
-                        'height'
-                    ];
-
-            } else {
-
-                $rightBlocks->push(
-                    $block
-                );
-            }
+        // Leave enough room for headings and the page footer.
+        // A continuation heading can add one more row per column.
+        $pages = $lines->chunk(50);
+        if ($pages->isEmpty()) {
+            $pages = collect([collect()]);
         }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Dynamic Compact Font
-        |--------------------------------------------------------------------------
-        */
-
-        $rightHeight =
-            $rightBlocks
-                ->sum(
-                    'height'
-                );
-
-
-        $maxColumnRows =
-            max(
-                $leftHeight,
-                $rightHeight
-            );
-
-
-        if (
-            $maxColumnRows
-            >
-            58
-        ) {
-
-            $studentFontSize =
-                5.4;
-
-            $subjectFontSize =
-                5.8;
-
-            $timeFontSize =
-                5.5;
-
-        } elseif (
-            $maxColumnRows
-            >
-            48
-        ) {
-
-            $studentFontSize =
-                6.0;
-
-            $subjectFontSize =
-                6.4;
-
-            $timeFontSize =
-                6.0;
-
-        } elseif (
-            $maxColumnRows
-            >
-            40
-        ) {
-
-            $studentFontSize =
-                6.6;
-
-            $subjectFontSize =
-                7.0;
-
-            $timeFontSize =
-                6.5;
-
-        } else {
-
-            $studentFontSize =
-                7.2;
-
-            $subjectFontSize =
-                7.6;
-
-            $timeFontSize =
-                7.0;
-        }
-
     @endphp
 
+    @foreach ($pages as $pageIndex => $pageLines)
+        @php
+            $pageLines = $pageLines->values();
+            $leftLines = $pageLines->take(25)->values();
+            $rightLines = $pageLines->skip(25)->values();
 
-    <div class="page">
+            foreach ([$leftLines, $rightLines] as $column) {
+                if ($column->isNotEmpty() && $column->first()['type'] === 'student') {
+                    $firstLine = $column->first();
+                    $column->prepend([
+                        'type' => 'group',
+                        'time' => $firstLine['time'],
+                        'subject' => $firstLine['subject'] . ' (continued)',
+                        'count' => null,
+                    ]);
+                }
+            }
 
-        <h1 class="title">
-            Kumon North Hobart Centre Schedule
-        </h1>
+            $visibleLines = max($leftLines->count(), $rightLines->count());
+        @endphp
 
-
-        <div class="day-title">
-            {{
-                $scheduleDate->format(
-                    'l, d F Y'
-                )
-            }}
-        </div>
-
-
-        @if (
-            $scheduleRows
-                ->isEmpty()
-        )
-
-            <div class="empty">
-                No students matched the selected filters.
-            </div>
-
-        @else
-
-            <table class="columns">
-
-                <tbody>
-
-                    <tr>
-
-                        <td class="panel">
-
-                            @include(
-                                'admin.schedule.partials.two-column-panel',
-                                [
-                                    'panelBlocks' =>
-                                        $leftBlocks,
-
-                                    'studentFontSize' =>
-                                        $studentFontSize,
-
-                                    'subjectFontSize' =>
-                                        $subjectFontSize,
-
-                                    'timeFontSize' =>
-                                        $timeFontSize,
-                                ]
-                            )
-
-                        </td>
-
-
-                        <td class="gap"></td>
-
-
-                        <td class="panel">
-
-                            @include(
-                                'admin.schedule.partials.two-column-panel',
-                                [
-                                    'panelBlocks' =>
-                                        $rightBlocks,
-
-                                    'studentFontSize' =>
-                                        $studentFontSize,
-
-                                    'subjectFontSize' =>
-                                        $subjectFontSize,
-
-                                    'timeFontSize' =>
-                                        $timeFontSize,
-                                ]
-                            )
-
-                        </td>
-
-                    </tr>
-
-                </tbody>
-
+        <div class="sheet @if (!$firstSheet) next-sheet @endif">
+            <table class="masthead">
+                <tr>
+                    <td class="brand">
+                        @if (is_file($logoPath))
+                            <img src="{{ $logoPath }}" alt="Kumon logo">
+                        @else
+                            KUMON
+                        @endif
+                        <span class="centre">Kumon North Hobart Education Centre</span>
+                    </td>
+                    <td class="printed">
+                        Printed {{ now('Australia/Hobart')->format('d M Y') }}<br>
+                        Page {{ $pageIndex + 1 }} of {{ $pages->count() }}
+                    </td>
+                </tr>
             </table>
 
-        @endif
+            <h1>Student Schedule List</h1>
 
+            <div class="panel">
+            <div class="date-bar">
+                <span><strong>Schedule day &amp; date:</strong>
+                    {{ \Carbon\Carbon::parse($schedule['date'])->format('l, d F Y') }}
+                </span>
+                <span class="count">{{ $exportRows->count() }} class allocations</span>
+            </div>
+
+            @if ($exportRows->isEmpty())
+                <div class="none">No students matched the selected filters.</div>
+            @else
+                <table class="list">
+                    <tbody>
+                        @for ($index = 0; $index < $visibleLines; $index++)
+                            <tr>
+                                @foreach ([$leftLines->get($index), $rightLines->get($index)] as $line)
+                                    @if (!$line)
+                                        <td class="blank">&nbsp;</td>
+                                    @elseif ($line['type'] === 'group')
+                                        <td class="group">
+                                            {{ $line['time'] }} &nbsp;·&nbsp; {{ $line['subject'] }}
+                                            @if ($line['count'] !== null)
+                                                <span class="small-count">{{ $line['count'] }}</span>
+                                            @endif
+                                        </td>
+                                    @else
+                                        @php
+                                            $student = $line['row'];
+                                            $attendance = $student['attendance_status'] ?? null;
+                                            $fill = $attendance === 'vacation' ? '#9ca3af'
+                                                : ($attendance === 'absent' ? '#dc2626' : ($student['status_fill'] ?? null));
+                                            $textColor = $attendance === 'absent' ? '#ffffff' : '#182338';
+                                            if ($fill && $attendance !== 'absent' && preg_match('/^#[0-9a-fA-F]{6}$/', $fill)) {
+                                                $r = hexdec(substr($fill, 1, 2));
+                                                $g = hexdec(substr($fill, 3, 2));
+                                                $b = hexdec(substr($fill, 5, 2));
+                                                if (($r * 299 + $g * 587 + $b * 114) / 1000 < 150) {
+                                                    $textColor = '#ffffff';
+                                                }
+                                            }
+                                        @endphp
+                                        <td class="name" @if ($fill) style="background: {{ $fill }}; color: {{ $textColor }};" @endif>
+                                            {{ $student['student_name'] ?? '' }}
+                                        </td>
+                                    @endif
+                                @endforeach
+                            </tr>
+                        @endfor
+                    </tbody>
+                </table>
+            @endif
+            </div>
+
+            <div class="footer">Kumon North Hobart · Student Schedule List</div>
+        </div>
+
+        @php $firstSheet = false; @endphp
+    @endforeach
+@empty
+    <div class="sheet">
+        <h1>Student Schedule List</h1>
+        <div class="panel"><div class="none">No students matched the selected filters.</div></div>
     </div>
-
-@endforeach
-
-
+@endforelse
 </body>
-
 </html>

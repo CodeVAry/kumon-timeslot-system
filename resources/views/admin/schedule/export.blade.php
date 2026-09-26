@@ -100,8 +100,8 @@
                    text-sm
                    text-slate-600"
         >
-            Generate the centre schedule using
-            the client printing format.
+            Review the class list before downloading
+            a PDF or Excel file.
         </p>
 
     </section>
@@ -174,6 +174,9 @@
     >
 
         @csrf
+
+        {{-- Export only after an explicit click on the preview's download button. --}}
+        <input type="hidden" name="download" value="0">
 
 
         <div
@@ -1011,7 +1014,7 @@
                        font-semibold
                        text-white"
             >
-                Generate Export
+                Preview Schedule
             </button>
 
         </div>
