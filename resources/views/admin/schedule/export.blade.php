@@ -175,9 +175,6 @@
 
         @csrf
 
-        {{-- Export only after an explicit click on the preview's download button. --}}
-        <input type="hidden" name="download" value="0">
-
 
         <div
             class="mb-6
