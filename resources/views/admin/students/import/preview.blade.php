@@ -986,6 +986,7 @@
           method="POST"
           action="{{ route('admin.student-import.confirm') }}"
           data-ready-count="{{ $readyRows->count() }}"
+          style="position: fixed; bottom: 16px; right: 16px; z-index: 2147483647; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; max-width: calc(100vw - 32px); padding: 12px; background: #fff; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 12px 30px rgba(15, 23, 42, .22);"
           class="fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-2rem)] flex-wrap items-center justify-end gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
         @csrf
         <span class="text-sm text-slate-600">
@@ -996,6 +997,7 @@
            class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">Cancel</a>
         @if ($readyRows->isNotEmpty() || $matchableCount > 0)
             <button id="confirm-import-button" type="submit"
+                    style="padding: 10px 20px; color: #fff; background: #16a34a; border: 0; border-radius: 8px; cursor: pointer; font-weight: 700;"
                     class="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-300">
                 Confirm Import
             </button>
@@ -1009,6 +1011,9 @@
     <script>
         (function () {
             const form = document.getElementById('import-confirm-form');
+            // Move the floating form out of layout containers that clip fixed elements.
+            // Match fields explicitly use form="import-confirm-form", so they still submit.
+            document.body.appendChild(form);
             const count = document.getElementById('selected-match-count');
             const button = document.getElementById('confirm-import-button');
             const rows = document.querySelectorAll('[data-match-row]');
@@ -1018,8 +1023,10 @@
                 rows.forEach(function (row) {
                     const check = row.querySelector('[data-match-check]');
                     const select = row.querySelector('[data-match-select]');
-                    select.disabled = !check.checked;
-                    select.required = check.checked;
+                    if (select) {
+                        select.disabled = !check.checked;
+                        select.required = check.checked;
+                    }
                     if (check.checked) selected++;
                 });
                 count.textContent = selected;
