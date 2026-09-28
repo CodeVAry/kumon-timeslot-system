@@ -500,163 +500,118 @@ class ScheduleController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function classStudents(
-        SectionOffering $sectionOffering
-    ) {
-        $sectionOffering->load([
-            'section',
-            'day',
-            'subSections',
+public function classStudents(
+    Request $request,
+    SectionOffering $sectionOffering
+) {
+    $validated = $request->validate([
+        'search' => ['nullable', 'string', 'max:150'],
+        'sub_section_id' => ['nullable', 'integer', 'min:1'],
+    ]);
+
+    $search = trim($validated['search'] ?? '');
+    $selectedSubSectionId = $validated['sub_section_id'] ?? null;
+
+    $sectionOffering->load([
+        'section',
+        'day',
+        'subSections',
+    ]);
+
+    $subSections = $sectionOffering->subSections
+        ->sortBy('sub_section_name')
+        ->values();
+
+    // Always restrict results to this class.
+    $baseQuery = Enrolment::query()
+        ->where('section_offering_id', $sectionOffering->id)
+        ->where('is_active', true)
+        ->where('is_wishlist', false);
+
+    // Keep the summary count for the whole class.
+    $confirmedCount = (clone $baseQuery)->count();
+
+    $query = (clone $baseQuery)->with([
+        'subSection',
+        'student.studentStatus',
+        'student.guardians',
+    ]);
+
+    if ($selectedSubSectionId !== null) {
+        $query->where('sub_section_id', $selectedSubSectionId);
+    }
+
+    if ($search !== '') {
+        // Supports first name, last name, full name and Student ID.
+        $terms = preg_split('/\s+/u', $search, -1, PREG_SPLIT_NO_EMPTY);
+
+        $query->whereHas('student', function ($studentQuery) use ($terms) {
+            foreach ($terms as $term) {
+                $studentQuery->where(function ($match) use ($term) {
+                    $match
+                        ->where('first_name', 'like', '%' . $term . '%')
+                        ->orWhere('last_name', 'like', '%' . $term . '%')
+                        ->orWhere('external_id', 'like', '%' . $term . '%');
+                });
+            }
+        });
+    }
+
+    $enrolments = $query
+        ->orderBy('student_id')
+        ->orderBy('id')
+        ->paginate(20)
+        ->appends([
+            'search' => $search,
+            'sub_section_id' => $selectedSubSectionId,
         ]);
 
+    $wishlistCount = Enrolment::query()
+        ->where('section_offering_id', $sectionOffering->id)
+        ->where('is_active', true)
+        ->where('is_wishlist', true)
+        ->count();
 
-        $enrolments =
-            Enrolment::with([
-                'subSection',
-                'student.studentStatus',
-                'student.guardians',
-            ])
-                ->where(
-                    'section_offering_id',
-                    $sectionOffering->id
-                )
-                ->where(
-                    'is_active',
-                    true
-                )
-                ->where(
-                    'is_wishlist',
-                    false
-                )
-                ->orderBy(
-                    'student_id'
-                )
-                ->paginate(20);
+    $today = now()->startOfDay();
+    $dayName = $sectionOffering->day?->day_name;
 
-
-        $wishlistCount =
-            Enrolment::where(
-                'section_offering_id',
-                $sectionOffering->id
-            )
-                ->where(
-                    'is_active',
-                    true
-                )
-                ->where(
-                    'is_wishlist',
-                    true
-                )
-                ->count();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Class Date
-        |--------------------------------------------------------------------------
-        */
-
-        $today =
-            now()
-                ->startOfDay();
-
-
-        $dayName =
-            $sectionOffering
-                ->day
-                ?->day_name;
-
-
-        if (
-            $dayName
-            &&
-            strtolower(
-                $dayName
-            )
-            ===
-            strtolower(
-                $today->format(
-                    'l'
-                )
-            )
-        ) {
-
-            $classDate =
-                $today
-                    ->copy();
-
-        } elseif ($dayName) {
-
-            $classDate =
-                $today
-                    ->copy()
-                    ->next(
-                        $dayName
-                    );
-
-        } else {
-
-            $classDate =
-                $today
-                    ->copy();
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Vacation Students
-        |--------------------------------------------------------------------------
-        */
-
-        $studentIds =
-            $enrolments
-                ->getCollection()
-                ->pluck(
-                    'student_id'
-                );
-
-
-        $vacationStudentIds =
-            collect();
-
-
-        if (
-            $studentIds
-                ->isNotEmpty()
-        ) {
-
-            $vacationStudentIds =
-                StudentLeave::activeOnDate(
-                    $classDate
-                )
-                    ->whereIn(
-                        'student_id',
-                        $studentIds
-                    )
-                    ->pluck(
-                        'student_id'
-                    )
-                    ->map(
-                        fn ($id) =>
-                            (int)
-                            $id
-                    )
-                    ->unique()
-                    ->values();
-        }
-
-
-        return view(
-            'admin.schedule.class-students',
-            compact(
-                'sectionOffering',
-                'enrolments',
-                'wishlistCount',
-                'vacationStudentIds',
-                'classDate'
-            )
-        );
+    if (
+        $dayName
+        && strtolower($dayName) !== strtolower($today->format('l'))
+    ) {
+        $classDate = $today->copy()->next($dayName);
+    } else {
+        $classDate = $today->copy();
     }
+
+    $studentIds = $enrolments
+        ->getCollection()
+        ->pluck('student_id')
+        ->unique();
+
+    $vacationStudentIds = collect();
+
+    if ($studentIds->isNotEmpty()) {
+        $vacationStudentIds = StudentLeave::activeOnDate($classDate)
+            ->whereIn('student_id', $studentIds)
+            ->pluck('student_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+    }
+
+    return view('admin.schedule.class-students', compact(
+        'sectionOffering',
+        'enrolments',
+        'confirmedCount',
+        'wishlistCount',
+        'vacationStudentIds',
+        'classDate',
+        'subSections',
+        'search',
+        'selectedSubSectionId'
+    ));
+}
 
 
     /*
