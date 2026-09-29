@@ -900,7 +900,7 @@
                                                            transition
                                                            hover:bg-green-700"
                                                 >
-                                                    Approve / Move
+                                                    Approve
                                                 </button>
 
                                             </form>
@@ -939,7 +939,7 @@
                                                        font-semibold
                                                        text-slate-400"
                                             >
-                                                Approve / Move
+                                                Approve
                                             </button>
 
                                         @endif
