@@ -165,7 +165,7 @@
             $loggedInUser &&
                 $loggedInUser->hasAnyPermission(['roles.view', 'permissions.view', 'users.view', 'audit_logs.view']))
 
-            <p
+            {{-- <p
                 class="mb-2 mt-6
                        px-3
                        text-xs
@@ -174,7 +174,7 @@
                        tracking-wider
                        text-slate-500">
                 User & Access
-            </p>
+            </p> --}}
 
 
             <div class="space-y-1">
@@ -751,10 +751,9 @@
                bg-slate-900
                p-4">
 
-        <div class="mb-3
-                   flex
-                   items-center
-                   gap-3">
+        <a href="{{ route('profile.edit') }}"
+            class="mb-3 flex items-center gap-3 rounded-lg p-2 -m-2 transition hover:bg-slate-800"
+            title="Open your profile">
 
             <div
                 class="flex
@@ -802,8 +801,7 @@
                 @endif
 
             </div>
-
-        </div>
+        </a>
 
 
 

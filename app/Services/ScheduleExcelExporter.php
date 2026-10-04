@@ -135,15 +135,14 @@ class ScheduleExcelExporter
 
     /*
     |--------------------------------------------------------------------------
-    | Build One Day Sheet - TWO COLUMN DESIGN
+    | Build One Day Sheet - SINGLE VERTICAL DESIGN
     |--------------------------------------------------------------------------
     |
-    | LEFT:  A = Time, B = Subject / Student
-    | SPACE: C
-    | RIGHT: D = Time, E = Subject / Student
+    | A = Time
+    | B = Subject / Student
     |
-    | The schedule is divided approximately in half and shown side-by-side.
-    | This makes the exported sheet compact enough to print on one portrait page.
+    | The schedule is rendered from top to bottom in one continuous list.
+    | There is no second block on the right-hand side.
     |--------------------------------------------------------------------------
     */
 
@@ -166,53 +165,18 @@ class ScheduleExcelExporter
 
         /*
         |--------------------------------------------------------------------------
-        | Page Columns
+        | Page Columns - one vertical schedule
         |--------------------------------------------------------------------------
         */
 
         $sheet
-            ->getColumnDimension(
-                'A'
-            )
-            ->setWidth(
-                8
-            );
+            ->getColumnDimension('A')
+            ->setWidth(14);
 
 
         $sheet
-            ->getColumnDimension(
-                'B'
-            )
-            ->setWidth(
-                30
-            );
-
-
-        $sheet
-            ->getColumnDimension(
-                'C'
-            )
-            ->setWidth(
-                2
-            );
-
-
-        $sheet
-            ->getColumnDimension(
-                'D'
-            )
-            ->setWidth(
-                8
-            );
-
-
-        $sheet
-            ->getColumnDimension(
-                'E'
-            )
-            ->setWidth(
-                30
-            );
+            ->getColumnDimension('B')
+            ->setWidth(58);
 
 
         /*
@@ -221,9 +185,7 @@ class ScheduleExcelExporter
         |--------------------------------------------------------------------------
         */
 
-        $sheet->mergeCells(
-            'A1:E1'
-        );
+        $sheet->mergeCells('A1:B1');
 
 
         $sheet->setCellValue(
@@ -234,7 +196,7 @@ class ScheduleExcelExporter
 
         $sheet
             ->getStyle(
-                'A1:E1'
+                'A1:B1'
             )
             ->getFont()
             ->setBold(
@@ -247,7 +209,7 @@ class ScheduleExcelExporter
 
         $sheet
             ->getStyle(
-                'A1:E1'
+                'A1:B1'
             )
             ->getAlignment()
             ->setHorizontal(
@@ -260,7 +222,7 @@ class ScheduleExcelExporter
 
         $sheet
             ->getStyle(
-                'A1:E1'
+                'A1:B1'
             )
             ->getFill()
             ->setFillType(
@@ -287,9 +249,7 @@ class ScheduleExcelExporter
         |--------------------------------------------------------------------------
         */
 
-        $sheet->mergeCells(
-            'A2:E2'
-        );
+        $sheet->mergeCells('A2:B2');
 
 
         $sheet->setCellValue(
@@ -302,7 +262,7 @@ class ScheduleExcelExporter
 
         $sheet
             ->getStyle(
-                'A2:E2'
+                'A2:B2'
             )
             ->getFont()
             ->setBold(
@@ -315,7 +275,7 @@ class ScheduleExcelExporter
 
         $sheet
             ->getStyle(
-                'A2:E2'
+                'A2:B2'
             )
             ->getAlignment()
             ->setHorizontal(
@@ -328,7 +288,7 @@ class ScheduleExcelExporter
 
         $sheet
             ->getStyle(
-                'A2:E2'
+                'A2:B2'
             )
             ->getFill()
             ->setFillType(
@@ -351,7 +311,7 @@ class ScheduleExcelExporter
 
         /*
         |--------------------------------------------------------------------------
-        | Two Column Headers
+        | Single Vertical List Headers
         |--------------------------------------------------------------------------
         */
 
@@ -359,8 +319,6 @@ class ScheduleExcelExporter
             [
                 'A3' => 'Time',
                 'B3' => 'Subject / Student',
-                'D3' => 'Time',
-                'E3' => 'Subject / Student',
             ]
             as $cell =>
                 $value
@@ -374,10 +332,7 @@ class ScheduleExcelExporter
 
 
         foreach (
-            [
-                'A3:B3',
-                'D3:E3',
-            ]
+            ['A3:B3']
             as $range
         ) {
 
@@ -449,47 +404,19 @@ class ScheduleExcelExporter
             );
 
 
-        [
-            $leftBlocks,
-            $rightBlocks,
-        ] =
-            $this->splitBlocks(
-                $blocks
-            );
-
-
         /*
         |--------------------------------------------------------------------------
-        | Render Both Sides
+        | Render One Continuous Column
         |--------------------------------------------------------------------------
         */
 
-        $leftLastRow =
-            $this->renderColumn(
-                $sheet,
-                $leftBlocks,
-                'A',
-                'B',
-                4
-            );
-
-
-        $rightLastRow =
-            $this->renderColumn(
-                $sheet,
-                $rightBlocks,
-                'D',
-                'E',
-                4
-            );
-
-
-        $lastRow =
-            max(
-                3,
-                $leftLastRow,
-                $rightLastRow
-            );
+        $lastRow = $this->renderColumn(
+            $sheet,
+            $blocks,
+            'A',
+            'B',
+            4
+        );
 
 
         /*
@@ -500,7 +427,7 @@ class ScheduleExcelExporter
 
         $sheet
             ->getStyle(
-                'A1:E'
+                'A1:B'
                 .
                 $lastRow
             )
@@ -567,7 +494,7 @@ class ScheduleExcelExporter
         $sheet
             ->getPageSetup()
             ->setPrintArea(
-                'A1:E'
+                'A1:B'
                 .
                 $lastRow
             );
@@ -580,7 +507,7 @@ class ScheduleExcelExporter
     |--------------------------------------------------------------------------
     |
     | A block is one subject within one time.
-    | Keeping a block together reduces awkward splits between columns.
+    | Keeping the class and its students together makes the list easy to read.
     |--------------------------------------------------------------------------
     */
 
@@ -645,94 +572,7 @@ class ScheduleExcelExporter
 
     /*
     |--------------------------------------------------------------------------
-    | Split Blocks Approximately 50 / 50
-    |--------------------------------------------------------------------------
-    */
-
-    private function splitBlocks(
-        Collection $blocks
-    ): array {
-
-        if (
-            $blocks
-                ->isEmpty()
-        ) {
-
-            return [
-                collect(),
-                collect(),
-            ];
-        }
-
-
-        $totalHeight =
-            $blocks
-                ->sum(
-                    'height'
-                );
-
-
-        $target =
-            (int)
-            ceil(
-                $totalHeight
-                /
-                2
-            );
-
-
-        $left =
-            collect();
-
-
-        $right =
-            collect();
-
-
-        $leftHeight =
-            0;
-
-
-        foreach (
-            $blocks
-            as $block
-        ) {
-
-            if (
-                $leftHeight
-                <
-                $target
-            ) {
-
-                $left->push(
-                    $block
-                );
-
-
-                $leftHeight +=
-                    $block[
-                        'height'
-                    ];
-
-            } else {
-
-                $right->push(
-                    $block
-                );
-            }
-        }
-
-
-        return [
-            $left,
-            $right,
-        ];
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Render One Side
+    | Render One Vertical List
     |--------------------------------------------------------------------------
     */
 
@@ -881,26 +721,49 @@ class ScheduleExcelExporter
                     );
 
 
-                if (
-                    !empty(
-                        $row[
-                            'status_fill'
-                        ]
-                    )
-                ) {
+                $attendance = $row['attendance_status'] ?? null;
+                $colour = $attendance === 'vacation'
+                    ? '9CA3AF'
+                    : ($attendance === 'absent'
+                        ? 'DC2626'
+                        : ltrim((string) ($row['status_fill'] ?? ''), '#'));
 
-                    $colour =
-                        ltrim(
-                            $row[
-                                'status_fill'
-                            ],
-                            '#'
+                if (preg_match('/^[0-9A-Fa-f]{6}$/', $colour)) {
+
+                    $sheet
+                        ->getStyle(
+                            $detailColumn
+                            .
+                            $currentRow
+                        )
+                        ->getFill()
+                        ->setFillType(
+                            Fill::FILL_SOLID
+                        )
+                        ->getStartColor()
+                        ->setRGB(
+                            strtoupper(
+                                $colour
+                            )
+                        );
+
+
+                    $sheet
+                        ->getStyle(
+                            $detailColumn
+                            .
+                            $currentRow
+                        )
+                        ->getFont()
+                        ->setBold(
+                            true
                         );
 
 
                     if (
-                        preg_match(
-                            '/^[0-9A-Fa-f]{6}$/',
+                        $attendance === 'absent'
+                        ||
+                        $this->useWhiteText(
                             $colour
                         )
                     ) {
@@ -911,48 +774,11 @@ class ScheduleExcelExporter
                                 .
                                 $currentRow
                             )
-                            ->getFill()
-                            ->setFillType(
-                                Fill::FILL_SOLID
-                            )
-                            ->getStartColor()
-                            ->setRGB(
-                                strtoupper(
-                                    $colour
-                                )
-                            );
-
-
-                        $sheet
-                            ->getStyle(
-                                $detailColumn
-                                .
-                                $currentRow
-                            )
                             ->getFont()
-                            ->setBold(
-                                true
+                            ->getColor()
+                            ->setRGB(
+                                'FFFFFF'
                             );
-
-
-                        if (
-                            $this->useWhiteText(
-                                $colour
-                            )
-                        ) {
-
-                            $sheet
-                                ->getStyle(
-                                    $detailColumn
-                                    .
-                                    $currentRow
-                                )
-                                ->getFont()
-                                ->getColor()
-                                ->setRGB(
-                                    'FFFFFF'
-                                );
-                        }
                     }
                 }
 
@@ -1038,9 +864,6 @@ class ScheduleExcelExporter
                     $blockStartRow
                 )
                 ->getAlignment()
-                ->setTextRotation(
-                    90
-                )
                 ->setHorizontal(
                     Alignment::HORIZONTAL_CENTER
                 )

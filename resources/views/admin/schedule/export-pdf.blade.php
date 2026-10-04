@@ -19,8 +19,9 @@
         .date-bar { margin: 0 0 8px; padding: 8px 10px; background: #eff6fa; color: #182338; font-size: 9px; border-left: 3px solid #0891b2; }
         .date-bar strong { color: #182338; }
         .date-bar .count { float: right; font-size: 8px; color: #475569; }
-        .list { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 5px 3px; }
-        .list td { width: 50%; padding: 4px 7px; vertical-align: middle; }
+        /* The printable list is intentionally one full-width column. */
+        .list { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0 3px; }
+        .list td { width: 100%; padding: 5px 8px; vertical-align: middle; }
         .list td.group { background: #e4eff5; color: #164e63; font-weight: bold; font-size: 8px; }
         .list td.name { background: #ffffff; color: #182338; border: 1px solid #e2e8f0; font-size: 9px; }
         .list td.blank { background: #ffffff; }
@@ -72,9 +73,9 @@
             }
         }
 
-        // Leave enough room for headings and the page footer.
-        // A continuation heading can add one more row per column.
-        $pages = $lines->chunk(50);
+        // Leave enough room for the headings and footer on an A4 portrait page.
+        // Each page now uses one full-width column.
+        $pages = $lines->chunk(44);
         if ($pages->isEmpty()) {
             $pages = collect([collect()]);
         }
@@ -83,22 +84,20 @@
     @foreach ($pages as $pageIndex => $pageLines)
         @php
             $pageLines = $pageLines->values();
-            $leftLines = $pageLines->take(25)->values();
-            $rightLines = $pageLines->skip(25)->values();
 
-            foreach ([$leftLines, $rightLines] as $column) {
-                if ($column->isNotEmpty() && $column->first()['type'] === 'student') {
-                    $firstLine = $column->first();
-                    $column->prepend([
-                        'type' => 'group',
-                        'time' => $firstLine['time'],
-                        'subject' => $firstLine['subject'] . ' (continued)',
-                        'count' => null,
-                    ]);
-                }
+            // If a page starts in the middle of a class, show a continuation
+            // heading so the single-column printout remains easy to follow.
+            if ($pageLines->isNotEmpty() && $pageLines->first()['type'] === 'student') {
+                $firstLine = $pageLines->first();
+                $pageLines->prepend([
+                    'type' => 'group',
+                    'time' => $firstLine['time'],
+                    'subject' => $firstLine['subject'] . ' (continued)',
+                    'count' => null,
+                ]);
             }
 
-            $visibleLines = max($leftLines->count(), $rightLines->count());
+            $visibleLines = $pageLines->count();
         @endphp
 
         <div class="sheet @if (!$firstSheet) next-sheet @endif">
@@ -136,37 +135,34 @@
                     <tbody>
                         @for ($index = 0; $index < $visibleLines; $index++)
                             <tr>
-                                @foreach ([$leftLines->get($index), $rightLines->get($index)] as $line)
-                                    @if (!$line)
-                                        <td class="blank">&nbsp;</td>
-                                    @elseif ($line['type'] === 'group')
-                                        <td class="group">
-                                            {{ $line['time'] }} &nbsp;·&nbsp; {{ $line['subject'] }}
-                                            @if ($line['count'] !== null)
-                                                <span class="small-count">{{ $line['count'] }}</span>
-                                            @endif
-                                        </td>
-                                    @else
-                                        @php
-                                            $student = $line['row'];
-                                            $attendance = $student['attendance_status'] ?? null;
-                                            $fill = $attendance === 'vacation' ? '#9ca3af'
-                                                : ($attendance === 'absent' ? '#dc2626' : ($student['status_fill'] ?? null));
-                                            $textColor = $attendance === 'absent' ? '#ffffff' : '#182338';
-                                            if ($fill && $attendance !== 'absent' && preg_match('/^#[0-9a-fA-F]{6}$/', $fill)) {
-                                                $r = hexdec(substr($fill, 1, 2));
-                                                $g = hexdec(substr($fill, 3, 2));
-                                                $b = hexdec(substr($fill, 5, 2));
-                                                if (($r * 299 + $g * 587 + $b * 114) / 1000 < 150) {
-                                                    $textColor = '#ffffff';
-                                                }
+                                @php $line = $pageLines->get($index); @endphp
+                                @if ($line['type'] === 'group')
+                                    <td class="group">
+                                        {{ $line['time'] }} &nbsp;·&nbsp; {{ $line['subject'] }}
+                                        @if ($line['count'] !== null)
+                                            <span class="small-count">{{ $line['count'] }}</span>
+                                        @endif
+                                    </td>
+                                @else
+                                    @php
+                                        $student = $line['row'];
+                                        $attendance = $student['attendance_status'] ?? null;
+                                        $fill = $attendance === 'vacation' ? '#9ca3af'
+                                            : ($attendance === 'absent' ? '#dc2626' : ($student['status_fill'] ?? null));
+                                        $textColor = $attendance === 'absent' ? '#ffffff' : '#182338';
+                                        if ($fill && $attendance !== 'absent' && preg_match('/^#[0-9a-fA-F]{6}$/', $fill)) {
+                                            $r = hexdec(substr($fill, 1, 2));
+                                            $g = hexdec(substr($fill, 3, 2));
+                                            $b = hexdec(substr($fill, 5, 2));
+                                            if (($r * 299 + $g * 587 + $b * 114) / 1000 < 150) {
+                                                $textColor = '#ffffff';
                                             }
-                                        @endphp
-                                        <td class="name" @if ($fill) style="background: {{ $fill }}; color: {{ $textColor }};" @endif>
-                                            {{ $student['student_name'] ?? '' }}
-                                        </td>
-                                    @endif
-                                @endforeach
+                                        }
+                                    @endphp
+                                    <td class="name" @if ($fill) style="background: {{ $fill }}; color: {{ $textColor }};" @endif>
+                                        {{ $student['student_name'] ?? '' }}
+                                    </td>
+                                @endif
                             </tr>
                         @endfor
                     </tbody>
