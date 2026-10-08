@@ -740,7 +740,7 @@
                                    gap-3"
                         >
 
-
+{{-- 
                             <label
                                 for="remember_me"
                                 class="inline-flex
@@ -767,7 +767,7 @@
                                     Remember me
                                 </span>
 
-                            </label>
+                            </label> --}}
 
 
 
