@@ -14,21 +14,21 @@
         'resources/js/app.js'
     ])
 </head>
-@stack('scripts')
+@stack('styles')
 <body class="bg-gray-100 font-sans antialiased">
 
-    <div class="min-h-screen">
+    <div class="min-h-screen w-full overflow-x-hidden">
 
         {{-- Sidebar --}}
         @include('panel.sidebar')
 
         {{-- Main content area --}}
-        <div class="min-h-screen ml-64">
+        <div class="min-h-screen w-full min-w-0 lg:ml-64">
 
             {{-- Header --}}
             @include('panel.header')
 
-            <main class="p-6">
+            <main class="min-w-0 p-4 sm:p-6">
 
                 {{-- Breadcrumb --}}
                 @include('panel.breadcrumb')
@@ -54,6 +54,8 @@
         </div>
 
     </div>
+
+    @stack('scripts')
 
 </body>
 </html>

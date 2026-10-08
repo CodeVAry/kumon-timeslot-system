@@ -5,17 +5,28 @@
 @endphp
 
 
-<aside
-    style="
-        position: fixed;
-        left: 0;
-        top: 0;
-        z-index: 40;
-        width: 256px;
-        height: 100vh;
-        background-color: #0f172a;
-        color: #ffffff;
-    ">
+<input
+    id="admin-sidebar-toggle"
+    type="checkbox"
+    class="sidebar-toggle"
+    aria-label="Toggle admin navigation"
+>
+
+<label
+    for="admin-sidebar-toggle"
+    class="sidebar-menu-button"
+    aria-label="Open admin navigation"
+>
+    <span aria-hidden="true">☰</span>
+</label>
+
+<label
+    for="admin-sidebar-toggle"
+    class="sidebar-overlay"
+    aria-label="Close admin navigation"
+></label>
+
+<aside class="responsive-sidebar bg-slate-900 text-white">
 
     {{-- =========================================================
         SYSTEM LOGO
