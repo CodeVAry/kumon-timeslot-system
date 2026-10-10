@@ -31,58 +31,6 @@ class AdminUserSeeder extends Seeder
                 )
                 ->firstOrFail();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Zartashia
-        |--------------------------------------------------------------------------
-        */
-
-        User::updateOrCreate(
-            [
-                'email' => 'zartashia@gmail.com',
-            ],
-            [
-                'name' => 'Zartashia',
-
-                'phone' => null,
-
-                'role_id' =>
-                    $adminRole->id,
-
-                'password' =>
-                    Hash::make(
-                        'zartashia1234'
-                    ),
-            ]
-        );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Carmel
-        |--------------------------------------------------------------------------
-        */
-
-        User::updateOrCreate(
-            [
-                'email' => 'carmel@kumon.com',
-            ],
-            [
-                'name' => 'Carmel',
-
-                'phone' => null,
-
-                'role_id' =>
-                    $adminRole->id,
-
-                'password' =>
-                    Hash::make(
-                        'carmel12345'
-                    ),
-            ]
-        );
-
         User::updateOrCreate(
             [
                 'email' =>
